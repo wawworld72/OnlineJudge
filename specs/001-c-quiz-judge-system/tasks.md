@@ -393,26 +393,26 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 
 ### Tests for User Story 6 ⚠️
 
-- [ ] T079 [P] [US6] Contract test for `archiveQuiz`(FR-037~038, 생성된 시트에 4개 탭이
+- [X] T079 [P] [US6] Contract test for `archiveQuiz`(FR-037~038, 생성된 시트에 4개 탭이
   각각 기록되는지 — 참가자 map 필드에서 데이터를 모아 시트로 옮기는 부분 포함, googleapis
   Sheets 모킹) in `functions/test/contract/archiveQuiz.spec.ts`
-- [ ] T080 [P] [US6] Contract test for `deleteQuizData`(FR-039~040, 아카이브 미존재 시
+- [X] T080 [P] [US6] Contract test for `deleteQuizData`(FR-039~040, 아카이브 미존재 시
   `NOT_ARCHIVED_YET`, `confirmWithoutArchive: true`로 강행 가능) in
   `functions/test/contract/deleteQuizData.spec.ts`
-- [ ] T081 [US6] Integration test — 아카이브 없이 삭제 시도(거부)→아카이브 실행→삭제 실행→
+- [X] T081 [US6] Integration test — 아카이브 없이 삭제 시도(거부)→아카이브 실행→삭제 실행→
   데이터 조회 시 존재하지 않음 확인(quickstart.md User Story 6 시나리오) in
   `functions/test/integration/archiveAndDelete.spec.ts`
 
 ### Implementation for User Story 6
 
-- [ ] T082 [P] [US6] `functions/src/services/sheetsClient.ts`에 Google Sheets API 클라이언트
+- [X] T082 [P] [US6] `functions/src/services/sheetsClient.ts`에 Google Sheets API 클라이언트
   구현(googleapis, T012 재시도 래퍼 사용, 탭별 쓰기)
-- [ ] T083 [US6] `functions/src/callable/archiveQuiz.ts`에 `archiveQuiz` 구현(FR-037~038,
+- [X] T083 [US6] `functions/src/callable/archiveQuiz.ts`에 `archiveQuiz` 구현(FR-037~038,
   4개 탭: 퀴즈 개요/참가자 및 확정 점수/문항별 채점 결과/제출 코드 — 참가자 문서의
   `submissions`/`runResults` map을 순회해 행으로 펼침) — T079 통과
-- [ ] T084 [US6] `functions/src/callable/deleteQuizData.ts`에 `deleteQuizData` 구현
+- [X] T084 [US6] `functions/src/callable/deleteQuizData.ts`에 `deleteQuizData` 구현
   (FR-039~040, 아카이브 미존재 시 `NOT_ARCHIVED_YET` 경고 후 명시적 확인 필요) — T080 통과
-- [ ] T085 [US6] `web/src/teacher/ArchiveDelete.tsx`에 아카이브/삭제 버튼과 미아카이브 경고
+- [X] T085 [US6] `web/src/teacher/ArchiveDelete.tsx`에 아카이브/삭제 버튼과 미아카이브 경고
   확인 다이얼로그 구현 — T081 통과
 
 **Checkpoint**: 모든 User Story가 함께, 각각 독립적으로 동작한다

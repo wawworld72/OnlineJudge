@@ -22,3 +22,5 @@ export { getParticipantDetail } from "./callable/getParticipantDetail";
 export { syncRoster } from "./callable/syncRoster";
 export { deployClassroomAssignment, resetClassroomDeployment } from "./callable/classroomAssignment";
 export { pushGrades } from "./callable/pushGrades";
+export { archiveQuiz } from "./callable/archiveQuiz";
+export { deleteQuizData } from "./callable/deleteQuizData";

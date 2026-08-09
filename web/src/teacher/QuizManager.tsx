@@ -15,6 +15,7 @@ import { PreDeployCheck } from "./PreDeployCheck";
 import { BatchGrade } from "./BatchGrade";
 import { ParticipantStatus } from "./ParticipantStatus";
 import { ClassroomPanel } from "./ClassroomPanel";
+import { ArchiveDelete } from "./ArchiveDelete";
 
 const NEXT_STATUS: Record<QuizStatus, QuizStatus | null> = {
   DRAFT: "OPEN",
@@ -186,6 +187,16 @@ export function QuizManager() {
             quizId={selected.quizId}
             problems={selected.problems}
             onChanged={() => openForEdit(selected.quizId)}
+          />
+          <ArchiveDelete
+            quizId={selected.quizId}
+            archivedAt={selected.archivedAt}
+            archiveSpreadsheetUrl={selected.archiveSpreadsheetUrl}
+            onArchived={() => openForEdit(selected.quizId)}
+            onDeleted={() => {
+              setShowForm(false);
+              refreshList();
+            }}
           />
         </>
       )}

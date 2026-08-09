@@ -47,6 +47,8 @@ export interface QuizDetail {
   courseId: string | null;
   courseWorkId: string | null;
   courseWorkLink: string | null;
+  archivedAt: number | null;
+  archiveSpreadsheetUrl: string | null;
   problems: ProblemDetail[];
 }
 
@@ -217,4 +219,15 @@ export interface PushGradesResponse {
 
 export function pushGrades(input: { quizId: string }) {
   return callFunction<typeof input, PushGradesResponse>("pushGrades", input);
+}
+
+export function archiveQuiz(input: { quizId: string }) {
+  return callFunction<typeof input, { spreadsheetUrl: string; createdAt: number }>(
+    "archiveQuiz",
+    input,
+  );
+}
+
+export function deleteQuizData(input: { quizId: string; confirmWithoutArchive?: boolean }) {
+  return callFunction<typeof input, { ok: true; deletedAt: number }>("deleteQuizData", input);
 }
