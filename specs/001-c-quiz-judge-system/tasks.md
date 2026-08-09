@@ -255,9 +255,10 @@ User Story도 시작할 수 없다.
 
 ---
 
-## Phase 7: User Story 5 - 교사의 Google Classroom 연동 (Priority: P5, 선택)
+## Phase 7: User Story 5 - 교사의 Google Classroom 연동 (Priority: P5, 필수)
 
-**Goal**: 교사가 필요할 때 Classroom 수강생 동기화·과제 배포·성적 반영을 수행한다.
+**Goal**: 교사가 매 퀴즈 운영 사이클마다 Classroom 수강생 동기화·과제 배포·성적 반영을
+수행한다(선택 기능이 아니라 필수 — Classroom 미연동 분반/퀴즈는 정상 운영 대상이 아니다).
 
 **Independent Test**: Classroom과 연동된 분반에서 수강생 동기화 → 과제 배포 → 성적 반영을
 각각 실행해 결과 요약을 확인(quickstart.md User Story 5 절 참고, googleapis는 모킹).
@@ -290,8 +291,8 @@ User Story도 시작할 수 없다.
 - [ ] T074 [US5] `web/src/teacher/ClassroomPanel.tsx`에 동기화/배포/성적반영 버튼과 결과
   팝업 화면 구현 — T069 통과
 
-**Checkpoint**: User Story 1~5가 함께, 각각 독립적으로 동작한다(US5는 분반이 Classroom과
-연동되지 않아도 나머지 스토리에 영향 없음)
+**Checkpoint**: User Story 1~5가 함께, 각각 독립적으로 동작한다(US5의 구현·테스트는 다른
+스토리를 기술적으로 막지 않지만, 완성된 시스템에서는 반드시 사용되는 필수 기능이다)
 
 ---
 
@@ -365,7 +366,8 @@ User Story도 시작할 수 없다.
 - **US3(P3)**: `graderClient`(T028, US1에서 생성)를 재사용하므로 T028 완료 후 시작하는 것을
   권장하지만, 별도 Grader 클라이언트를 임시로 두면 이론상 독립 시작도 가능
 - **US4(P4)**: Foundational 이후 시작 가능, 다른 스토리와 무관(조회 전용)
-- **US5(P5)**: Foundational 이후 시작 가능, 선택 기능이며 다른 스토리에 영향 없음
+- **US5(P5)**: Foundational 이후 시작 가능, 필수 기능이지만 구현·테스트는 다른 스토리를
+  기술적으로 막지 않음(독립적으로 개발 가능)
 - **US6(P6)**: Foundational 이후 시작 가능, 다른 스토리에 영향 없음(단, 실제 검증은 US3에서
   확정 채점된 데이터가 있어야 의미가 있음)
 
@@ -421,7 +423,9 @@ Task: "web/src/student/QuizList.tsx에 퀴즈 목록 화면 구현"
 2. US1 추가(테스트 → 구현) → 독립 검증 → 시연(MVP)
 3. US2 추가(교사가 UI로 퀴즈를 직접 준비 가능해짐) → 독립 검증 → 시연
 4. US3 추가(일괄 채점) → 독립 검증 → 시연 — 여기까지가 "핵심 응시 사이클" 완성
-5. US4~US6는 운영 편의 기능으로 필요한 순서대로 추가
+5. US5(Classroom 연동, **필수**) 추가 → 독립 검증 → 시연 — 이 단계가 끝나야 실제 운영(수강생
+   동기화·과제 배포·성적 반영) 가능한 시스템으로 간주한다
+6. US4(참가자 현황 조회)·US6(아카이브/삭제)는 운영 편의 기능으로 필요한 순서대로 추가
 
 ### Parallel Team Strategy
 

@@ -69,7 +69,7 @@
 - **Request**: `{ quizId: string, studentId: string }`
 - **Response**: `{ submissions: [...], runResults: [...] }`
 
-## 교사용 — Classroom (선택, User Story 5)
+## 교사용 — Classroom (필수, User Story 5)
 
 ### `syncRoster`
 - **Request**: `{ courseId: string }`

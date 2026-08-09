@@ -55,7 +55,7 @@ firebase emulators:start --only auth,firestore,functions
 2. `getParticipantDetail({quizId:'Q1', studentId:'S001'})` 호출 → 제출 코드·문항별 채점 상세
    확인.
 
-## User Story 5 검증 — Classroom 연동 (P5, 선택)
+## User Story 5 검증 — Classroom 연동 (P5, 필수)
 
 Classroom API는 에뮬레이터가 없으므로 googleapis 클라이언트를 모킹한 통합 테스트로 대체한다.
 
