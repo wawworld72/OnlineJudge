@@ -5,6 +5,7 @@ import { firebaseApp } from "./shared/firebaseApp";
 import { Login } from "./shared/Login";
 import { QuizList } from "./student/QuizList";
 import { QuizEntry } from "./student/QuizEntry";
+import { QuizManager } from "./teacher/QuizManager";
 
 const auth = getAuth(firebaseApp);
 
@@ -44,7 +45,7 @@ export function App() {
             <Route path="/quiz/:quizId" element={<QuizEntry />} />
           </>
         ) : (
-          <Route path="/*" element={<div>교사 화면 (User Story 2에서 구현)</div>} />
+          <Route path="/*" element={<QuizManager />} />
         )}
       </Routes>
     </BrowserRouter>

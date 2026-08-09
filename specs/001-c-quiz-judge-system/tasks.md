@@ -262,11 +262,11 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
   getQuizForEdit.ts`에 `getQuizForEdit` 구현 — 퀴즈 전체 필드 + 삭제되지 않은 문항 +
   문항별 `problemSecrets.items`(정답 포함, 교사에게는 헌법 III이 적용되지 않음)를 한 번에
   반환 in `functions/test/contract/getQuizForEdit.spec.ts`
-- [ ] T056 [P] [US2] `web/src/teacher/QuizManager.tsx`에 교사 퀴즈 목록/생성/수정/상태전환
+- [X] T056 [P] [US2] `web/src/teacher/QuizManager.tsx`에 교사 퀴즈 목록/생성/수정/상태전환
   화면 구현
-- [ ] T057 [US2] `web/src/teacher/ProblemEditor.tsx`에 문항·테스트케이스 편집 화면 구현
+- [X] T057 [US2] `web/src/teacher/ProblemEditor.tsx`에 문항·테스트케이스 편집 화면 구현
   (Markdown 설명, 배점 합계 자동 표시, 삭제된(`deletedAt != null`) 문항은 목록에서 숨김)
-- [ ] T058 [US2] `web/src/teacher/PreDeployCheck.tsx`에 배포 전 점검 결과 패널(PASS/WARN/
+- [X] T058 [US2] `web/src/teacher/PreDeployCheck.tsx`에 배포 전 점검 결과 패널(PASS/WARN/
   BLOCK, `classroomRosterSync`/`classroomDeployment` WARN 항목 포함) 구현 — T049 통과
 
 **Checkpoint**: User Story 1과 2가 함께, 각각 독립적으로 동작한다
