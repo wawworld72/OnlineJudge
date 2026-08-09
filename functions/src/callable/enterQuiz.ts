@@ -50,6 +50,7 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
       runsUsedByProblem: {},
       submissions: {},
       runResults: {},
+      gradePushedAt: null,
     };
     try {
       // `.create()`는 문서가 이미 있으면 실패한다 — 동시에 두 요청이 함께 "없음"을 보고

@@ -12,6 +12,7 @@ import {
 } from "./api";
 import { ProblemEditor } from "./ProblemEditor";
 import { PreDeployCheck } from "./PreDeployCheck";
+import { BatchGrade } from "./BatchGrade";
 
 const NEXT_STATUS: Record<QuizStatus, QuizStatus | null> = {
   DRAFT: "OPEN",
@@ -169,6 +170,7 @@ export function QuizManager() {
           )}
 
           <PreDeployCheck quizId={selected.quizId} />
+          <BatchGrade quizId={selected.quizId} />
           <ProblemEditor
             quizId={selected.quizId}
             problems={selected.problems}

@@ -138,7 +138,8 @@ lost-update가 발생할 수 있었다.
 | completedCount, totalCount | number | 참가자 현황 화면용 진행도 (FR-025) |
 | runsUsedByProblem | map<problemId, number> | 문항별 실행 횟수 사용량. `runTransaction`으로만 증가(FR-014, research.md §5) |
 | submissions | map<problemId, `{code, submittedAt}`> | 문항별 최종 제출 코드(구 `submissions` 서브컬렉션, FR-017) |
-| runResults | map<problemId, `{status, score, maxScore, compileErrorMessage, tcResults}`> | 문항별 확정 채점 결과(구 `runResults` 서브컬렉션, FR-024) |
+| runResults | map<problemId, `{status, score, maxScore, compileErrorMessage, tcResults}`> | 문항별 확정 채점 결과(구 `runResults` 서브컬렉션, FR-024). `status`는 `'AC'\|'WA'\|'CE'\|'NOT_ATTEMPTED'` — 코드를 제출하지 않은 문항은 `'NOT_ATTEMPTED'`/0점으로 기록한다(FR-022) |
+| gradePushedAt | timestamp \| null | `pushGrades`(User Story 5)가 이 참가자의 성적을 Classroom에 성공 반영한 시각. `batchGrade`가 `classroomGradesPending`(FR-023)을 판단하려면 "이미 반영됨"과 "아직 반영 안 됨"을 구분할 무언가가 필요한데, 원래 설계엔 이 필드가 없었다(research.md §19 — 구현 중 발견) |
 
 **생성 시점**: `enterQuiz`(최초 입장) 시점에 생성하며 `finalStatus: 'IN_PROGRESS'`,
 `runsUsedByProblem: {}`, `submissions: {}`, `runResults: {}`로 초기화한다(research.md §10).

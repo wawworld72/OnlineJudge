@@ -136,3 +136,15 @@ export function runPreDeployCheck(input: { quizId: string }) {
 export function setQuizStatus(input: { quizId: string; status: QuizStatus }) {
   return callFunction<typeof input, { status: QuizStatus }>("setQuizStatus", input);
 }
+
+export interface BatchGradeResponse {
+  processed: number;
+  skipped: number;
+  failed: number;
+  failedParticipantIds: string[];
+  classroomGradesPending: boolean;
+}
+
+export function batchGrade(input: { quizId: string }) {
+  return callFunction<typeof input, BatchGradeResponse>("batchGrade", input);
+}

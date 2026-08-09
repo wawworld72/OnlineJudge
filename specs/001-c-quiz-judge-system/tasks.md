@@ -282,17 +282,17 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T059 [P] [US3] Contract test for `batchGrade`(FR-020~023, FINALIZED 스킵, 미제출 문항
+- [X] T059 [P] [US3] Contract test for `batchGrade`(FR-020~023, FINALIZED 스킵, 미제출 문항
   NOT_ATTEMPTED 0점 처리, `runResults` map이 참가자 문서 1건 업데이트로 기록되는지,
   분반 연동 + 성적 미반영 상태에서 `classroomGradesPending: true`가 반환되는지) in
   `functions/test/contract/batchGrade.spec.ts`
-- [ ] T060 [US3] Integration test — 제출완료/미제출/이미확정 참가자가 섞인 퀴즈에서 일괄
+- [X] T060 [US3] Integration test — 제출완료/미제출/이미확정 참가자가 섞인 퀴즈에서 일괄
   채점 실행 후 처리/스킵/실패 집계 확인(quickstart.md User Story 3 시나리오) in
   `functions/test/integration/batchGrade.spec.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T061 [US3] `functions/src/callable/batchGrade.ts`에 `batchGrade` 구현(FR-020~023,
+- [X] T061 [US3] `functions/src/callable/batchGrade.ts`에 `batchGrade` 구현(FR-020~023,
   T032 Grader 클라이언트 재사용, research.md §15). `participants`에서 `quizId == X &&
   finalStatus == 'SUBMITTED'`로 조회(등호 필터만 조합이라 복합 인덱스 불필요), 대상 참가자를
   동시성 상한(잠정 10)을 둔 청크로 나눠 처리하고, Cloud Functions 2세대 `timeoutSeconds`를
@@ -300,9 +300,9 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
   참가자별로 `runResults` map 필드와 `finalTotal`/`finalStatus: 'FINALIZED'`를 한 번의 문서
   업데이트로 기록. 응답 전 `quizzes.courseId` 존재 + `FINALIZED` 참가자 중 `pushGrades` 미실행
   인원 존재 여부를 확인해 `classroomGradesPending`을 채운다(FR-023 WARN 안내) — T059 통과
-- [ ] T062 [P] [US3] `functions/src/services/scoreAggregation.ts`에 문항 배점 기준 총점
+- [X] T062 [P] [US3] `functions/src/services/scoreAggregation.ts`에 문항 배점 기준 총점
   재계산 유틸 구현(헌법 I — Grader가 준 score를 그대로 신뢰하지 않고 서버가 재계산)
-- [ ] T063 [P] [US3] `web/src/teacher/BatchGrade.tsx`에 일괄 채점 실행 버튼 + 결과 요약
+- [X] T063 [P] [US3] `web/src/teacher/BatchGrade.tsx`에 일괄 채점 실행 버튼 + 결과 요약
   팝업(처리/스킵/실패 인원, `classroomGradesPending`이면 성적 반영 미실행 경고 배너) 구현 —
   T060 통과
 

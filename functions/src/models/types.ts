@@ -68,7 +68,7 @@ export interface Submission {
   submittedAt: Timestamp;
 }
 
-export type RunStatus = "AC" | "WA" | "CE";
+export type RunStatus = "AC" | "WA" | "CE" | "NOT_ATTEMPTED";
 
 /**
  * `isPublic`이 false인 항목은 `input`/`expectedOutput`/`actualOutput`을 제거하고
@@ -103,6 +103,13 @@ export interface Participant {
   runsUsedByProblem: Record<string, number>;
   submissions: Record<string, Submission>;
   runResults: Record<string, RunResult>;
+  /**
+   * `pushGrades`(User Story 5)가 이 참가자의 성적을 Classroom에 성공적으로 반영한
+   * 시각. `batchGrade`가 `classroomGradesPending`을 판단할 때 이 필드로 "이미 반영된
+   * FINALIZED 참가자"와 "아직 반영 안 된 FINALIZED 참가자"를 구분한다(research.md §19 —
+   * data-model.md에 이 필드가 없어 발견된 누락).
+   */
+  gradePushedAt: Timestamp | null;
 }
 
 export interface AccessLog {

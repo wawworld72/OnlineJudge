@@ -162,6 +162,8 @@
 ### `pushGrades`
 - **Request**: `{ quizId: string }`
 - **처리**: FR-030~031. `FINALIZED` 참가자만 대상, 없으면 `NO_FINALIZED_PARTICIPANTS` 오류.
+  성공한 참가자의 `participants.gradePushedAt`을 서버 시각으로 기록한다(research.md §19 —
+  `batchGrade`의 `classroomGradesPending` 판단이 이 필드에 의존함).
 - **Response**: `{ succeeded, failed, failedStudentIds: string[] }`
 
 ## 교사용 — 아카이브/삭제 (User Story 6)

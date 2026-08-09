@@ -257,6 +257,23 @@
   목록뿐, §17) 규칙에서 "이 요청자가 교사인가"를 판단할 방법이 없다 — Callable Function
   경로가 이 판별을 이미 갖고 있으므로(`requireTeacher`) 그대로 재사용하는 쪽을 택했다.
 
+## 19. `classroomGradesPending` 판단에 필요한 참가자별 반영 여부 필드 — 구현 중 식별된 누락 항목
+
+- **Decision**: `participants/{quizId}_{studentId}`에 `gradePushedAt: timestamp | null`
+  필드를 추가한다. `pushGrades`(User Story 5)가 이 참가자의 성적을 Classroom에 성공
+  반영하면 이 필드를 서버 시각으로 채우고, `batchGrade`는 응답 직전에 "이 퀴즈에
+  `FINALIZED`인데 `gradePushedAt == null`인 참가자가 있는가"로 `classroomGradesPending`을
+  계산한다.
+- **Rationale**: `batchGrade`의 계약(contracts/callable-functions.md)은 이미
+  "`FINALIZED` 참가자 중 아직 `pushGrades`가 성공한 적 없는 인원이 있는지 확인해
+  `classroomGradesPending`을 채운다"고 서술하고 있었지만, "성공한 적 없음"을 판단할 근거
+  데이터가 data-model.md 어디에도 없었다 — `pushGrades`가 무언가를 기록하지 않으면 이
+  판단 자체가 불가능하다. `batchGrade`(T061)를 구현하며 발견했다.
+- **Alternatives considered**: 퀴즈 문서에 "마지막으로 성적을 반영한 시각" 단일 필드만
+  두는 방법도 검토했으나, `pushGrades`가 일부 참가자만 실패할 수 있어(응답 스키마에
+  `failedStudentIds`가 있음) 퀴즈 단위 하나의 시각으로는 "그때 실패한 참가자가 이후 재시도로
+  성공했는지"를 구분할 수 없다 — 참가자별 필드가 필요하다.
+
 ## Open Items (구현 착수 전 확인 필요)
 
 - Grader `/grade` 응답의 런타임 오류 표현 필드명과 개별 테스트케이스 타임아웃 시 `status` 값은

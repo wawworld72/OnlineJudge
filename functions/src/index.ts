@@ -16,3 +16,4 @@ export { upsertProblem, deleteProblem } from "./callable/problems";
 export { upsertTestCase, deleteTestCase } from "./callable/testCases";
 export { runPreDeployCheck } from "./callable/runPreDeployCheck";
 export { setQuizStatus } from "./callable/setQuizStatus";
+export { batchGrade } from "./callable/batchGrade";
