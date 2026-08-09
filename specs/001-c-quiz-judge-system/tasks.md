@@ -69,46 +69,47 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 공용 모듈에서 절대 임포트하지 않는다 — 콜드 스타트 번들 크기가 커지면 SC-001(1초)/SC-002
 (2초) 목표를 첫 요청에서 넘기기 쉽다.
 
-- [ ] T007 `firestore.rules`에 기본 거부(default-deny) 규칙 골격 작성. `problemSecrets`/
+- [X] T007 `firestore.rules`에 기본 거부(default-deny) 규칙 골격 작성. `problemSecrets`/
   `participants`/`students`/`rosters`/`accessLogs`/`archives`는 예외 없이 전면 차단(참가자
   데이터는 `enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResult` 응답으로만 전달 — "조회
   경로 단일화"를 학생에게도 동일 적용). `quizzes`/`problems`의 조건부 read 허용은 T038(US1)에서
   자신의 경로 줄로 추가
-- [ ] T008 [P] `functions/src/models/types.ts`에 data-model.md의 모든 엔티티 타입 정의
+- [X] T008 [P] `functions/src/models/types.ts`에 data-model.md의 모든 엔티티 타입 정의
   (Quiz(`deletedAt` 없음, 퀴즈 자체는 소프트삭제 대상 아님), Problem(`deletedAt`),
   ProblemSecrets(`items: TestCase[]`), StudentRosterEntry, Roster,
   Participant(`runsUsedByProblem`/`submissions`/`runResults` map 필드 포함), AccessLog
   (`expiresAt`), ArchiveExport)
-- [ ] T009 [P] `functions/src/shared/identity.ts`에 학번+이름+이메일 3중 대조 유틸 구현
+- [X] T009 [P] `functions/src/shared/identity.ts`에 학번+이름+이메일 3중 대조 유틸 구현
   (FR-009~012, 헌법 II)
-- [ ] T010 [P] `functions/src/shared/participantId.ts`에 참가자 문서ID 재계산 유틸 구현
+- [X] T010 [P] `functions/src/shared/participantId.ts`에 참가자 문서ID 재계산 유틸 구현
   (`${quizId}_${studentId}`, 헌법 I — 클라이언트가 보낸 값은 신뢰하지 않고 항상 재계산)
-- [ ] T011 [P] `functions/src/shared/timeAuthority.ts`에 서버 기준 시각 판단 유틸 구현
+- [X] T011 [P] `functions/src/shared/timeAuthority.ts`에 서버 기준 시각 판단 유틸 구현
   (헌법 VII, `Timestamp.now()` 기준 응시 가능/마감 판단)
-- [ ] T012 [P] `functions/src/shared/retryOnce.ts`에 외부 호출 1회 재시도 래퍼 구현(헌법 VI —
+- [X] T012 [P] `functions/src/shared/retryOnce.ts`에 외부 호출 1회 재시도 래퍼 구현(헌법 VI —
   Grader/Classroom/Sheets 클라이언트가 공통으로 사용)
-- [ ] T013 [P] `functions/src/shared/errors.ts`에 표준 오류 응답 헬퍼 구현(사용자용 일반
+- [X] T013 [P] `functions/src/shared/errors.ts`에 표준 오류 응답 헬퍼 구현(사용자용 일반
   안내 + 서버 로그 상세 기록, 헌법 VI)
-- [ ] T014 `functions/src/config.ts`에 환경 변수 로더 구현(`GRADER_SERVICE_URL`,
-  `GRADER_AUTH_TOKEN`, 허용 이메일 도메인)
-- [ ] T015 [P] `functions/src/shared/schemas.ts`에 모든 Callable Function 요청과 Firestore
+- [X] T014 `functions/src/config.ts`에 환경 변수 로더 구현(`GRADER_SERVICE_URL`,
+  `GRADER_AUTH_TOKEN`, 허용 이메일 도메인, 교사 판별용 `TEACHER_EMAILS` 허용 목록 —
+  research.md §17) 및 `shared/authorization.ts`의 `requireTeacher` 가드 구현
+- [X] T015 [P] `functions/src/shared/schemas.ts`에 모든 Callable Function 요청과 Firestore
   쓰기 대상 객체에 대한 Zod 스키마 정의(research.md §7 — Firestore는 스키마를 강제하지
   않으므로 `finalStatus` 등 열거형 값의 실제 강제는 이 스키마가 런타임에 담당)
-- [ ] T016 `functions/src/shared/callableFactory.ts`에 모든 Callable Function이 공유하는
+- [X] T016 `functions/src/shared/callableFactory.ts`에 모든 Callable Function이 공유하는
   생성 헬퍼 구현 — `enforceAppCheck: true`를 기본 적용하고, 핸들러 실행 전 T015의 Zod 스키마로
   입력을 검증한 뒤 실패 시 T013 오류 헬퍼로 응답(research.md §6~7)
-- [ ] T017 [P] `web/src/shared/Login.tsx`에 Firebase Authentication Google 로그인 + 허용
+- [X] T017 [P] `web/src/shared/Login.tsx`에 Firebase Authentication Google 로그인 + 허용
   도메인 검사 구현(FR-002)
-- [ ] T018 [P] `web/src/shared/functionsClient.ts`에 Callable Functions 공용 호출 래퍼 구현
-- [ ] T019 [P] `web/src/shared/countdown.ts`에 서버가 준 종료시각 기준 로컬 카운트다운 유틸
+- [X] T018 [P] `web/src/shared/functionsClient.ts`에 Callable Functions 공용 호출 래퍼 구현
+- [X] T019 [P] `web/src/shared/countdown.ts`에 서버가 준 종료시각 기준 로컬 카운트다운 유틸
   구현(`onSnapshot` 미사용, 헌법 IV·VII)
-- [ ] T020 [P] `web/src/shared/DelayedActionButton.tsx`에 단계적 지연 안내 UX 컴포넌트
+- [X] T020 [P] `web/src/shared/DelayedActionButton.tsx`에 단계적 지연 안내 UX 컴포넌트
   구현(진행중→지연안내→재시도, FR-035, 헌법 V·VI)
-- [ ] T021 [P] `web/src/shared/appCheck.ts`에 App Check 클라이언트 초기화 구현
+- [X] T021 [P] `web/src/shared/appCheck.ts`에 App Check 클라이언트 초기화 구현
   (`ReCaptchaV3Provider` + 로컬 개발/Emulator용 디버그 토큰 분기, research.md §6) — 앱 부팅
   시 T018의 Callable Function 클라이언트보다 먼저 초기화되어야 함
-- [ ] T022 `web/src/App.tsx`에 로그인 이메일 기준 학생/교사 역할 라우팅 구현
-- [ ] T023 `firestore.indexes.json`에 `participants` 컬렉션의 `(quizId ASC, finalSubmittedAt
+- [X] T022 `web/src/App.tsx`에 로그인 이메일 기준 학생/교사 역할 라우팅 구현
+- [X] T023 `firestore.indexes.json`에 `participants` 컬렉션의 `(quizId ASC, finalSubmittedAt
   ASC)` 복합 인덱스를 정의(data-model.md "필요한 복합 인덱스" 참고 — 이 조합만 실제로 필요)
 
 **Checkpoint**: 이 지점부터 모든 User Story를 (병렬로도) 시작할 수 있다

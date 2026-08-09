@@ -7,7 +7,9 @@
 
 모든 함수는 `enforceAppCheck: true`로 배포한다(research.md §6) — 로그인 여부와 무관하게, 실제
 배포된 웹앱이 아닌 곳(예: 브라우저 콘솔에서 직접 호출)에서 온 요청은 이 계약에 도달하기 전에
-거부된다. 모든 함수의 입력은 Zod 스키마로 런타임 검증한다(research.md §7).
+거부된다. 모든 함수의 입력은 Zod 스키마로 런타임 검증한다(research.md §7). "교사용"으로
+표시된 모든 함수는 추가로 `requireTeacher` 가드(로그인 이메일을 `TEACHER_EMAILS` 허용 목록과
+대조)를 통과해야 한다(research.md §17).
 
 ## 학생용
 

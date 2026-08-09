@@ -217,6 +217,24 @@
   기각). 모든 Callable Function을 하나의 번들로 배포(단순하지만 학생 경로에 Classroom/Sheets
   의존성이 항상 같이 로드되어 기각).
 
+## 17. 교사(관리자) 판별 — 구현 중 식별된 누락 항목
+
+- **Decision**: 교사용 Callable Function은 시작 시 로그인 이메일(`context.auth.token.email`)을
+  별도 환경 변수 허용 목록(`TEACHER_EMAILS`, `config.ts`)과 대조하는 공통 가드
+  (`shared/authorization.ts`의 `requireTeacher`)를 통과해야 한다. 프론트엔드
+  `App.tsx`의 역할 라우팅(어떤 화면을 보여줄지)도 동일한 목록을 참조하지만, 이는 UX
+  분기일 뿐 보안 경계가 아니다 — 실제 권한 검증은 항상 서버(Callable Function 내부)에서
+  수행한다(헌법 원칙 I).
+- **Rationale**: contracts/callable-functions.md가 정의한 "교사용" 함수들은 모두
+  `enforceAppCheck: true` + 로그인 필요만 명시했을 뿐, "이 로그인 사용자가 실제로
+  교사인가"를 판별하는 방법이 문서에 없었다 — 학생명부(`students`) 소속 여부로 "교사 = 명부에
+  없는 계정"이라 추론하는 방법도 검토했으나, 아직 명부에 등록되지 않은 학생(동기화 지연 등)을
+  교사로 오판할 위험이 있어 기각했다. 이 프로젝트의 운영 규모(헌법 "운영 규모 및 범위 가정" —
+  분반 2개, 교사 1인 내외)에서는 고정 허용 목록이 가장 단순하고 오판 위험이 없다.
+- **Alternatives considered**: Firebase Custom Claims(계정 생성 시 관리자가 수동으로
+  설정) — 이 규모에서는 별도 프로비저닝 스크립트를 추가하는 비용이 허용 목록보다 크다고
+  판단해 기각(향후 교사가 여러 명으로 늘어나면 재검토 대상).
+
 ## Open Items (구현 착수 전 확인 필요)
 
 - Grader `/grade` 응답의 런타임 오류 표현 필드명과 개별 테스트케이스 타임아웃 시 `status` 값은
