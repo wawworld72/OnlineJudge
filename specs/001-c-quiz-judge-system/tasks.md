@@ -148,7 +148,9 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
   구현(contracts/grader-api.md, T012 재시도 래퍼 사용). 테스트케이스는
   `quizzes/{quizId}/problemSecrets/{problemId}.items`를 1회 읽어 구성
 - [ ] T033 [US1] `functions/src/services/practiceRunCache.ts`에 연습 실행 결과 캐시 구현
-  (FR-016, 캐시 키: quizId+problemId+code+문항 updatedAt, `SYSTEM_ERROR`는 캐시 제외)
+  (FR-016, research.md §14 — 캐시 키: quizId+problemId+code+`problems.updatedAt`, TTL 5분,
+  `SYSTEM_ERROR`는 캐시 제외. TTL은 성능 파라미터일 뿐이고 정확성은 키에 포함된 `updatedAt`이
+  보장함을 유의)
 - [ ] T034 [US1] `functions/src/services/runCountTransaction.ts`에 실행 횟수 원자적
   확인·차감 구현(FR-014) — `participants/{quizId}_{studentId}` 문서를 `runTransaction`으로 읽어
   `runsUsedByProblem.{problemId} < maxRuns`일 때만 1 증가시켜 커밋

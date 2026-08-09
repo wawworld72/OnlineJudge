@@ -1,5 +1,5 @@
 <!--
-Sync Impact Report
+Sync Impact Report — v1.0.0 (initial ratification)
 Version change: (unratified template) → 1.0.0
 Rationale for bump: Initial ratification — no prior concrete version existed.
 Modified principles: N/A (initial ratification; all principles newly defined)
@@ -13,6 +13,23 @@ Added sections:
 Removed sections: none (replacing template placeholders only)
 Templates requiring follow-up: none — .specify/templates/{spec,plan,tasks,checklist}-template.md
   reference the constitution generically and need no edits for this ratification.
+Deferred TODOs: none
+
+Sync Impact Report — v1.0.1 (PATCH, 2026-08-09)
+Version change: 1.0.0 → 1.0.1
+Rationale for bump: /speckit-analyze(001-c-quiz-judge-system) flagged a CRITICAL finding — Principle
+  IV's "서버 쓰기는 최종 제출 시점 1회로 제한한다" reads as a blanket cap on all server writes, but
+  the design it was meant to constrain (this session's original discussion) was specifically about
+  code-autosave writes. Under the literal broad reading, legitimate writes mandated elsewhere in
+  this spec — the participant doc created at `enterQuiz` (data-model.md), and the FR-014 run-count
+  transaction written on every practice-run attempt — would appear to violate a MUST principle.
+  This amendment scopes the clause to what it always meant, per the analysis report's explicit
+  guidance: fix the constitution's wording, do not weaken FR-014's transactional enforcement.
+Modified principles: IV. 무료 운영 비용 상한 — clarified that the "1회" write cap applies to
+  code-autosave traffic specifically, and explicitly names the two writes it does not prohibit.
+Added sections: none
+Removed sections: none
+Templates requiring follow-up: none
 Deferred TODOs: none
 -->
 
@@ -50,12 +67,17 @@ Deferred TODOs: none
 시스템은 Firestore 무료(Spark) 플랜의 일일 한도(읽기 50,000건, 쓰기 20,000건, 저장 1GiB, 월
 아웃바운드 10GiB) 안에서 학기 전체를 운영 가능해야 한다. 비용 폭증을 유발하는 설계는 금지한다:
 잔여 시간 표시에 실시간 리스너(onSnapshot)를 사용하지 않고 클라이언트가 서버로부터 받은 종료
-시각을 기준으로 로컬 카운트다운을 계산한다; 코드 자동저장은 브라우저 로컬 저장소에만 남기고
-서버 쓰기는 최종 제출 시점 1회로 제한한다; 연습 실행 결과는 서버에 영구 저장하지 않는다. 신규
-기능이 읽기·쓰기 트래픽을 구조적으로 늘리는 경우, 도입 전 무료 한도 대비 예상 사용률을 검토한다.
+시각을 기준으로 로컬 카운트다운을 계산한다; 학생이 편집 중인 코드의 자동저장은 브라우저 로컬
+저장소에만 남기고, 그 자동저장 자체는 서버 쓰기를 발생시키지 않는다 — 학생 코드가 서버에
+쓰이는 시점은 최종 제출 1회뿐이다; 연습 실행 결과는 서버에 영구 저장하지 않는다. 이 "1회" 제약은
+코드 자동저장 트래픽을 겨냥한 것이며, 그 자체로 필요한 다른 서버 쓰기 — 참가자 문서 생성(입장
+시, data-model.md), 실행 횟수 한도를 정확히 지키기 위한 트랜잭션 쓰기(FR-014, 연습 실행마다
+발생) 등 — 를 금지하지 않는다. 신규 기능이 읽기·쓰기 트래픽을 구조적으로 늘리는 경우, 도입 전
+무료 한도 대비 예상 사용률을 검토한다.
 **Rationale**: 전면 무료 운영은 이 프로젝트의 존재 조건이다. 실시간 리스너나 불필요한 쓰기
 하나가 학기 전체 운영을 유료 전환으로 몰 수 있으므로, 설계 단계에서부터 비용을 구조적으로
-통제해야 한다.
+통제해야 한다. 다만 "쓰기를 줄인다"는 목표가 "정확성을 보장하는 데 필요한 쓰기"(예: 동시성
+정확도가 요구되는 실행 횟수 카운터)를 막는 것으로 오독되어서는 안 된다.
 
 ### V. 화면별 응답 시간 목표 (Performance Budgets)
 사용자가 체감하는 동작별 목표 응답 시간을 다음과 같이 정한다: 퀴즈 목록 조회 1초, 입장(출입코드·
@@ -123,4 +145,4 @@ MINOR — 신규 원칙/섹션 추가 또는 기존 원칙의 실질적 확장, 
 경우, 도입 전 검토를 거친다. 보안·신뢰 경계 관련 원칙(I~III)을 위반하는 설계는 예외 없이
 반려한다.
 
-**Version**: 1.0.0 | **Ratified**: 2026-08-09 | **Last Amended**: 2026-08-09
+**Version**: 1.0.1 | **Ratified**: 2026-08-09 | **Last Amended**: 2026-08-09
