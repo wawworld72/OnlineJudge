@@ -84,6 +84,6 @@ Google Sheets API도 모킹한다.
 - 클라이언트 SDK로 다른 학생의 `participants/{quizId}_{otherStudentId}` 문서를 읽으려 하면
   거부되는지 검증(헌법 I·III).
 - App Check 디버그 토큰 없이 Callable Function을 호출하면 거부되는지 확인(에뮬레이터에서 App
-  Check 디버그 공급자를 켠 상태와 끈 상태를 각각 테스트, research.md §9).
+  Check 디버그 공급자를 켠 상태와 끈 상태를 각각 테스트, research.md §6).
 - 같은 문항에 `practiceRun`을 동시에 여러 번(예: `Promise.all`로 5개) 호출해 남은 횟수가
   정확히 초과되지 않는지 확인(FR-014, research.md §5).

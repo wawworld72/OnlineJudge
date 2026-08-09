@@ -63,10 +63,10 @@
   거부를 못 해 동시 요청 시 한도 초과 가능 → 기각). 애플리케이션 레벨 락(Redis 등 별도 인프라)은
   무료 운영 목표에 반하므로 기각. 단순 읽고-쓰기(non-transactional)는 경합 상황에서 초과 실행을
   허용하므로 Clarify 답변(A: 정확히 지켜야 함)과 충돌해 기각. 카운터를 참가자 문서와 분리한
-  별도 문서에 두는 방안은, 참가자 문서 자체를 map 필드로 통합하기로 한 결정(§13, data-model.md)과
+  별도 문서에 두는 방안은, 참가자 문서 자체를 map 필드로 통합하기로 한 결정(§10, data-model.md)과
   일관되지 않고 트랜잭션 대상 문서를 하나 더 늘리므로 기각.
 
-## 9. 부정 사용 방지 계층 — Firebase App Check
+## 6. 부정 사용 방지 계층 — Firebase App Check
 
 - **Decision**: 모든 Callable Function에 Firebase App Check를 강제(`enforceAppCheck: true`)
   한다. 웹 프론트엔드는 reCAPTCHA v3(또는 Enterprise) 공급자로 App Check를 초기화하고, Emulator
@@ -79,7 +79,7 @@
 - **Alternatives considered**: 커스텀 요청 서명/디바이스 핑거프린팅(자체 구현·유지보수 비용이
   크고 App Check가 이미 해결하는 문제를 재발명하는 것 → 기각).
 
-## 10. Firestore 스키마 미강제 → 런타임 검증
+## 7. Firestore 스키마 미강제 → 런타임 검증
 
 - **Decision**: Cloud Functions 내부에서 Zod로 모든 Callable Function 입력과, Firestore에
   쓰기 전 최종 객체 형태를 런타임 검증한다.
@@ -90,7 +90,7 @@
 - **Alternatives considered**: 검증 없이 TypeScript 타입에만 의존(런타임에 잘못된 값이 조용히
   저장될 위험을 방치하므로 기각).
 
-## 11. accessLogs 저장 공간 관리 — Firestore 네이티브 TTL
+## 8. accessLogs 저장 공간 관리 — Firestore 네이티브 TTL
 
 - **Decision**: `accessLogs.expiresAt`(작성 시각 + 6개월)에 Firestore TTL 정책을 설정해 만료된
   로그를 자동 삭제한다.
@@ -101,7 +101,7 @@
 - **Alternatives considered**: 수동 정리 배치 작업(별도 스케줄러 인프라 필요 → 무료 운영
   목표와 충돌해 기각). TTL 없음(무한 누적 시 저장 한도 초과 위험 → 기각).
 
-## 12. 복합 인덱스 필요 여부
+## 9. 복합 인덱스 필요 여부
 
 - **Decision**: 등호(`==`) 필터만 여러 개 조합하는 쿼리(예: `batchGrade`의 `quizId ==` +
   `finalStatus ==`)는 Firestore가 단일 필드 인덱스를 자동으로 병합해 처리하므로 별도 복합
@@ -112,7 +112,7 @@
 - **Rationale**: 불필요한 복합 인덱스를 미리 정의하지 않아야 `firestore.indexes.json`이
   실제 쿼리 패턴과 어긋나지 않고, 인덱스 빌드 시간·저장 공간도 아낄 수 있다.
 
-## 13. 참가자 문서 생성 시점 — 최종 제출이 아니라 최초 입장
+## 10. 참가자 문서 생성 시점 — 최종 제출이 아니라 최초 입장
 
 - **Decision**: `participants/{quizId}_{studentId}` 문서는 최초 최종 제출 시점이 아니라
   `enterQuiz`(최초 입장) 시점에 생성하고, `finalStatus`를 `'IN_PROGRESS'`로 명시적으로
@@ -124,16 +124,16 @@
   조회 로직은 그대로 유지된다 — 다만 그 문서가 생성되는 시점만 입장으로 앞당겨진다.
 - **Alternatives considered**: 카운터를 참가자 문서와 분리한 별도의 "진행 상태" 문서에 두고
   참가자 문서 생성은 최종 제출까지 미루는 방안(문서를 하나 더 늘려 §5의 map 필드 통합 취지와
-  §13(submissions/runResults 통합, data-model.md)의 취지에 모두 반하므로 기각).
+  §10(submissions/runResults 통합, data-model.md)의 취지에 모두 반하므로 기각).
 
-## 6. 참가자 식별자 위조 방지 (헌법 원칙 I)
+## 11. 참가자 식별자 위조 방지 (헌법 원칙 I)
 
 - **Decision**: 모든 참가자 관련 Callable Function은 클라이언트가 보낸 `participantId`를
   무시하고, 함수 내부에서 `` `${quizId}_${검증된 studentId}` `` 로 재계산한 값만 사용한다.
 - **Rationale**: 스펙 FR과 헌법 원칙 I이 요구하는 "서버가 재계산해 대조" 원칙을 문서ID 결정적
   생성 규칙(원본 개발 문서 4.1절)으로 그대로 구현할 수 있다.
 
-## 7. Google 스프레드시트 아카이브 (FR-037~038)
+## 12. Google 스프레드시트 아카이브 (FR-037~038)
 
 - **Decision**: Cloud Functions에서 `googleapis`의 Sheets API(`spreadsheets.create` +
   `spreadsheets.values.update`)로 새 스프레드시트를 생성하고, 데이터 종류별로 시트(탭)를 나눠
@@ -144,7 +144,7 @@
 - **Alternatives considered**: CSV 여러 개로 내보내기(사용자가 명시적으로 "탭별로 구분된 하나의
   스프레드시트 파일"을 요청했으므로 기각).
 
-## 14. 연습 실행 결과 캐시 — TTL과 키 구성 (FR-016)
+## 13. 연습 실행 결과 캐시 — TTL과 키 구성 (FR-016)
 
 - **Decision**: 캐시 키는 `(quizId, problemId, code, problems.updatedAt)` 4요소 조합이며,
   TTL은 5분이다. 두 요소의 역할은 서로 다르다 — **키에 `problems.updatedAt`이 포함되는 것이
@@ -159,7 +159,7 @@
     포괄하면서도 무기한 보관을 막는 값으로, 원본 개발 문서 8절의 예시값을 그대로 채택했다.
 - **저장 위치**: Firestore 대신 이 캐시 자체는 Cloud Functions 인스턴스의 메모리 캐시 또는
   단명 TTL 컬렉션(예: `practiceRunCache/{cacheKeyHash}`에 `expiresAt`을 두고 TTL 정책 적용,
-  §11과 같은 방식)으로 구현한다 — 어느 쪽이든 "영구 저장"이 되지 않도록 반드시 만료 메커니즘을
+  §8과 같은 방식)으로 구현한다 — 어느 쪽이든 "영구 저장"이 되지 않도록 반드시 만료 메커니즘을
   둔다.
 - **Rationale**: 캐시 키에 콘텐츠 버전(`updatedAt`)을 포함하는 것과, 그 캐시 자체를 시간이
   지나면 지우는 것은 서로 다른 문제(정확성 vs. 저장 공간)를 풀기 위한 것이며, 둘 다 필요하다.
@@ -170,7 +170,7 @@
   직후 짧은 시간 안에는 오래된 결과가 재사용될 수 있어 FR-016의 "수정 후에는 재사용하지 않아야
   한다" 요건과 직접 충돌 → 기각). TTL 없이 무기한 캐시(헌법 IV 위반 소지 → 기각).
 
-## 8. 테스트 전략
+## 14. 테스트 전략
 
 - **Decision**: Firebase Emulator Suite(Auth+Firestore+Functions)로 Callable Function과
   Firestore 보안 규칙을 통합 테스트하고, Vitest로 순수 로직(점수 합산, 신원 검증, 시각 판단)을

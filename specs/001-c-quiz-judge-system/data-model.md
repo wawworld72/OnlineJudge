@@ -12,7 +12,7 @@ Firestore 컬렉션 경로와 문서 스키마. spec.md의 Key Entities와 1:1 �
 - **스키마는 Firestore가 아니라 런타임 검증이 강제한다**: Firestore는 관계형 DB와 달리 스키마를
   강제하지 않는다 — 이 문서가 정의한 열거형(예: `finalStatus`)에 없는 값도 에러 없이 그대로
   저장된다. TypeScript 타입은 컴파일 타임에만 유효하므로, 아래 각 필드의 실제 강제는 Cloud
-  Functions 내부의 Zod 런타임 검증이 책임진다(research.md §10).
+  Functions 내부의 Zod 런타임 검증이 책임진다(research.md §7).
 - **보안 규칙과 Admin SDK의 관계**: Cloud Functions(Admin SDK)는 Firestore 보안 규칙을 완전히
   우회한다 — 규칙은 서버 코드의 정확성을 보장하지 않으며, 서버가 쓰는 값이 맞는지는 오직
   Callable Function 내부 로직(신원 검증, 트랜잭션, 위 런타임 검증)이 책임진다. 반대로 보안
@@ -141,7 +141,7 @@ lost-update가 발생할 수 있었다.
 | runResults | map<problemId, `{status, score, maxScore, compileErrorMessage, tcResults}`> | 문항별 확정 채점 결과(구 `runResults` 서브컬렉션, FR-024) |
 
 **생성 시점**: `enterQuiz`(최초 입장) 시점에 생성하며 `finalStatus: 'IN_PROGRESS'`,
-`runsUsedByProblem: {}`, `submissions: {}`, `runResults: {}`로 초기화한다(research.md §13).
+`runsUsedByProblem: {}`, `submissions: {}`, `runResults: {}`로 초기화한다(research.md §10).
 문서가 아직 없는 참가자 조회는 "미입장"으로 해석한다. 연습 실행 횟수 카운터가 응시 시작
 직후부터 필요하기 때문에, "최종 제출 시점에 생성"(원본 개발 문서 4.1절)에서 이렇게 변경했다.
 
@@ -166,7 +166,7 @@ lost-update가 발생할 수 있었다.
 | action | string | 예: `ENTER`, `FINAL_SUBMIT` |
 | timestamp | timestamp | |
 | userAgent | string | |
-| expiresAt | timestamp | 작성 시각 + 6개월. 이 필드에 Firestore TTL 정책을 설정해 자동 삭제(research.md §11) |
+| expiresAt | timestamp | 작성 시각 + 6개월. 이 필드에 Firestore TTL 정책을 설정해 자동 삭제(research.md §8) |
 
 ## archives/{quizId} (신규 — User Story 6 지원)
 

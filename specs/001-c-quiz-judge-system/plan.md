@@ -25,11 +25,11 @@ Firestore 트랜잭션으로 원자적으로 처리한다(헌법 원칙 IV 비�
 
 **Primary Dependencies**: firebase-admin / firebase-functions(백엔드), googleapis(Google
 Classroom API·Google Sheets API 연동), zod(Callable Function 입력 및 Firestore 쓰기 전 런타임
-스키마 검증, research.md §10 — Firestore는 스키마를 강제하지 않으므로 이 책임을 코드가 진다),
+스키마 검증, research.md §7 — Firestore는 스키마를 강제하지 않으므로 이 책임을 코드가 진다),
 React 18 + Vite(프론트엔드 SPA), CodeMirror 6 + `@codemirror/lang-cpp`(C 코드 에디터), Firebase
 JS SDK(Authentication 로그인, Callable Functions 호출; Firestore 클라이언트 SDK는 조회
 전용으로만 사용), Firebase App Check(reCAPTCHA v3 공급자 — 모든 Callable Function 앞단에서
-요청 출처 검증, research.md §9)
+요청 출처 검증, research.md §6)
 
 **Storage**: Cloud Firestore (Spark 무료 플랜). 참가자 문서ID 규칙(`participants/
 {quizId}_{studentId}`)은 원본 개발 문서를 그대로 채택하되, 읽기/쓰기 비용을 줄이기 위해
@@ -66,7 +66,7 @@ User Story 6개(P1~P6), 기능 요구사항 40개.
 | I. 서버 신뢰 경계 | 시간·점수·참가자 식별자 판단은 전부 Callable Functions 내부에서 수행. 참가자 문서ID는 클라이언트가 보낸 값이 아니라 `(quizId, 서버가 검증한 studentId)`로 함수 내부에서 재계산해 대조(contracts/callable-functions.md 참고) |
 | II. 3중 신원 검증 | 모든 학생 호출 Callable Function 진입점에서 `context.auth.token.email` + 요청의 학번·이름을 학생명부와 대조하는 공통 검증 유틸을 통과해야만 로직이 실행됨 |
 | III. 정답 및 상태 무결성 보호 | Firestore 보안 규칙에서 `problemSecrets`(구 `testCases`)는 클라이언트 read/write를 전면 차단(Admin SDK만 접근), 문항 공개 문서와 절대 같은 문서로 합치지 않음. 참가자·제출·채점 관련 필드는 클라이언트 write 전면 차단, read는 본인 문서만 허용. Zod 런타임 검증이 서버가 쓰는 값 자체의 정확성을 보강(규칙은 클라이언트 접근만 규율, Admin SDK는 규칙을 우회하므로 서버 쓰기 정확성은 코드가 책임 — contracts/firestore-access-summary.md 참고) |
-| IV. 무료 운영 비용 상한 | 연습 실행 결과 미저장, 잔여시간 클라이언트 로컬 계산(서버가 준 종료시각 기준), 코드 자동저장은 로컬 저장소, 서버 쓰기는 최종 제출 1회, `submissions`/`runResults`를 참가자 문서의 map 필드로 통합해 문항 5개 기준 참가자 조회를 11회 read에서 1회로 축소(data-model.md), `accessLogs`에 6개월 TTL 적용 — Technical Context의 Constraints에 그대로 반영. App Check는 정당한 앱 외부에서의 무분별한 호출을 앞단에서 차단해 구조적 트래픽 증가를 방지(research.md §9) |
+| IV. 무료 운영 비용 상한 | 연습 실행 결과 미저장, 잔여시간 클라이언트 로컬 계산(서버가 준 종료시각 기준), 코드 자동저장은 로컬 저장소, 서버 쓰기는 최종 제출 1회, `submissions`/`runResults`를 참가자 문서의 map 필드로 통합해 문항 5개 기준 참가자 조회를 11회 read에서 1회로 축소(data-model.md), `accessLogs`에 6개월 TTL 적용 — Technical Context의 Constraints에 그대로 반영. App Check는 정당한 앱 외부에서의 무분별한 호출을 앞단에서 차단해 구조적 트래픽 증가를 방지(research.md §6) |
 | V. 화면별 응답 시간 목표 | Performance Goals에 원칙 그대로 채택. 지연 UX(진행중→지연안내→재시도)는 프론트엔드 공용 컴포넌트로 구현해 입장·최종제출 두 Callable Function 호출 지점에 재사용. `googleapis`(Classroom·Sheets) 의존성을 학생용 함수의 콜드 스타트 경로에서 분리해(research.md §16) 목표 시간을 콜드 스타트가 잠식하지 않도록 함 |
 | VI. 장애 복원력 있는 오류 처리 | 외부 호출(Grader, Classroom, Sheets) 공용 래퍼에서 1회 자동 재시도 후 실패 시 사용자에게는 일반 안내, 상세는 Cloud Functions 로그(Cloud Logging)에만 기록 |
 | VII. 단일 기준 시간 | 모든 시간 판단은 Cloud Functions에서 서버 시각(`Timestamp.now()`) 기준으로 수행. 클라이언트에는 `yyyy-MM-dd HH:mm:ss` 형식의 종료시각만 전달하고 표시용 짧은 형식은 프론트엔드에서만 변환 |

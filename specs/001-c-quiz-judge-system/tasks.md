@@ -90,11 +90,11 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 - [ ] T014 `functions/src/config.ts`에 환경 변수 로더 구현(`GRADER_SERVICE_URL`,
   `GRADER_AUTH_TOKEN`, 허용 이메일 도메인)
 - [ ] T015 [P] `functions/src/shared/schemas.ts`에 모든 Callable Function 요청과 Firestore
-  쓰기 대상 객체에 대한 Zod 스키마 정의(research.md §10 — Firestore는 스키마를 강제하지
+  쓰기 대상 객체에 대한 Zod 스키마 정의(research.md §7 — Firestore는 스키마를 강제하지
   않으므로 `finalStatus` 등 열거형 값의 실제 강제는 이 스키마가 런타임에 담당)
 - [ ] T016 `functions/src/shared/callableFactory.ts`에 모든 Callable Function이 공유하는
   생성 헬퍼 구현 — `enforceAppCheck: true`를 기본 적용하고, 핸들러 실행 전 T015의 Zod 스키마로
-  입력을 검증한 뒤 실패 시 T013 오류 헬퍼로 응답(research.md §9~10)
+  입력을 검증한 뒤 실패 시 T013 오류 헬퍼로 응답(research.md §6~7)
 - [ ] T017 [P] `web/src/shared/Login.tsx`에 Firebase Authentication Google 로그인 + 허용
   도메인 검사 구현(FR-002)
 - [ ] T018 [P] `web/src/shared/functionsClient.ts`에 Callable Functions 공용 호출 래퍼 구현
@@ -103,7 +103,7 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 - [ ] T020 [P] `web/src/shared/DelayedActionButton.tsx`에 단계적 지연 안내 UX 컴포넌트
   구현(진행중→지연안내→재시도, FR-035, 헌법 V·VI)
 - [ ] T021 [P] `web/src/shared/appCheck.ts`에 App Check 클라이언트 초기화 구현
-  (`ReCaptchaV3Provider` + 로컬 개발/Emulator용 디버그 토큰 분기, research.md §9) — 앱 부팅
+  (`ReCaptchaV3Provider` + 로컬 개발/Emulator용 디버그 토큰 분기, research.md §6) — 앱 부팅
   시 T018의 Callable Function 클라이언트보다 먼저 초기화되어야 함
 - [ ] T022 `web/src/App.tsx`에 로그인 이메일 기준 학생/교사 역할 라우팅 구현
 - [ ] T023 `firestore.indexes.json`에 `participants` 컬렉션의 `(quizId ASC, finalSubmittedAt
@@ -147,14 +147,14 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 
 - [ ] T030 [P] [US1] `functions/src/callable/enterQuiz.ts`에 `enterQuiz` 구현(FR-009~011,
   T009/T010/T011 유틸 사용, T016 팩토리로 생성). 검증 통과 시 `participants` 문서가 없으면
-  `finalStatus: 'IN_PROGRESS'`와 빈 map 필드들로 생성(research.md §13) — T024 통과
+  `finalStatus: 'IN_PROGRESS'`와 빈 map 필드들로 생성(research.md §10) — T024 통과
 - [ ] T031 [P] [US1] `functions/src/callable/registerStudentEmail.ts`에
   `registerStudentEmail` 구현(FR-011~012) — T025 통과
 - [ ] T032 [US1] `functions/src/services/graderClient.ts`에 Grader `/grade` 호출 클라이언트
   구현(contracts/grader-api.md, T012 재시도 래퍼 사용). 테스트케이스는
   `quizzes/{quizId}/problemSecrets/{problemId}.items`를 1회 읽어 구성
 - [ ] T033 [US1] `functions/src/services/practiceRunCache.ts`에 연습 실행 결과 캐시 구현
-  (FR-016, research.md §14 — 캐시 키: quizId+problemId+code+`problems.updatedAt`, TTL 5분,
+  (FR-016, research.md §13 — 캐시 키: quizId+problemId+code+`problems.updatedAt`, TTL 5분,
   `SYSTEM_ERROR`는 캐시 제외. TTL은 성능 파라미터일 뿐이고 정확성은 키에 포함된 `updatedAt`이
   보장함을 유의)
 - [ ] T034 [US1] `functions/src/services/runCountTransaction.ts`에 실행 횟수 원자적
@@ -417,12 +417,12 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
   runCountTransaction 유틸 Vitest 단위 테스트 작성(경합 상황 시뮬레이션 포함, FR-014 —
   동시에 여러 `runTransaction` 호출을 걸어 `runsUsedByProblem`이 한도를 넘지 않는지 검증)
 - [ ] T088 [P] `functions/test/contract/appCheck.spec.ts`에 App Check 토큰 없이 Callable
-  Function을 호출하면 거부되는지, 유효한 디버그 토큰으로는 통과하는지 검증(research.md §9)
+  Function을 호출하면 거부되는지, 유효한 디버그 토큰으로는 통과하는지 검증(research.md §6)
 - [ ] T089 `functions/scripts/seed.ts`에 quickstart.md 시드 데이터 스크립트 작성
 - [ ] T090 quickstart.md의 User Story 1~6 검증 시나리오를 Emulator Suite에서 전체 실행하고
   결과 기록
 - [ ] T091 `accessLogs.expiresAt` 필드에 Firestore TTL 정책(6개월)을 Firebase CLI/console로
-  설정하고 설정 방법을 `functions/README.md` 또는 배포 문서에 기록(research.md §11)
+  설정하고 설정 방법을 `functions/README.md` 또는 배포 문서에 기록(research.md §8)
 - [ ] T092 100명/문항 5개 기준 실제 Firestore 읽기·쓰기 횟수를 에뮬레이터 로그로 추정해
   헌법 원칙 IV(Spark 무료 한도) 대비 여유율 재확인(map 필드 통합 이후 참가자 조회가 11회 →
   1회로 줄어든 효과를 실측치로 반영)
