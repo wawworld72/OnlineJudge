@@ -14,7 +14,7 @@ firebase emulators:start --only auth,firestore,functions
   - `students/S001` (`name: "홍길동"`, `email: null`, `status: 'ACTIVE'`)
   - `quizzes/Q1` (`status: 'DRAFT'`, `accessCode: 'ABCD'`, `maxRunsPerProblem: 10`, 응시 기간은
     현재 시각 기준 시작 전~1시간 뒤)
-  - `quizzes/Q1/problems/P1` + `testCases/TC1`(공개), `testCases/TC2`(비공개)
+  - `quizzes/Q1/problems/P1` + `quizzes/Q1/problemSecrets/P1.items = [TC1(공개), TC2(비공개)]`
 - Grader 호출은 에뮬레이터 환경에서 로컬 스텁 서버(고정 응답 반환)로 대체한다.
 
 ## User Story 2 검증 — 퀴즈 준비 및 배포 전 점검 (P2)
@@ -79,7 +79,11 @@ Google Sheets API도 모킹한다.
 
 ## 회귀 확인 (헌법 원칙 매핑)
 
-- Firestore 에뮬레이터의 보안 규칙 테스트(`@firebase/rules-unit-testing`)로 `testCases` 서브
-  컬렉션에 대한 클라이언트 SDK read/write가 모두 거부되는지 검증(헌법 III).
+- Firestore 에뮬레이터의 보안 규칙 테스트(`@firebase/rules-unit-testing`)로 `problemSecrets`
+  문서에 대한 클라이언트 SDK read/write가 모두 거부되는지 검증(헌법 III).
 - 클라이언트 SDK로 다른 학생의 `participants/{quizId}_{otherStudentId}` 문서를 읽으려 하면
   거부되는지 검증(헌법 I·III).
+- App Check 디버그 토큰 없이 Callable Function을 호출하면 거부되는지 확인(에뮬레이터에서 App
+  Check 디버그 공급자를 켠 상태와 끈 상태를 각각 테스트, research.md §9).
+- 같은 문항에 `practiceRun`을 동시에 여러 번(예: `Promise.all`로 5개) 호출해 남은 횟수가
+  정확히 초과되지 않는지 확인(FR-014, research.md §5).

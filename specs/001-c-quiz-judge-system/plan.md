@@ -9,8 +9,8 @@
 학생은 출입코드·학번·이름으로 퀴즈에 입장해 문항별로 연습 실행을 반복한 뒤 최종 제출하고, 교사는
 퀴즈·문항·테스트케이스를 준비해 배포 전 점검을 거쳐 공개하고, 종료 후 일괄 채점으로 점수를
 확정한다. 모든 운영 사이클에서 필수로 Google Classroom과 연동해 수강생 동기화·과제 배포·성적
-반영을 수행하며,
-더 이상 필요 없는 퀴즈 데이터는 Google 스프레드시트로 아카이브한 뒤 삭제할 수 있다.
+반영을 수행하며, 더 이상 필요 없는 퀴즈 데이터는 Google 스프레드시트로 아카이브한 뒤 삭제할 수
+있다.
 
 기술적으로는 Firebase(Authentication, Firestore, Cloud Functions, Hosting)를 표준 스택으로
 하는 정적 프론트엔드 + Callable Functions 백엔드 구조를 채택한다. 모든 신뢰가 필요한 판단(신원,
@@ -24,13 +24,18 @@ Firestore 트랜잭션으로 원자적으로 처리한다(헌법 원칙 IV 비�
 **Language/Version**: TypeScript 5.x on Node.js 20 (Cloud Functions 2세대 및 프론트엔드 공용)
 
 **Primary Dependencies**: firebase-admin / firebase-functions(백엔드), googleapis(Google
-Classroom API·Google Sheets API 연동), React 18 + Vite(프론트엔드 SPA), CodeMirror 6 +
-`@codemirror/lang-cpp`(C 코드 에디터), Firebase JS SDK(Authentication 로그인, Callable
-Functions 호출; Firestore 클라이언트 SDK는 조회 전용으로만 사용)
+Classroom API·Google Sheets API 연동), zod(Callable Function 입력 및 Firestore 쓰기 전 런타임
+스키마 검증, research.md §10 — Firestore는 스키마를 강제하지 않으므로 이 책임을 코드가 진다),
+React 18 + Vite(프론트엔드 SPA), CodeMirror 6 + `@codemirror/lang-cpp`(C 코드 에디터), Firebase
+JS SDK(Authentication 로그인, Callable Functions 호출; Firestore 클라이언트 SDK는 조회
+전용으로만 사용), Firebase App Check(reCAPTCHA v3 공급자 — 모든 Callable Function 앞단에서
+요청 출처 검증, research.md §9)
 
-**Storage**: Cloud Firestore (Spark 무료 플랜). 원본 개발 문서의 컬렉션 경로 규칙
-(`quizzes/{quizId}/problems/{problemId}/testCases/{tcId}`, `participants/{quizId}_{studentId}`
-등)을 그대로 채택 — 자세한 스키마는 data-model.md 참고.
+**Storage**: Cloud Firestore (Spark 무료 플랜). 참가자 문서ID 규칙(`participants/
+{quizId}_{studentId}`)은 원본 개발 문서를 그대로 채택하되, 읽기/쓰기 비용을 줄이기 위해
+문항별 제출·채점 결과는 서브컬렉션이 아니라 참가자 문서의 map 필드로, 테스트케이스는
+`quizzes/{quizId}/problemSecrets/{problemId}.items` 배열 필드로 통합했다(설계 리뷰 반영,
+자세한 스키마와 근거는 data-model.md 참고).
 
 **Testing**: Firebase Emulator Suite(Auth + Firestore + Functions, 무료·로컬)로 Callable
 Functions와 Firestore 보안 규칙을 통합 테스트하고, Vitest로 Functions 내부 로직(점수 계산, 신원
@@ -60,8 +65,8 @@ User Story 6개(P1~P6), 기능 요구사항 40개.
 |---|---|
 | I. 서버 신뢰 경계 | 시간·점수·참가자 식별자 판단은 전부 Callable Functions 내부에서 수행. 참가자 문서ID는 클라이언트가 보낸 값이 아니라 `(quizId, 서버가 검증한 studentId)`로 함수 내부에서 재계산해 대조(contracts/callable-functions.md 참고) |
 | II. 3중 신원 검증 | 모든 학생 호출 Callable Function 진입점에서 `context.auth.token.email` + 요청의 학번·이름을 학생명부와 대조하는 공통 검증 유틸을 통과해야만 로직이 실행됨 |
-| III. 정답 및 상태 무결성 보호 | Firestore 보안 규칙에서 `testCases` 서브컬렉션은 클라이언트 read/write를 전면 차단(Admin SDK만 접근). 참가자·제출·채점 관련 컬렉션은 클라이언트 write 전면 차단, read는 본인 문서만 허용 |
-| IV. 무료 운영 비용 상한 | 연습 실행 결과 미저장, 잔여시간 클라이언트 로컬 계산(서버가 준 종료시각 기준), 코드 자동저장은 로컬 저장소, 서버 쓰기는 최종 제출 1회 — Technical Context의 Constraints에 그대로 반영 |
+| III. 정답 및 상태 무결성 보호 | Firestore 보안 규칙에서 `problemSecrets`(구 `testCases`)는 클라이언트 read/write를 전면 차단(Admin SDK만 접근), 문항 공개 문서와 절대 같은 문서로 합치지 않음. 참가자·제출·채점 관련 필드는 클라이언트 write 전면 차단, read는 본인 문서만 허용. Zod 런타임 검증이 서버가 쓰는 값 자체의 정확성을 보강(규칙은 클라이언트 접근만 규율, Admin SDK는 규칙을 우회하므로 서버 쓰기 정확성은 코드가 책임 — contracts/firestore-access-summary.md 참고) |
+| IV. 무료 운영 비용 상한 | 연습 실행 결과 미저장, 잔여시간 클라이언트 로컬 계산(서버가 준 종료시각 기준), 코드 자동저장은 로컬 저장소, 서버 쓰기는 최종 제출 1회, `submissions`/`runResults`를 참가자 문서의 map 필드로 통합해 문항 5개 기준 참가자 조회를 11회 read에서 1회로 축소(data-model.md), `accessLogs`에 6개월 TTL 적용 — Technical Context의 Constraints에 그대로 반영. App Check는 정당한 앱 외부에서의 무분별한 호출을 앞단에서 차단해 구조적 트래픽 증가를 방지(research.md §9) |
 | V. 화면별 응답 시간 목표 | Performance Goals에 원칙 그대로 채택. 지연 UX(진행중→지연안내→재시도)는 프론트엔드 공용 컴포넌트로 구현해 입장·최종제출 두 Callable Function 호출 지점에 재사용 |
 | VI. 장애 복원력 있는 오류 처리 | 외부 호출(Grader, Classroom, Sheets) 공용 래퍼에서 1회 자동 재시도 후 실패 시 사용자에게는 일반 안내, 상세는 Cloud Functions 로그(Cloud Logging)에만 기록 |
 | VII. 단일 기준 시간 | 모든 시간 판단은 Cloud Functions에서 서버 시각(`Timestamp.now()`) 기준으로 수행. 클라이언트에는 `yyyy-MM-dd HH:mm:ss` 형식의 종료시각만 전달하고 표시용 짧은 형식은 프론트엔드에서만 변환 |
@@ -70,8 +75,15 @@ User Story 6개(P1~P6), 기능 요구사항 40개.
 
 **Phase 1 설계 반영 후 재평가**: data-model.md(Firestore 스키마)·contracts/(Callable
 Functions, 실제 Grader API, Firestore 접근 규칙)·quickstart.md 작성을 마친 뒤 다시 검토했다.
-`testCases` 클라이언트 read 전면 차단(III), 참가자 문서ID 서버 재계산(I), 캐시 키에 문항
-`updatedAt` 포함(FR-016/IV), Grader 실패 1회 재시도(VI) 모두 설계에 실제로 반영됐다. 위반 없음.
+`testCases`(현 `problemSecrets`) 클라이언트 read 전면 차단(III), 참가자 문서ID 서버 재계산(I),
+캐시 키에 문항 `updatedAt` 포함(FR-016/IV), Grader 실패 1회 재시도(VI) 모두 설계에 실제로
+반영됐다. 위반 없음.
+
+**설계 리뷰 반영 후 2차 재평가(2026-08-09)**: 실행 횟수 카운터 위치(`participants.
+runsUsedByProblem`), submissions/runResults map 필드 통합, `problems.deletedAt` 소프트
+삭제, App Check, Zod 런타임 검증, accessLogs TTL, 복합 인덱스 범위를 반영한 뒤에도 7원칙
+위반 없음. 오히려 III(맵 필드로도 정답 노출 경로가 생기지 않도록 problemSecrets를 문항
+공개 문서와 분리 유지)과 IV(읽기/쓰기 횟수 축소)가 더 명확하게 충족됨을 확인했다.
 
 ## Project Structure
 
@@ -95,9 +107,9 @@ specs/001-c-quiz-judge-system/
 ```text
 functions/                       # Cloud Functions (TypeScript, Node.js 20)
 ├── src/
-│   ├── callable/                # 각 Callable Function 진입점 (enterQuiz, practiceRun, ...)
+│   ├── callable/                # 각 Callable Function 진입점 (enforceAppCheck: true 공통 적용)
 │   ├── services/                # grader-client, classroom-client, sheets-client, identity, timeAuthority
-│   ├── models/                  # Firestore 문서 타입 정의 (data-model.md 매핑)
+│   ├── models/                  # Firestore 문서 타입 정의(data-model.md 매핑) + Zod 스키마
 │   └── shared/                  # 공용 검증·오류 응답 유틸
 └── test/                        # Vitest 단위 테스트 + Emulator 통합 테스트
 
@@ -105,7 +117,7 @@ web/                              # React + Vite SPA (학생/교사 역할별 �
 ├── src/
 │   ├── student/                 # 퀴즈 목록/입장/풀이 화면
 │   ├── teacher/                 # 퀴즈·문항 관리/배포전점검/채점/현황/Classroom/아카이브 화면
-│   ├── shared/                  # 로그인, Callable Function 클라이언트, 타이머 유틸
+│   ├── shared/                  # 로그인, App Check 초기화, Callable Function 클라이언트, 타이머 유틸
 │   └── editor/                  # CodeMirror 6 기반 C 코드 에디터 컴포넌트
 └── test/
 

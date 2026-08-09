@@ -5,12 +5,19 @@
 그대로 신뢰하지 않고 서버에서 재검증/재계산한다. 오류는 `{code, message}` 형태로 반환하며
 `message`는 사용자에게 보여줄 일반 안내문(헌법 VI), 상세 원인은 Cloud Logging에만 남긴다.
 
+모든 함수는 `enforceAppCheck: true`로 배포한다(research.md §9) — 로그인 여부와 무관하게, 실제
+배포된 웹앱이 아닌 곳(예: 브라우저 콘솔에서 직접 호출)에서 온 요청은 이 계약에 도달하기 전에
+거부된다. 모든 함수의 입력은 Zod 스키마로 런타임 검증한다(research.md §10).
+
 ## 학생용
 
 ### `enterQuiz`
 - **Request**: `{ quizId: string, accessCode: string, studentId: string, name: string }`
 - **처리**: FR-009~FR-011 순서로 검증(출입코드 → 퀴즈 상태/시간 → 학번·이름·이메일 3중 대조).
-  이메일 미등록 학번이면 `NEEDS_EMAIL_REGISTRATION` 오류로 응답해 5.3절 플로우로 분기.
+  이메일 미등록 학번이면 `NEEDS_EMAIL_REGISTRATION` 오류로 응답해 5.3절 플로우로 분기. 검증을
+  통과하면 `participants/{quizId}_{studentId}` 문서가 없을 경우 이 시점에 생성한다
+  (`finalStatus: 'IN_PROGRESS'`, `runsUsedByProblem/submissions/runResults: {}` — research.md
+  §13, data-model.md). 이미 존재하면 그대로 조회만 한다.
 - **Response**: `{ participantStatus, problems: [{problemId, title, description, initialCode, maxRuns, remainingRuns, pointsTotal}], endAt, existingSubmission?, gradedResult? }`
 - **오류 코드**: `INVALID_ACCESS_CODE`, `IDENTITY_MISMATCH`, `QUIZ_NOT_OPEN`, `NEEDS_EMAIL_REGISTRATION`
 
@@ -22,16 +29,22 @@
 ### `practiceRun`
 - **Request**: `{ quizId: string, problemId: string, code: string }`
 - **처리**: FR-013~FR-016. `(quizId, problemId, code, 문항 updatedAt)` 캐시 키로 먼저 조회 →
-  캐시 히트 시 Grader 미호출(횟수 차감도 없음) → 캐시 미스면 Firestore 트랜잭션으로 남은 횟수
-  확인·차감(research.md §5) → Grader 호출(contracts/grader-api.md `/grade`) → 비공개 TC
-  마스킹 → `SYSTEM_ERROR`가 아닌 결과만 캐시에 저장.
+  캐시 히트 시 Grader 미호출(횟수 차감도 없음) → 캐시 미스면 `runTransaction`으로
+  `participants/{quizId}_{studentId}.runsUsedByProblem.{problemId}`을 조회해 `maxRuns` 미만인
+  경우에만 1 증가시켜 커밋(research.md §5 — `FieldValue.increment()` 단독 사용은 조건부 거부가
+  안 되므로 쓰지 않는다) → 트랜잭션 커밋에 성공한 요청만 Grader 호출(contracts/grader-api.md
+  `/grade`) → 비공개 TC 마스킹 → `SYSTEM_ERROR`가 아닌 결과만 캐시에 저장. `problemSecrets`
+  문서에서 테스트케이스 배열을 1회 읽어 Grader 요청을 구성한다.
 - **Response**: `{ status, score, maxScore, compileErrorMessage?, tcResults: [...], remainingRuns, usedCache: boolean }`
 - **오류 코드**: `NO_RUNS_LEFT`, `QUIZ_NOT_ACTIVE`
 
 ### `finalSubmit`
 - **Request**: `{ quizId: string, submissions: [{problemId: string, code: string}] }`
 - **처리**: FR-017~FR-019. 이미 SUBMITTED/FINALIZED면 기존 결과 반환(FR-018). 퀴즈에 실제로
-  속한 problemId만 채택. 서버 시각으로 종료 여부 재검증(헌법 VII).
+  속한 problemId만 채택. 서버 시각으로 종료 여부 재검증(헌법 VII). 문항별 코드를
+  `participants/{quizId}_{studentId}.submissions` map 필드에 트랜잭션으로 한 번에 기록하고
+  `finalStatus`를 `'SUBMITTED'`로 갱신한다(구 설계의 문항별 서브컬렉션 배치 쓰기 대신 문서 1건
+  업데이트로 단순화, data-model.md 참고).
 - **Response**: `{ participantStatus: 'SUBMITTED', finalSubmittedAt }`
 - **오류 코드**: `QUIZ_CLOSED`
 
@@ -41,9 +54,13 @@
 
 ## 교사용 — 준비
 
-### `upsertQuiz`, `deleteProblem`, `upsertProblem`, `upsertTestCase` 등
+### `upsertQuiz`, `upsertProblem`, `deleteProblem`, `upsertTestCase`, `deleteTestCase` 등
 - CRUD 계열. FR-003~FR-005. Request/Response는 각각 data-model.md의 대응 문서 필드와 동일한
-  모양이며, 서버는 저장 시 문항의 `pointsTotal`을 재계산한다(FR-006).
+  모양이며, 서버는 저장 시 문항의 `pointsTotal`을 재계산한다(FR-006). `deleteProblem`은 하드
+  삭제가 아니라 `deletedAt`을 설정하는 소프트 삭제다(data-model.md — Firestore에 캐스케이드
+  삭제가 없어 하위 `problemSecrets`가 고아로 남기 때문). `upsertTestCase`/`deleteTestCase`는
+  `quizzes/{quizId}/problemSecrets/{problemId}.items` 배열 안의 원소를 추가/치환/제거하는
+  트랜잭션이며, 별도 문서를 만들지 않는다.
 
 ### `runPreDeployCheck`
 - **Request**: `{ quizId: string }`
@@ -58,16 +75,23 @@
 
 ### `batchGrade`
 - **Request**: `{ quizId: string }`
-- **처리**: FR-020~FR-023. `participants` 중 `SUBMITTED`만 대상, `FINALIZED`는 스킵.
+- **처리**: FR-020~FR-023. `participants`에서 `quizId == X && finalStatus == 'SUBMITTED'`로
+  조회(등호 필터만 조합이라 복합 인덱스 불필요, data-model.md "필요한 복합 인덱스" 참고).
+  `FINALIZED`는 스킵. 참가자별로 `submissions` map의 각 문항 코드를 채점해 `runResults` map
+  필드와 `finalTotal`/`finalStatus: 'FINALIZED'`를 한 번의 문서 업데이트로 기록한다.
 - **Response**: `{ processed, skipped, failed, failedParticipantIds: string[] }`
 
 ### `getParticipantOverview`
 - **Request**: `{ quizId: string }`
+- **처리**: `participants`에서 `quizId == X`, `finalSubmittedAt` 정렬 조회 — 이 조합은 복합
+  인덱스가 필요하다(data-model.md "필요한 복합 인덱스" 참고).
 - **Response**: `{ participants: [{studentId, name, status, submittedAt?, finalTotal?}] }` (FR-025)
 
 ### `getParticipantDetail`
 - **Request**: `{ quizId: string, studentId: string }`
-- **Response**: `{ submissions: [...], runResults: [...] }`
+- **처리**: 참가자 문서 1건을 읽어 `submissions`/`runResults` map 필드를 그대로 반환한다(구
+  설계의 서브컬렉션 다중 조회 대신 단일 문서 읽기).
+- **Response**: `{ submissions: {...}, runResults: {...} }`
 
 ## 교사용 — Classroom (필수, User Story 5)
 
