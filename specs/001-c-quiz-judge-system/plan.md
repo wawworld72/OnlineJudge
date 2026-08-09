@@ -67,7 +67,7 @@ User Story 6개(P1~P6), 기능 요구사항 40개.
 | II. 3중 신원 검증 | 모든 학생 호출 Callable Function 진입점에서 `context.auth.token.email` + 요청의 학번·이름을 학생명부와 대조하는 공통 검증 유틸을 통과해야만 로직이 실행됨 |
 | III. 정답 및 상태 무결성 보호 | Firestore 보안 규칙에서 `problemSecrets`(구 `testCases`)는 클라이언트 read/write를 전면 차단(Admin SDK만 접근), 문항 공개 문서와 절대 같은 문서로 합치지 않음. 참가자·제출·채점 관련 필드는 클라이언트 write 전면 차단, read는 본인 문서만 허용. Zod 런타임 검증이 서버가 쓰는 값 자체의 정확성을 보강(규칙은 클라이언트 접근만 규율, Admin SDK는 규칙을 우회하므로 서버 쓰기 정확성은 코드가 책임 — contracts/firestore-access-summary.md 참고) |
 | IV. 무료 운영 비용 상한 | 연습 실행 결과 미저장, 잔여시간 클라이언트 로컬 계산(서버가 준 종료시각 기준), 코드 자동저장은 로컬 저장소, 서버 쓰기는 최종 제출 1회, `submissions`/`runResults`를 참가자 문서의 map 필드로 통합해 문항 5개 기준 참가자 조회를 11회 read에서 1회로 축소(data-model.md), `accessLogs`에 6개월 TTL 적용 — Technical Context의 Constraints에 그대로 반영. App Check는 정당한 앱 외부에서의 무분별한 호출을 앞단에서 차단해 구조적 트래픽 증가를 방지(research.md §9) |
-| V. 화면별 응답 시간 목표 | Performance Goals에 원칙 그대로 채택. 지연 UX(진행중→지연안내→재시도)는 프론트엔드 공용 컴포넌트로 구현해 입장·최종제출 두 Callable Function 호출 지점에 재사용 |
+| V. 화면별 응답 시간 목표 | Performance Goals에 원칙 그대로 채택. 지연 UX(진행중→지연안내→재시도)는 프론트엔드 공용 컴포넌트로 구현해 입장·최종제출 두 Callable Function 호출 지점에 재사용. `googleapis`(Classroom·Sheets) 의존성을 학생용 함수의 콜드 스타트 경로에서 분리해(research.md §16) 목표 시간을 콜드 스타트가 잠식하지 않도록 함 |
 | VI. 장애 복원력 있는 오류 처리 | 외부 호출(Grader, Classroom, Sheets) 공용 래퍼에서 1회 자동 재시도 후 실패 시 사용자에게는 일반 안내, 상세는 Cloud Functions 로그(Cloud Logging)에만 기록 |
 | VII. 단일 기준 시간 | 모든 시간 판단은 Cloud Functions에서 서버 시각(`Timestamp.now()`) 기준으로 수행. 클라이언트에는 `yyyy-MM-dd HH:mm:ss` 형식의 종료시각만 전달하고 표시용 짧은 형식은 프론트엔드에서만 변환 |
 

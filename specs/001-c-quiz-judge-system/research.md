@@ -196,6 +196,27 @@
   큐로 분리 — 이 규모(100명, 학기당 15회)에는 과한 인프라이고 무료 운영 목표에 부담을 줄 수
   있어 기각(단, 실측 결과 동시성 상한+타임아웃 확장으로도 부족하면 재검토 대상).
 
+## 16. 콜드 스타트가 응답 시간 목표(SC-001~003)를 위협하지 않도록 모듈 경계 분리
+
+- **Decision**: `googleapis`(Classroom·Sheets 연동용, 무거운 라이브러리)를 임포트하는 코드는
+  `classroomClient.ts`/`sheetsClient.ts`와 그것을 호출하는 Callable Function
+  (`syncRoster`/`classroomAssignment`/`pushGrades`/`archiveQuiz`)에만 존재해야 하며,
+  학생이 실제로 호출하는 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResult`)나 그
+  함수들이 의존하는 공용 모듈(`functions/src/shared/*`, `functions/src/models/types.ts`)은
+  `googleapis`를 직접·간접적으로 임포트하지 않는다. `minInstances`(상시 warm 인스턴스)는
+  설정하지 않는다.
+- **Rationale**: Cloud Functions는 함수별로 독립적으로 콜드 스타트되며, 콜드 스타트 시간은
+  그 함수가 로드하는 모듈 크기에 비례한다. `googleapis`는 번들이 커서, 학생용 함수가 이를
+  같은 콜드 스타트 경로에 함께 로드하면 SC-001(1초)·SC-002(2초) 목표를 첫 요청에서 넘기기
+  쉽다. `minInstances`로 항상 웜 상태를 유지하는 방법도 있지만 이는 사용량과 무관하게 계속
+  비용이 발생해 헌법 원칙 IV(무료 운영)와 충돌하므로 채택하지 않는다 — 대신 모듈 경계를
+  분리해 콜드 스타트 자체의 비용(로드 시간)을 줄이는 쪽을 택한다. 첫 요청의 남은 지연은
+  헌법 원칙 V가 이미 요구하는 단계적 지연 안내 UX(진행 중 표시 → 지연 안내, T020/T042)로
+  사용자 경험을 보완한다.
+- **Alternatives considered**: `minInstances` 설정(상시 비용 발생 → 헌법 IV 위반 소지로
+  기각). 모든 Callable Function을 하나의 번들로 배포(단순하지만 학생 경로에 Classroom/Sheets
+  의존성이 항상 같이 로드되어 기각).
+
 ## Open Items (구현 착수 전 확인 필요)
 
 - Grader `/grade` 응답의 런타임 오류 표현 필드명과 개별 테스트케이스 타임아웃 시 `status` 값은
@@ -205,3 +226,7 @@
 - Grader 1회 호출의 실제 응답 시간(§15 관련) — 구현 착수 후 소수 샘플로 실측하고, 그 값에
   맞춰 `batchGrade`의 동시성 상한(잠정 10)과 `timeoutSeconds`(잠정 540)를 조정한다. SC-004의
   100명 규모 처리가 실제로 타임아웃 없이 끝나는지는 이 실측 없이는 확인할 수 없다.
+- SC-001~003(응답 시간 목표) 실측(§16 관련) — Firebase Emulator Suite는 실제 배포 환경의
+  콜드 스타트·네트워크 지연을 반영하지 않으므로, 목표 충족 여부는 **실제 Firebase 프로젝트에
+  배포한 뒤** 콜드 스타트 1회 + 웜 상태 반복 요청을 각각 측정해야 확인할 수 있다. 에뮬레이터
+  측정치는 하한선(이보다 느릴 수만 있음)으로만 참고한다.

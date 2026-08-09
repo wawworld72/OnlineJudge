@@ -63,6 +63,12 @@ User Story도 시작할 수 없다.
 I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callable Function이 반드시 이를 통과해야
 한다.
 
+**⚠️ 모듈 경계 규칙(research.md §16, SC-001~003)**: `googleapis`를 임포트하는 코드
+(`classroomClient.ts`, `sheetsClient.ts`와 이를 호출하는 Classroom/Sheets Callable
+Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResult`)나 이 단계의
+공용 모듈에서 절대 임포트하지 않는다 — 콜드 스타트 번들 크기가 커지면 SC-001(1초)/SC-002
+(2초) 목표를 첫 요청에서 넘기기 쉽다.
+
 - [ ] T007 `firestore.rules`에 기본 거부(default-deny) 규칙과 contracts/
   firestore-access-summary.md의 허용 예외(퀴즈/문항 — `deletedAt == null`인 문서만 — OPEN 시
   읽기, 본인 `participants` 문서 읽기)를 작성. `problemSecrets`는 예외 없이 전면 차단
@@ -426,6 +432,12 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
   Grader 응답 시간 기준으로 충분한지 확인하고, 부족하면 research.md §15의 잠정값을 실측
   근거로 갱신한다(SC-004는 이 실측 없이는 충족 여부를 확인할 수 없음 — 설계 문서 검토만으로
   닫을 수 있는 항목이 아니다)
+- [ ] T094 SC-001~003(응답 시간 목표) 실측 검증 — **실제 Firebase 프로젝트에 배포한 뒤**
+  (Emulator Suite 측정치는 콜드 스타트·네트워크 지연을 반영하지 않아 하한선일 뿐이므로 제외)
+  `enterQuiz`(SC-001, 목표 2초)·`practiceRun`(SC-002, 목표 3초)·`finalSubmit`(SC-003, 목표
+  3초)·퀴즈 목록 조회(목표 1초)를 각각 콜드 스타트 1회 + 웜 상태 반복 요청 5회씩 측정해
+  기록한다. 콜드 스타트가 목표를 크게 넘기면 research.md §16의 모듈 경계 분리(T032/T074가
+  실제로 `googleapis`를 분리했는지)를 다시 확인한다
 
 ---
 
