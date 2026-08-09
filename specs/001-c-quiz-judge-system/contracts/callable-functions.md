@@ -63,14 +63,33 @@
   `deletedAt`을 설정하는 소프트 삭제다(Firestore에 캐스케이드 삭제가 없어 하위
   `problemSecrets`가 고아로 남기 때문).
 
-### `upsertTestCase`, `deleteTestCase`
-- FR-005~FR-006. `quizzes/{quizId}/problemSecrets/{problemId}.items` 배열 안의 원소를
-  추가/치환/제거하는 **단일 Firestore 트랜잭션** 안에서, (1) 새 `items`로 배점 합을 다시
-  계산해 `problemSecrets.items`와 `problemSecrets.updatedAt`을 쓰고, (2) 같은 트랜잭션으로
-  `problems/{problemId}.pointsTotal`(재계산된 합)과 `problems/{problemId}.updatedAt`도 함께
-  쓴다. 이 두 문서를 별도 쓰기로 나누면 "테스트케이스만 고쳤는데 `problems.updatedAt`이
-  그대로여서 `practiceRun`의 캐시가 무효화되지 않는" 버그가 생기므로, 반드시 하나의 트랜잭션
-  으로 묶는다(data-model.md "두 문서의 updatedAt을 함께 갱신해야 하는 이유" 참고).
+### `upsertTestCase`
+- **Request**: `{ quizId: string, problemId: string, testCase: { tcId?: string, tcNo: number, input: string, expected: string, points: number, isPublic: boolean, description: string } }`
+  — `tcId`가 없으면 새 테스트케이스 추가, 있으면 해당 테스트케이스만 치환. **클라이언트는
+  `items` 전체 배열이나 `pointsTotal`을 절대 보내지 않는다** — 항상 테스트케이스 1개 단위의
+  델타만 보낸다.
+- **처리**: FR-005~FR-006. 단일 Firestore 트랜잭션 안에서 (1) `tx.get()`으로
+  `problemSecrets/{problemId}`의 **현재 `items`를 트랜잭션 내부에서 새로 읽고**, (2) 그
+  배열에 요청받은 테스트케이스 1개만 추가/치환해 새 배열을 만들고, (3) 그 새 배열 기준으로
+  배점 합을 다시 계산해 `problemSecrets.items`/`updatedAt`과 `problems.pointsTotal`/
+  `updatedAt`을 함께 쓴다.
+- **동시 편집 안전성**: 배점 합계를 클라이언트가 보낸 값이나 트랜잭션 시작 전에 읽어둔 배열로
+  계산하지 않고, **트랜잭션 내부에서 재조회한 최신 배열**을 기준으로 계산하기 때문에, 교사가
+  같은 문항을 두 탭에서 동시에 편집해도(예: 한쪽은 테스트케이스 A 수정, 다른 쪽은 테스트케이스
+  B 수정) 안전하다. Firestore 트랜잭션은 커밋 시점에 읽은 문서가 트랜잭션 도중 다른 쓰기로
+  바뀌었으면 자동으로 재시도하므로, 나중에 커밋되는 트랜잭션은 먼저 커밋된 변경을 반영한
+  배열 위에서 자신의 델타를 다시 적용한다 — 두 수정 모두 최종 배점 합계에 반영된다(먼저
+  커밋된 수정이 누락되는 lost-update가 발생하지 않는다).
+
+### `deleteTestCase`
+- **Request**: `{ quizId: string, problemId: string, tcId: string }`
+- **처리**: `upsertTestCase`와 동일한 트랜잭션 구조로, 재조회한 최신 `items` 배열에서 해당
+  `tcId`만 제거한 뒤 배점 합을 다시 계산해 `problemSecrets`/`problems` 양쪽을 함께 쓴다.
+
+두 함수 모두 이 두 문서(`problemSecrets`, `problems`)를 별도 쓰기로 나누면 "테스트케이스만
+고쳤는데 `problems.updatedAt`이 그대로여서 `practiceRun`의 캐시가 무효화되지 않는" 버그가
+생기므로, 반드시 하나의 트랜잭션으로 묶는다(data-model.md "두 문서의 updatedAt을 함께
+갱신해야 하는 이유" 참고).
 
 ### `runPreDeployCheck`
 - **Request**: `{ quizId: string }`

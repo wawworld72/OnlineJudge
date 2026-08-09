@@ -198,7 +198,10 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
   `functions/test/contract/problems.spec.ts`
 - [ ] T046 [P] [US2] Contract test for `upsertTestCase`/`deleteTestCase`(FR-005~006,
   `problemSecrets.items` 배열이 트랜잭션으로 갱신되는지, **같은 트랜잭션에서**
-  `problems.pointsTotal`과 `problems.updatedAt`도 함께 갱신되는지) in
+  `problems.pointsTotal`과 `problems.updatedAt`도 함께 갱신되는지, **동시성 테스트**: 같은
+  문항에 서로 다른 테스트케이스를 동시에(`Promise.all`) `upsertTestCase`하면 두 수정이 모두
+  최종 `items`/`pointsTotal`에 반영되는지(lost-update 없음, contracts/callable-functions.md
+  "동시 편집 안전성" 참고)) in
   `functions/test/contract/testCases.spec.ts`
 - [ ] T047 [P] [US2] Contract test for `runPreDeployCheck`(FR-007, 각 판정 항목별 PASS/WARN/
   BLOCK, 데이터 미변경) in `functions/test/contract/runPreDeployCheck.spec.ts`
@@ -220,11 +223,15 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
   현재 서버 시각으로 설정하는 소프트 삭제다 — Firestore에는 캐스케이드 삭제가 없어 하드
   삭제하면 `problemSecrets`가 고아로 남기 때문(data-model.md) — T045 통과
 - [ ] T052 [P] [US2] `functions/src/callable/testCases.ts`에 `upsertTestCase`/
-  `deleteTestCase` 구현(FR-005~006) — `quizzes/{quizId}/problemSecrets/{problemId}.items`
-  배열의 원소를 하나의 Firestore 트랜잭션 안에서 추가/치환/제거하고, 같은 트랜잭션으로 새
-  배점 합을 `problems/{problemId}.pointsTotal`에, 현재 서버 시각을 `problemSecrets.updatedAt`
-  과 `problems.updatedAt` 양쪽에 함께 쓴다(두 문서를 별도 쓰기로 나누면 캐시 무효화가
-  누락될 수 있음 — data-model.md 참고) — T046 통과
+  `deleteTestCase` 구현(FR-005~006). Request는 테스트케이스 1개 단위의 델타만 받는다
+  (`items` 전체 배열이나 배점 합계는 클라이언트가 보내지 않음). 하나의 Firestore 트랜잭션
+  안에서 `tx.get()`으로 `problemSecrets.items`를 **그 시점에 다시 읽고**, 그 배열에 델타를
+  적용한 뒤 배점 합을 재계산해 `problemSecrets.items`/`updatedAt`과
+  `problems.pointsTotal`/`updatedAt`을 함께 쓴다 — 클라이언트가 계산한 배열/합계를 그대로
+  믿지 않고 항상 트랜잭션 내부 재조회 값을 기준으로 계산해야, 같은 문항을 두 탭에서 동시에
+  편집해도 Firestore의 트랜잭션 자동 재시도로 두 수정 모두 최종 합계에 반영된다(lost-update
+  방지, contracts/callable-functions.md 참고). 두 문서를 별도 쓰기로 나누면 캐시 무효화가
+  누락될 수 있음(data-model.md 참고) — T046 통과
 - [ ] T053 [US2] `functions/src/callable/runPreDeployCheck.ts`에 `runPreDeployCheck`
   구현(FR-007, 데이터 변경 없이 판정만, `deletedAt != null`인 문항은 판정 대상에서 제외) —
   T047 통과
