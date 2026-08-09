@@ -47,6 +47,12 @@ export const getMyResultSchema = z.object({
   quizId: z.string().min(1),
 });
 
+export const listQuizzesSchema = z.object({});
+
+export const getQuizForEditSchema = z.object({
+  quizId: z.string().min(1),
+});
+
 export const upsertQuizSchema = z.object({
   quizId: z.string().min(1).optional(),
   title: z.string().min(1),

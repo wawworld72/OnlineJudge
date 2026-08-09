@@ -235,6 +235,28 @@
   설정) — 이 규모에서는 별도 프로비저닝 스크립트를 추가하는 비용이 허용 목록보다 크다고
   판단해 기각(향후 교사가 여러 명으로 늘어나면 재검토 대상).
 
+## 18. 교사의 퀴즈 목록/편집 조회 경로 — 구현 중 식별된 누락 항목
+
+- **Decision**: `listQuizzes`(교사가 접근 가능한 전체 퀴즈의 `deletedAt == null` 목록,
+  `DRAFT`/`OPEN`/`CLOSED` 모두 포함)와 `getQuizForEdit`(퀴즈 전체 필드 + 삭제되지 않은
+  문항 + 문항별 `problemSecrets.items`를 한 번에 반환)를 신규 Callable Function으로
+  추가한다. 둘 다 `requireTeacher` 가드를 통과해야 한다(research.md §17).
+- **Rationale**: firestore.rules는 `quizzes`/`problems`의 클라이언트 직접 read를
+  `status == 'OPEN'`(학생용 시나리오)일 때만 허용한다 — 교사가 편집해야 하는 `DRAFT`
+  퀴즈나 이미 끝난 `CLOSED` 퀴즈는 이 경로로 읽을 수 없다. 그런데
+  contracts/callable-functions.md의 "교사용 — 준비" 절은 `upsertQuiz`/`upsertProblem`/
+  `upsertTestCase` 등 **쓰기** 함수만 정의했을 뿐, 교사가 "무엇을 편집할지 고르기 위해
+  먼저 조회하는" 경로가 문서에 전혀 없었다 — QuizManager/ProblemEditor 화면을 만들면서
+  발견한 누락이다. `getQuizForEdit`이 문항별 `problemSecrets.items`(정답 포함)까지
+  함께 반환하는 것은 의도적이다 — 교사에게는 애초에 정답을 감출 이유가 없고(헌법 III은
+  "학생에게" 정답을 숨기는 원칙), 왕복 횟수를 줄이기 위해 문항 편집에 필요한 모든 데이터를
+  한 번에 담는다.
+- **Alternatives considered**: `quizzes`/`problems`에 "작성자(교사) 본인이면 상태 무관
+  read 허용" firestore.rules 예외를 추가하는 방법도 검토했으나, 이 프로젝트에 교사 계정을
+  문서 필드로 저장해 두는 곳이 없어(교사 판별 자체가 `TEACHER_EMAILS` 환경변수 허용
+  목록뿐, §17) 규칙에서 "이 요청자가 교사인가"를 판단할 방법이 없다 — Callable Function
+  경로가 이 판별을 이미 갖고 있으므로(`requireTeacher`) 그대로 재사용하는 쪽을 택했다.
+
 ## Open Items (구현 착수 전 확인 필요)
 
 - Grader `/grade` 응답의 런타임 오류 표현 필드명과 개별 테스트케이스 타임아웃 시 `status` 값은

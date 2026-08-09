@@ -56,6 +56,20 @@
 
 ## 교사용 — 준비
 
+### `listQuizzes`
+- **Request**: `{}`
+- **처리**: firestore.rules는 `status == 'OPEN'`인 퀴즈만 클라이언트 직접 read를 허용하므로,
+  교사가 자신의 `DRAFT`/`CLOSED` 퀴즈까지 포함한 목록을 보려면 이 함수가 필요하다
+  (research.md §18). `deletedAt == null`인 퀴즈만 반환한다.
+- **Response**: `{ quizzes: [{quizId, title, status, startAt, endAt}] }`
+
+### `getQuizForEdit`
+- **Request**: `{ quizId: string }`
+- **처리**: QuizManager(퀴즈 필드 편집)와 ProblemEditor(문항·테스트케이스 편집)가 필요로
+  하는 모든 데이터를 한 번에 반환한다. 문항별 `problemSecrets.items`(정답 포함)도 그대로
+  포함한다 — 헌법 III은 "학생에게" 정답을 숨기는 원칙이므로 교사에게는 해당하지 않는다.
+- **Response**: `{ quizId, title, description, startAt, endAt, accessCode, status, maxRunsPerProblem, courseId, problems: [{problemId, order, title, description, initialCode, maxRuns, pointsTotal, testCases: TestCase[]}] }`
+
 ### `upsertQuiz`, `upsertProblem`, `deleteProblem`
 - CRUD 계열. FR-003~FR-004. Request/Response는 data-model.md의 대응 문서 필드와 동일한 모양.
   `upsertProblem`은 문항 메타데이터(제목·설명·초기코드·maxRuns)만 다룬다 — 신규 생성 시에만

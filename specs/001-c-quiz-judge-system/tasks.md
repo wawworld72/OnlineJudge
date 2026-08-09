@@ -254,6 +254,14 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
   차단 항목이 있으면 `OPEN` 전환 거부) — T048 통과
 - [X] T055 [P] [US2] `firestore.rules`에 `quizzes`/`problems`/`problemSecrets` 클라이언트
   write 전면 차단이 이미 걸려 있는지 확인하고 누락된 경로 보강
+- [X] T055a [P] [US2] (구현 중 식별된 누락 항목, research.md §18) `functions/src/callable/
+  listQuizzes.ts`에 `listQuizzes` 구현 — firestore.rules가 `status == 'OPEN'`만 클라이언트
+  read를 허용하므로 교사의 `DRAFT`/`CLOSED` 퀴즈 목록에는 별도 경로가 필요함 in
+  `functions/test/contract/listQuizzes.spec.ts`
+- [X] T055b [P] [US2] (구현 중 식별된 누락 항목, research.md §18) `functions/src/callable/
+  getQuizForEdit.ts`에 `getQuizForEdit` 구현 — 퀴즈 전체 필드 + 삭제되지 않은 문항 +
+  문항별 `problemSecrets.items`(정답 포함, 교사에게는 헌법 III이 적용되지 않음)를 한 번에
+  반환 in `functions/test/contract/getQuizForEdit.spec.ts`
 - [ ] T056 [P] [US2] `web/src/teacher/QuizManager.tsx`에 교사 퀴즈 목록/생성/수정/상태전환
   화면 구현
 - [ ] T057 [US2] `web/src/teacher/ProblemEditor.tsx`에 문항·테스트케이스 편집 화면 구현
