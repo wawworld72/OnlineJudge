@@ -38,7 +38,7 @@
 - 0/3 [NEEDS CLARIFICATION] 마커 — 원본 문서가 충분히 구체적이어서 추가 확인 없이 합리적인
   기본값으로 채울 수 있었다. 남은 모호성(학번-이메일 연결 변경 절차, 출입코드 전역 고유성 등)은
   Assumptions에 문서화했다.
-- `/speckit-clarify` Session 2026-08-09: 장애 시 시험시간 정책(FR-036), PAUSED 상태 범위 제외
-  (FR-008/FR-010, Assumptions), 데이터 아카이브·삭제(User Story 6, FR-037~FR-040, SC-010~011)를
-  반영했다. 상세는 spec.md의 `## Clarifications` 참고.
+- `/speckit-clarify` Session 2026-08-09 (4문답): 장애 시 시험시간 정책(FR-036), PAUSED 상태 범위
+  제외(FR-008/FR-010, Assumptions), 데이터 아카이브·삭제(User Story 6, FR-037~FR-040, SC-010~011),
+  실행 횟수 제한의 동시성 정확도(FR-014)를 반영했다. 상세는 spec.md의 `## Clarifications` 참고.
 - 모든 항목 통과 — `/speckit-clarify` 계속 진행 또는 `/speckit-plan`으로 진행 가능.
