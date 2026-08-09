@@ -177,15 +177,15 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
   포함됨(자신의 경로 줄만 추가하는 원칙은 병렬 작업자가 있을 때를 위한 것이며, 단일 작업
   흐름에서는 추가로 수정할 내용 없음 확인). `participants`는 T007에서 이미 전면 차단됨(직접
   읽기 경로 불필요)
-- [ ] T039 [P] [US1] `web/src/student/QuizList.tsx`에 퀴즈 목록 화면 구현(OPEN 퀴즈만, 딥링크
+- [X] T039 [P] [US1] `web/src/student/QuizList.tsx`에 퀴즈 목록 화면 구현(OPEN 퀴즈만, 딥링크
   지원)
-- [ ] T040 [US1] `web/src/student/QuizEntry.tsx`에 입장 화면 구현(출입코드·학번·이름 입력,
+- [X] T040 [US1] `web/src/student/QuizEntry.tsx`에 입장 화면 구현(출입코드·학번·이름 입력,
   T020 지연 UX, 이메일 최초 등록 플로우)
-- [ ] T041 [US1] `web/src/student/QuizTaking.tsx`에 문항 탭 + 코드 에디터(T005) + 실행/제출
+- [X] T041 [US1] `web/src/student/QuizTaking.tsx`에 문항 탭 + 코드 에디터(T005) + 실행/제출
   + 카운트다운(T019) 화면 구현
-- [ ] T042 [US1] `web/src/student/FinalSubmitModal.tsx`에 최종 제출 확인 모달 구현(T020
+- [X] T042 [US1] `web/src/student/FinalSubmitModal.tsx`에 최종 제출 확인 모달 구현(T020
   지연 UX, 문항별 작성 상태 요약)
-- [ ] T043 [US1] `web/src/student/ResultView.tsx`에 제출 완료 후 화면(SUBMITTED/FINALIZED
+- [X] T043 [US1] `web/src/student/ResultView.tsx`에 제출 완료 후 화면(SUBMITTED/FINALIZED
   상태별 안내, FR-024) 구현 — T029 통과
 
 **Checkpoint**: User Story 1이 단독으로 완전히 동작하고 검증 가능하다(MVP)

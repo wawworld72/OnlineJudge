@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { getAuth, onAuthStateChanged, type User } from "firebase/auth";
 import { firebaseApp } from "./shared/firebaseApp";
 import { Login } from "./shared/Login";
+import { QuizList } from "./student/QuizList";
+import { QuizEntry } from "./student/QuizEntry";
 
 const auth = getAuth(firebaseApp);
 
@@ -37,7 +39,10 @@ export function App() {
     <BrowserRouter>
       <Routes>
         {role === "STUDENT" ? (
-          <Route path="/*" element={<div>학생 화면 (User Story 1에서 구현)</div>} />
+          <>
+            <Route path="/" element={<QuizList />} />
+            <Route path="/quiz/:quizId" element={<QuizEntry />} />
+          </>
         ) : (
           <Route path="/*" element={<div>교사 화면 (User Story 2에서 구현)</div>} />
         )}
