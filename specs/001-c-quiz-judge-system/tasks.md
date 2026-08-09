@@ -423,34 +423,56 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 
 **Purpose**: 여러 User Story에 걸친 검증 및 마무리
 
-- [ ] T086 [P] `functions/test/rules.spec.ts`에 `@firebase/rules-unit-testing`으로 전체
+- [X] T086 [P] `functions/test/rules.spec.ts`에 `@firebase/rules-unit-testing`으로 전체
   컬렉션 접근 규칙 매트릭스(contracts/firestore-access-summary.md 표 전체) 검증 작성 —
   `problemSecrets` 전면 차단, `participants` 문서 read 전면 거부(본인 포함) 검증 포함
-- [ ] T087 [P] `functions/test/unit/`에 identity, timeAuthority, scoreAggregation,
+- [X] T087 [P] `functions/test/unit/`에 identity, timeAuthority, scoreAggregation,
   runCountTransaction 유틸 Vitest 단위 테스트 작성(경합 상황 시뮬레이션 포함, FR-014 —
   동시에 여러 `runTransaction` 호출을 걸어 `runsUsedByProblem`이 한도를 넘지 않는지 검증)
 - [ ] T088 [P] `functions/test/contract/appCheck.spec.ts`에 App Check 토큰 없이 Callable
   Function을 호출하면 거부되는지, 유효한 디버그 토큰으로는 통과하는지 검증(research.md §6)
-- [ ] T089 `functions/scripts/seed.ts`에 quickstart.md 시드 데이터 스크립트 작성
-- [ ] T090 quickstart.md의 User Story 1~6 검증 시나리오를 Emulator Suite에서 전체 실행하고
+  — **차단됨**: `enforceAppCheck`는 Callable Function의 HTTP 레이어(onCall 래퍼)에서만
+  검사되므로 `.run()` 단위 테스트로는 우회된다 — 실제 HTTP 호출이 필요하다. 이 환경에서
+  `firebase emulators:start --only functions,...`로 실제 호출을 시도한 결과, 모든 요청에서
+  `functions.config() has been removed in firebase-functions v7` 경고 직후 워커가 예외
+  없이 죽는 현상이 재현됐다(App Check 유무·요청 내용과 무관, 가장 단순한 요청도 동일) —
+  `firebase-functions@7` + 현재 `firebase-tools` 버전 조합의 에뮬레이터 호환성 문제로 보이며
+  이 코드의 로직 문제가 아니다. "유효한 디버그 토큰으로 통과" 절반은 추가로 실제 App Check
+  백엔드 네트워크 접근이 필요해 이 샌드박스에서는 원천적으로 검증할 수 없다. `callableFactory.ts`
+  가 모든 Callable Function에 `enforceAppCheck: true`를 적용하는 것은 코드 리뷰로 확인됨.
+- [X] T089 `functions/scripts/seed.ts`에 quickstart.md 시드 데이터 스크립트 작성
+- [X] T090 quickstart.md의 User Story 1~6 검증 시나리오를 Emulator Suite에서 전체 실행하고
   결과 기록
 - [ ] T091 `accessLogs.expiresAt` 필드에 Firestore TTL 정책(6개월)을 Firebase CLI/console로
-  설정하고 설정 방법을 `functions/README.md` 또는 배포 문서에 기록(research.md §8)
+  설정하고 설정 방법을 `functions/README.md` 또는 배포 문서에 기록(research.md §8) —
+  **문서화는 완료**(`functions/README.md`에 정확한 `gcloud firestore fields ttls update`
+  명령 기록), **실제 설정은 미실행**: 이 환경에는 배포된 실제 Firebase 프로젝트나 `gcloud`
+  자격증명이 없어 실행할 수 없다. 실제 프로젝트를 배포한 뒤 문서의 명령을 1회 실행해야 한다.
 - [ ] T092 100명/문항 5개 기준 실제 Firestore 읽기·쓰기 횟수를 에뮬레이터 로그로 추정해
   헌법 원칙 IV(Spark 무료 한도) 대비 여유율 재확인(map 필드 통합 이후 참가자 조회가 11회 →
-  1회로 줄어든 효과를 실측치로 반영)
+  1회로 줄어든 효과를 실측치로 반영) — **미실행**: 100명 규모의 실사용 패턴을 흉내 낼 실제
+  또는 대표성 있는 부하 시나리오가 이 환경에 없다. data-model.md/research.md §13이 이미
+  설계상 근거(11회→1회)를 서술하고 있으나, 이는 "실측"이 아니라 설계 검토이므로 이 태스크가
+  요구하는 실측 확인으로 대체할 수 없다.
 - [ ] T093 `batchGrade`의 SC-004(100명 규모) 실측 검증 — (실제 또는 스텁) Grader 서버로
   참가자 100명(문항 5개, 스킵/실패 없는 최악 케이스)을 시드해 `batchGrade`를 1회 실행하고
   실제 소요 시간을 기록한다. T061의 동시성 상한(잠정 10)·`timeoutSeconds`(잠정 540)가 실측
   Grader 응답 시간 기준으로 충분한지 확인하고, 부족하면 research.md §15의 잠정값을 실측
   근거로 갱신한다(SC-004는 이 실측 없이는 충족 여부를 확인할 수 없음 — 설계 문서 검토만으로
-  닫을 수 있는 항목이 아니다)
+  닫을 수 있는 항목이 아니다) — **미실행**: 실제 Grader 서버가 없고, 이 환경에서 Cloud
+  Functions 배포·실행 자체가 불가능해(T088 참고) 100명 규모의 실제 타이밍을 낼 수 없다.
+  `batchGrade.spec.ts`가 로직(스킵/실패 처리, 동시성 청크)은 검증했으나 SC-004가 요구하는
+  실제 소요 시간 수치는 아니다.
 - [ ] T094 SC-001~003(응답 시간 목표) 실측 검증 — **실제 Firebase 프로젝트에 배포한 뒤**
   (Emulator Suite 측정치는 콜드 스타트·네트워크 지연을 반영하지 않아 하한선일 뿐이므로 제외)
   `enterQuiz`(SC-001, 목표 2초)·`practiceRun`(SC-002, 목표 3초)·`finalSubmit`(SC-003, 목표
   3초)·퀴즈 목록 조회(목표 1초)를 각각 콜드 스타트 1회 + 웜 상태 반복 요청 5회씩 측정해
   기록한다. 콜드 스타트가 목표를 크게 넘기면 research.md §16의 모듈 경계 분리(T032/T074가
-  실제로 `googleapis`를 분리했는지)를 다시 확인한다
+  실제로 `googleapis`를 분리했는지)를 다시 확인한다 — **미실행**: 이 태스크는 태스크 설명
+  자체가 명시하듯 실제 배포된 프로젝트를 전제로 하며, 이 환경에는 그런 프로젝트가 없다.
+  research.md §16의 모듈 경계(학생용 함수가 `googleapis`를 임포트하지 않음)는 코드
+  리뷰로 확인됨 — `functions/src/index.ts`의 학생용 함수(enterQuiz/practiceRun/
+  finalSubmit/getMyResult)가 의존하는 모듈 중 `googleapis`를 임포트하는 것은 없다.
 
 ---
 
