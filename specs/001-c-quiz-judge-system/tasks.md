@@ -190,11 +190,13 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
 
 - [ ] T044 [P] [US2] Contract test for `upsertQuiz`(FR-003, 생성 시 DRAFT 상태 강제) in
   `functions/test/contract/upsertQuiz.spec.ts`
-- [ ] T045 [P] [US2] Contract test for `upsertProblem`/`deleteProblem`(FR-004, 저장 시
-  `pointsTotal` 재계산, `deleteProblem`은 문서를 지우지 않고 `deletedAt`만 설정하는지) in
+- [ ] T045 [P] [US2] Contract test for `upsertProblem`/`deleteProblem`(FR-004, 생성 시
+  `pointsTotal: 0` 초기화, 메타데이터만 수정할 때는 `pointsTotal`/`updatedAt`이 변하지 않는지,
+  `deleteProblem`은 문서를 지우지 않고 `deletedAt`만 설정하는지) in
   `functions/test/contract/problems.spec.ts`
 - [ ] T046 [P] [US2] Contract test for `upsertTestCase`/`deleteTestCase`(FR-005~006,
-  `problemSecrets.items` 배열이 트랜잭션으로 갱신되는지) in
+  `problemSecrets.items` 배열이 트랜잭션으로 갱신되는지, **같은 트랜잭션에서**
+  `problems.pointsTotal`과 `problems.updatedAt`도 함께 갱신되는지) in
   `functions/test/contract/testCases.spec.ts`
 - [ ] T047 [P] [US2] Contract test for `runPreDeployCheck`(FR-007, 각 판정 항목별 PASS/WARN/
   BLOCK, 데이터 미변경) in `functions/test/contract/runPreDeployCheck.spec.ts`
@@ -209,12 +211,18 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
 - [ ] T050 [P] [US2] `functions/src/callable/upsertQuiz.ts`에 퀴즈 생성/수정 구현(FR-003) —
   T044 통과
 - [ ] T051 [P] [US2] `functions/src/callable/problems.ts`에 `upsertProblem`/`deleteProblem`
-  구현(FR-004, 저장 시 `pointsTotal` 재계산). `deleteProblem`은 하드 삭제가 아니라 `deletedAt`을
+  구현(FR-004). `upsertProblem`은 문항 메타데이터(제목·설명·초기코드·maxRuns)만 다루며,
+  신규 생성 시에만 `pointsTotal: 0`으로 초기화하고 이후 메타데이터 수정 시에는
+  `pointsTotal`/`updatedAt`을 건드리지 않는다(그 둘의 소유자는 T052뿐 — data-model.md
+  "pointsTotal/updatedAt의 소유권" 참고). `deleteProblem`은 하드 삭제가 아니라 `deletedAt`을
   현재 서버 시각으로 설정하는 소프트 삭제다 — Firestore에는 캐스케이드 삭제가 없어 하드
   삭제하면 `problemSecrets`가 고아로 남기 때문(data-model.md) — T045 통과
 - [ ] T052 [P] [US2] `functions/src/callable/testCases.ts`에 `upsertTestCase`/
   `deleteTestCase` 구현(FR-005~006) — `quizzes/{quizId}/problemSecrets/{problemId}.items`
-  배열의 원소를 트랜잭션으로 추가/치환/제거하고 `updatedAt`을 함께 갱신 — T046 통과
+  배열의 원소를 하나의 Firestore 트랜잭션 안에서 추가/치환/제거하고, 같은 트랜잭션으로 새
+  배점 합을 `problems/{problemId}.pointsTotal`에, 현재 서버 시각을 `problemSecrets.updatedAt`
+  과 `problems.updatedAt` 양쪽에 함께 쓴다(두 문서를 별도 쓰기로 나누면 캐시 무효화가
+  누락될 수 있음 — data-model.md 참고) — T046 통과
 - [ ] T053 [US2] `functions/src/callable/runPreDeployCheck.ts`에 `runPreDeployCheck`
   구현(FR-007, 데이터 변경 없이 판정만, `deletedAt != null`인 문항은 판정 대상에서 제외) —
   T047 통과

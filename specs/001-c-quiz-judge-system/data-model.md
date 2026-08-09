@@ -71,9 +71,16 @@ Firestore 컬렉션 경로와 문서 스키마. spec.md의 Key Entities와 1:1 �
 | title, description | string | description은 Markdown 원문 (렌더링은 클라이언트) |
 | initialCode | string | 초기 코드 |
 | maxRuns | number \| null | null이면 퀴즈의 `maxRunsPerProblem` 사용 (FR-004) |
-| pointsTotal | number | `problemSecrets`의 테스트케이스 배점 합, 문항 저장/수정 시 서버가 재계산 (FR-006) |
-| updatedAt | timestamp | 테스트케이스/배점 수정 캐시 무효화 판단에 사용 (FR-016) |
+| pointsTotal | number | `problemSecrets.items`의 배점 합. **소유자는 `problemSecrets` 쓰기 경로뿐**(아래 참고) |
+| updatedAt | timestamp | 테스트케이스/배점 수정 캐시 무효화 판단에 사용 (FR-016). **소유자는 `problemSecrets` 쓰기 경로뿐** |
 | deletedAt | timestamp \| null | 소프트 삭제 시각. null이면 유효한 문항 (FR-004) |
+
+**`pointsTotal`/`updatedAt`의 소유권**: 이 두 필드는 문항 메타데이터(제목·설명·초기코드·
+maxRuns)를 바꾸는 `upsertProblem`이 아니라, 테스트케이스를 바꾸는 `upsertTestCase`/
+`deleteTestCase`만 갱신한다. `upsertProblem`은 문항을 새로 생성할 때만 `pointsTotal: 0`으로
+초기화하고, 이후 메타데이터 수정 시에는 이 두 필드를 절대 건드리지 않는다(제목만 고쳤는데
+연습 실행 캐시가 불필요하게 무효화되는 것을 막기 위함). 배점·테스트케이스 변경 여부만이
+`updatedAt`을 갱신할 수 있다.
 
 **소프트 삭제(`deletedAt`)를 쓰는 이유**: Firestore는 관계형 DB의 외래키·캐스케이드 삭제 개념이
 없다. `problems/{problemId}` 문서를 하드 삭제해도 그 아래 `problemSecrets/{problemId}`(구
@@ -86,7 +93,7 @@ null` 필터를 반드시 포함해야 한다.
 | 필드 | 타입 | 설명 |
 |---|---|---|
 | items | array<`{tcId, tcNo, input, expected, points, isPublic, description}`> | 문항의 테스트케이스 전체 — **클라이언트 read 전면 금지**(헌법 III) |
-| updatedAt | timestamp | `problems.updatedAt`과 함께 갱신(FR-016 캐시 무효화 판단) |
+| updatedAt | timestamp | `problems.updatedAt`과 **같은 Firestore 트랜잭션 안에서** 갱신(FR-016 캐시 무효화 판단) |
 
 **왜 배열 필드로 통합했는가(서브컬렉션이 아니라)**: 연습 실행마다 Cloud Functions가 문항의
 테스트케이스를 전부 읽어 Grader에 보내야 한다. 테스트케이스를 문항당 N개의 개별 문서(서브
@@ -99,6 +106,15 @@ null` 필터를 반드시 포함해야 한다.
 `items` 배열을 두면 Firestore 문서 단위 read 권한 특성상 그 문서를 읽는 즉시 정답이 함께
 노출된다 — 헌법 원칙 III(정답 및 상태 무결성 보호)에 대한 직접적인 위반이 된다. 그래서
 `problemSecrets`는 항상 별도의, 클라이언트에게 전면 차단된 문서로 유지한다.
+
+**두 문서(`problems`, `problemSecrets`)의 `updatedAt`을 함께 갱신해야 하는 이유**: 정답이
+`problems`와 분리된 문서에 있다 보니, 테스트케이스만 고치는 편집(문항 본문은 그대로)이 흔히
+발생한다. `upsertTestCase`/`deleteTestCase`는 **하나의 Firestore 트랜잭션 안에서** (1)
+`problemSecrets.items`를 갱신하고 배점 합을 다시 계산해 (2) `problemSecrets.updatedAt`과
+(3) `problems.pointsTotal`·`problems.updatedAt`을 함께 쓴다. 이 셋을 별도의 쓰기로 나누면,
+그중 일부만 반영된 상태(예: 테스트케이스는 바뀌었는데 `problems.updatedAt`은 그대로)가 생길
+수 있고, `practiceRun`의 캐시 키가 `problems.updatedAt`을 기준으로 하므로 그 경우 캐시가
+무효화되지 않아 "테스트케이스를 고쳤는데 이전 결과가 그대로 재사용되는" 버그로 이어진다.
 
 ## participants/{quizId}\_{studentId}
 
@@ -118,6 +134,11 @@ null` 필터를 반드시 포함해야 한다.
 `runsUsedByProblem: {}`, `submissions: {}`, `runResults: {}`로 초기화한다(research.md §13).
 문서가 아직 없는 참가자 조회는 "미입장"으로 해석한다. 연습 실행 횟수 카운터가 응시 시작
 직후부터 필요하기 때문에, "최종 제출 시점에 생성"(원본 개발 문서 4.1절)에서 이렇게 변경했다.
+
+**재입장 시 멱등성**: `enterQuiz`는 이 문서가 **없을 때만 생성**하며, 이미 존재하면 그대로
+읽기만 하고 어떤 필드도 다시 쓰지 않는다. 즉 학생이 새로고침해서 `enterQuiz`를 여러 번
+호출해도 `enteredAt`(최초 입장 시각 그대로 유지)·`runsUsedByProblem`·`submissions`·
+`runResults`는 덮어써지지 않는다(contracts/callable-functions.md `enterQuiz` 참고).
 
 **서브컬렉션 대신 map 필드로 통합한 이유**: 문항이 5개면 참가자 1명의 전체 응시 상태를 읽는 데
 기존 구조(참가자 1 + submissions 5 + runResults 5)로는 11번의 문서 읽기가 필요했다. 이 규모

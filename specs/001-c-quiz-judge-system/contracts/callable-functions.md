@@ -54,13 +54,23 @@
 
 ## 교사용 — 준비
 
-### `upsertQuiz`, `upsertProblem`, `deleteProblem`, `upsertTestCase`, `deleteTestCase` 등
-- CRUD 계열. FR-003~FR-005. Request/Response는 각각 data-model.md의 대응 문서 필드와 동일한
-  모양이며, 서버는 저장 시 문항의 `pointsTotal`을 재계산한다(FR-006). `deleteProblem`은 하드
-  삭제가 아니라 `deletedAt`을 설정하는 소프트 삭제다(data-model.md — Firestore에 캐스케이드
-  삭제가 없어 하위 `problemSecrets`가 고아로 남기 때문). `upsertTestCase`/`deleteTestCase`는
-  `quizzes/{quizId}/problemSecrets/{problemId}.items` 배열 안의 원소를 추가/치환/제거하는
-  트랜잭션이며, 별도 문서를 만들지 않는다.
+### `upsertQuiz`, `upsertProblem`, `deleteProblem`
+- CRUD 계열. FR-003~FR-004. Request/Response는 data-model.md의 대응 문서 필드와 동일한 모양.
+  `upsertProblem`은 문항 메타데이터(제목·설명·초기코드·maxRuns)만 다룬다 — 신규 생성 시에만
+  `pointsTotal: 0`으로 초기화하고, 이후 메타데이터 수정 시에는 `pointsTotal`/`updatedAt`을
+  **건드리지 않는다**(그 둘의 소유자는 아래 `upsertTestCase`/`deleteTestCase`뿐 —
+  data-model.md "pointsTotal/updatedAt의 소유권" 참고). `deleteProblem`은 하드 삭제가 아니라
+  `deletedAt`을 설정하는 소프트 삭제다(Firestore에 캐스케이드 삭제가 없어 하위
+  `problemSecrets`가 고아로 남기 때문).
+
+### `upsertTestCase`, `deleteTestCase`
+- FR-005~FR-006. `quizzes/{quizId}/problemSecrets/{problemId}.items` 배열 안의 원소를
+  추가/치환/제거하는 **단일 Firestore 트랜잭션** 안에서, (1) 새 `items`로 배점 합을 다시
+  계산해 `problemSecrets.items`와 `problemSecrets.updatedAt`을 쓰고, (2) 같은 트랜잭션으로
+  `problems/{problemId}.pointsTotal`(재계산된 합)과 `problems/{problemId}.updatedAt`도 함께
+  쓴다. 이 두 문서를 별도 쓰기로 나누면 "테스트케이스만 고쳤는데 `problems.updatedAt`이
+  그대로여서 `practiceRun`의 캐시가 무효화되지 않는" 버그가 생기므로, 반드시 하나의 트랜잭션
+  으로 묶는다(data-model.md "두 문서의 updatedAt을 함께 갱신해야 하는 이유" 참고).
 
 ### `runPreDeployCheck`
 - **Request**: `{ quizId: string }`
