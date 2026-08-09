@@ -93,7 +93,11 @@
 
 ### `runPreDeployCheck`
 - **Request**: `{ quizId: string }`
-- **처리**: FR-007. 데이터 변경 없이 판정만 수행.
+- **처리**: FR-007. 데이터 변경 없이 판정만 수행. 분반(`courseId`)이 연동된 퀴즈는
+  `items`에 `classroomRosterSync`(수강생 명단 동기화 여부)와 `classroomDeployment`
+  (Classroom 배포 여부, `courseWorkId` 존재 여부로 판정) 두 항목이 항상 `WARN` 이하로만
+  추가된다 — 둘 다 `BLOCK`으로 판정하지 않는다(User Story 5는 필수지만, 급한 사정으로
+  Classroom 없이 진행해야 하는 경우를 이 점검이 강제로 막지 않기 위함).
 - **Response**: `{ items: [{key, level: 'PASS'|'WARN'|'BLOCK', message}], blockingCount }`
 
 ### `setQuizStatus`
@@ -104,11 +108,14 @@
 
 ### `batchGrade`
 - **Request**: `{ quizId: string }`
-- **처리**: FR-020~FR-023. `participants`에서 `quizId == X && finalStatus == 'SUBMITTED'`로
-  조회(등호 필터만 조합이라 복합 인덱스 불필요, data-model.md "필요한 복합 인덱스" 참고).
-  `FINALIZED`는 스킵. 참가자별로 `submissions` map의 각 문항 코드를 채점해 `runResults` map
-  필드와 `finalTotal`/`finalStatus: 'FINALIZED'`를 한 번의 문서 업데이트로 기록한다.
-- **Response**: `{ processed, skipped, failed, failedParticipantIds: string[] }`
+- **처리**: FR-020~FR-023, research.md §15(동시성 상한·타임아웃). `participants`에서
+  `quizId == X && finalStatus == 'SUBMITTED'`로 조회(등호 필터만 조합이라 복합 인덱스 불필요,
+  data-model.md "필요한 복합 인덱스" 참고). `FINALIZED`는 스킵. 참가자별로 `submissions` map의
+  각 문항 코드를 채점해 `runResults` map 필드와 `finalTotal`/`finalStatus: 'FINALIZED'`를 한
+  번의 문서 업데이트로 기록한다. 응답 직전에 `quizzes.courseId`가 있는지, 그리고 `FINALIZED`
+  참가자 중 아직 `pushGrades`가 성공한 적 없는 인원이 있는지 확인해 `classroomGradesPending`을
+  채운다(FR-023, WARN 수준 안내 — 성적 반영 실행을 강제하지는 않음).
+- **Response**: `{ processed, skipped, failed, failedParticipantIds: string[], classroomGradesPending: boolean }`
 
 ### `getParticipantOverview`
 - **Request**: `{ quizId: string }`

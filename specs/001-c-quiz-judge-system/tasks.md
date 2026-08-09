@@ -204,7 +204,9 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
   "동시 편집 안전성" 참고)) in
   `functions/test/contract/testCases.spec.ts`
 - [ ] T047 [P] [US2] Contract test for `runPreDeployCheck`(FR-007, 각 판정 항목별 PASS/WARN/
-  BLOCK, 데이터 미변경) in `functions/test/contract/runPreDeployCheck.spec.ts`
+  BLOCK, 데이터 미변경, 분반 연동 시 `classroomRosterSync`/`classroomDeployment`가 항상
+  WARN 이하로만 판정되는지 — 절대 BLOCK이 아님을 확인) in
+  `functions/test/contract/runPreDeployCheck.spec.ts`
 - [ ] T048 [P] [US2] Contract test for `setQuizStatus`(FR-008, 차단 항목 있으면 OPEN 거부) in
   `functions/test/contract/setQuizStatus.spec.ts`
 - [ ] T049 [US2] Integration test — 퀴즈 생성→문항/테스트케이스 입력→배포전점검→공개 전환
@@ -233,7 +235,9 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
   방지, contracts/callable-functions.md 참고). 두 문서를 별도 쓰기로 나누면 캐시 무효화가
   누락될 수 있음(data-model.md 참고) — T046 통과
 - [ ] T053 [US2] `functions/src/callable/runPreDeployCheck.ts`에 `runPreDeployCheck`
-  구현(FR-007, 데이터 변경 없이 판정만, `deletedAt != null`인 문항은 판정 대상에서 제외) —
+  구현(FR-007, 데이터 변경 없이 판정만, `deletedAt != null`인 문항은 판정 대상에서 제외).
+  분반이 연동된 경우 `classroomRosterSync`(수강생 명단 동기화 여부)와
+  `classroomDeployment`(`courseWorkId` 존재 여부) 두 항목을 WARN 이하로만 추가 —
   T047 통과
 - [ ] T054 [US2] `functions/src/callable/setQuizStatus.ts`에 `setQuizStatus` 구현(FR-008,
   차단 항목이 있으면 `OPEN` 전환 거부) — T048 통과
@@ -244,7 +248,7 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
 - [ ] T057 [US2] `web/src/teacher/ProblemEditor.tsx`에 문항·테스트케이스 편집 화면 구현
   (Markdown 설명, 배점 합계 자동 표시, 삭제된(`deletedAt != null`) 문항은 목록에서 숨김)
 - [ ] T058 [US2] `web/src/teacher/PreDeployCheck.tsx`에 배포 전 점검 결과 패널(PASS/WARN/
-  BLOCK) 구현 — T049 통과
+  BLOCK, `classroomRosterSync`/`classroomDeployment` WARN 항목 포함) 구현 — T049 통과
 
 **Checkpoint**: User Story 1과 2가 함께, 각각 독립적으로 동작한다
 
@@ -260,7 +264,8 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
 ### Tests for User Story 3 ⚠️
 
 - [ ] T059 [P] [US3] Contract test for `batchGrade`(FR-020~023, FINALIZED 스킵, 미제출 문항
-  NOT_ATTEMPTED 0점 처리, `runResults` map이 참가자 문서 1건 업데이트로 기록되는지) in
+  NOT_ATTEMPTED 0점 처리, `runResults` map이 참가자 문서 1건 업데이트로 기록되는지,
+  분반 연동 + 성적 미반영 상태에서 `classroomGradesPending: true`가 반환되는지) in
   `functions/test/contract/batchGrade.spec.ts`
 - [ ] T060 [US3] Integration test — 제출완료/미제출/이미확정 참가자가 섞인 퀴즈에서 일괄
   채점 실행 후 처리/스킵/실패 집계 확인(quickstart.md User Story 3 시나리오) in
@@ -274,11 +279,13 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
   동시성 상한(잠정 10)을 둔 청크로 나눠 처리하고, Cloud Functions 2세대 `timeoutSeconds`를
   540으로 설정한다(100명×문항5개=최대 500회 Grader 호출이 기본 타임아웃을 넘기지 않도록).
   참가자별로 `runResults` map 필드와 `finalTotal`/`finalStatus: 'FINALIZED'`를 한 번의 문서
-  업데이트로 기록 — T059 통과
+  업데이트로 기록. 응답 전 `quizzes.courseId` 존재 + `FINALIZED` 참가자 중 `pushGrades` 미실행
+  인원 존재 여부를 확인해 `classroomGradesPending`을 채운다(FR-023 WARN 안내) — T059 통과
 - [ ] T062 [P] [US3] `functions/src/services/scoreAggregation.ts`에 문항 배점 기준 총점
   재계산 유틸 구현(헌법 I — Grader가 준 score를 그대로 신뢰하지 않고 서버가 재계산)
 - [ ] T063 [P] [US3] `web/src/teacher/BatchGrade.tsx`에 일괄 채점 실행 버튼 + 결과 요약
-  팝업(처리/스킵/실패 인원) 구현 — T060 통과
+  팝업(처리/스킵/실패 인원, `classroomGradesPending`이면 성적 반영 미실행 경고 배너) 구현 —
+  T060 통과
 
 **Checkpoint**: User Story 1~3이 함께, 각각 독립적으로 동작한다
 
@@ -510,6 +517,13 @@ Task: "web/src/student/QuizList.tsx에 퀴즈 목록 화면 구현"
 인력이 여러 명이면 Foundational 완료 후 US1(학생 응시)/US2(교사 준비)/US4(현황 조회)를
 서로 다른 담당자가 동시에 진행할 수 있다. US3(일괄 채점)은 US1의 `graderClient`를
 재사용하므로 US1 담당자와의 조율이 필요하다. US5·US6은 독립적이라 언제든 별도로 진행 가능.
+
+**`firestore.rules` 공유 규칙**: T007(Foundational)이 이 파일의 골격(기본 거부 + 최초 예외
+목록)을 만든다. 이후 T038(US1)·T055(US2)를 포함해 이 파일을 다루는 모든 태스크는 **자신의
+컬렉션 경로에 해당하는 줄만 추가**하며, 다른 태스크가 이미 추가한 줄을 삭제하거나 고치지
+않는다. 여러 담당자가 US1/US2를 동시에 진행해도 각자 다른 줄에 추가만 하면 git이 자동으로
+병합할 수 있어 충돌이 거의 발생하지 않는다 — 기존 줄을 정리·재구성하고 싶다면 별도 태스크로
+분리해 한 사람이 전담한다.
 
 ---
 
