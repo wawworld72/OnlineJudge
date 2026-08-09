@@ -9,3 +9,8 @@ export { registerStudentEmail } from "./callable/registerStudentEmail";
 export { practiceRun } from "./callable/practiceRun";
 export { finalSubmit } from "./callable/finalSubmit";
 export { getMyResult } from "./callable/getMyResult";
+export { upsertQuiz } from "./callable/upsertQuiz";
+export { upsertProblem, deleteProblem } from "./callable/problems";
+export { upsertTestCase, deleteTestCase } from "./callable/testCases";
+export { runPreDeployCheck } from "./callable/runPreDeployCheck";
+export { setQuizStatus } from "./callable/setQuizStatus";

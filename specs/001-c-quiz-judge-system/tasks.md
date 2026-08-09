@@ -201,41 +201,41 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T044 [P] [US2] Contract test for `upsertQuiz`(FR-003, 생성 시 DRAFT 상태 강제) in
+- [X] T044 [P] [US2] Contract test for `upsertQuiz`(FR-003, 생성 시 DRAFT 상태 강제) in
   `functions/test/contract/upsertQuiz.spec.ts`
-- [ ] T045 [P] [US2] Contract test for `upsertProblem`/`deleteProblem`(FR-004, 생성 시
+- [X] T045 [P] [US2] Contract test for `upsertProblem`/`deleteProblem`(FR-004, 생성 시
   `pointsTotal: 0` 초기화, 메타데이터만 수정할 때는 `pointsTotal`/`updatedAt`이 변하지 않는지,
   `deleteProblem`은 문서를 지우지 않고 `deletedAt`만 설정하는지) in
   `functions/test/contract/problems.spec.ts`
-- [ ] T046 [P] [US2] Contract test for `upsertTestCase`/`deleteTestCase`(FR-005~006,
+- [X] T046 [P] [US2] Contract test for `upsertTestCase`/`deleteTestCase`(FR-005~006,
   `problemSecrets.items` 배열이 트랜잭션으로 갱신되는지, **같은 트랜잭션에서**
   `problems.pointsTotal`과 `problems.updatedAt`도 함께 갱신되는지, **동시성 테스트**: 같은
   문항에 서로 다른 테스트케이스를 동시에(`Promise.all`) `upsertTestCase`하면 두 수정이 모두
   최종 `items`/`pointsTotal`에 반영되는지(lost-update 없음, contracts/callable-functions.md
   "동시 편집 안전성" 참고)) in
   `functions/test/contract/testCases.spec.ts`
-- [ ] T047 [P] [US2] Contract test for `runPreDeployCheck`(FR-007, 각 판정 항목별 PASS/WARN/
+- [X] T047 [P] [US2] Contract test for `runPreDeployCheck`(FR-007, 각 판정 항목별 PASS/WARN/
   BLOCK, 데이터 미변경, 분반 연동 시 `classroomRosterSync`/`classroomDeployment`가 항상
   WARN 이하로만 판정되는지 — 절대 BLOCK이 아님을 확인) in
   `functions/test/contract/runPreDeployCheck.spec.ts`
-- [ ] T048 [P] [US2] Contract test for `setQuizStatus`(FR-008, 차단 항목 있으면 OPEN 거부) in
+- [X] T048 [P] [US2] Contract test for `setQuizStatus`(FR-008, 차단 항목 있으면 OPEN 거부) in
   `functions/test/contract/setQuizStatus.spec.ts`
-- [ ] T049 [US2] Integration test — 퀴즈 생성→문항/테스트케이스 입력→배포전점검→공개 전환
+- [X] T049 [US2] Integration test — 퀴즈 생성→문항/테스트케이스 입력→배포전점검→공개 전환
   흐름(quickstart.md User Story 2 시나리오) in
   `functions/test/integration/teacherQuizPrep.spec.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T050 [P] [US2] `functions/src/callable/upsertQuiz.ts`에 퀴즈 생성/수정 구현(FR-003) —
+- [X] T050 [P] [US2] `functions/src/callable/upsertQuiz.ts`에 퀴즈 생성/수정 구현(FR-003) —
   T044 통과
-- [ ] T051 [P] [US2] `functions/src/callable/problems.ts`에 `upsertProblem`/`deleteProblem`
+- [X] T051 [P] [US2] `functions/src/callable/problems.ts`에 `upsertProblem`/`deleteProblem`
   구현(FR-004). `upsertProblem`은 문항 메타데이터(제목·설명·초기코드·maxRuns)만 다루며,
   신규 생성 시에만 `pointsTotal: 0`으로 초기화하고 이후 메타데이터 수정 시에는
   `pointsTotal`/`updatedAt`을 건드리지 않는다(그 둘의 소유자는 T052뿐 — data-model.md
   "pointsTotal/updatedAt의 소유권" 참고). `deleteProblem`은 하드 삭제가 아니라 `deletedAt`을
   현재 서버 시각으로 설정하는 소프트 삭제다 — Firestore에는 캐스케이드 삭제가 없어 하드
   삭제하면 `problemSecrets`가 고아로 남기 때문(data-model.md) — T045 통과
-- [ ] T052 [P] [US2] `functions/src/callable/testCases.ts`에 `upsertTestCase`/
+- [X] T052 [P] [US2] `functions/src/callable/testCases.ts`에 `upsertTestCase`/
   `deleteTestCase` 구현(FR-005~006). Request는 테스트케이스 1개 단위의 델타만 받는다
   (`items` 전체 배열이나 배점 합계는 클라이언트가 보내지 않음). 하나의 Firestore 트랜잭션
   안에서 `tx.get()`으로 `problemSecrets.items`를 **그 시점에 다시 읽고**, 그 배열에 델타를
@@ -245,14 +245,14 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
   편집해도 Firestore의 트랜잭션 자동 재시도로 두 수정 모두 최종 합계에 반영된다(lost-update
   방지, contracts/callable-functions.md 참고). 두 문서를 별도 쓰기로 나누면 캐시 무효화가
   누락될 수 있음(data-model.md 참고) — T046 통과
-- [ ] T053 [US2] `functions/src/callable/runPreDeployCheck.ts`에 `runPreDeployCheck`
+- [X] T053 [US2] `functions/src/callable/runPreDeployCheck.ts`에 `runPreDeployCheck`
   구현(FR-007, 데이터 변경 없이 판정만, `deletedAt != null`인 문항은 판정 대상에서 제외).
   분반이 연동된 경우 `classroomRosterSync`(수강생 명단 동기화 여부)와
   `classroomDeployment`(`courseWorkId` 존재 여부) 두 항목을 WARN 이하로만 추가 —
   T047 통과
-- [ ] T054 [US2] `functions/src/callable/setQuizStatus.ts`에 `setQuizStatus` 구현(FR-008,
+- [X] T054 [US2] `functions/src/callable/setQuizStatus.ts`에 `setQuizStatus` 구현(FR-008,
   차단 항목이 있으면 `OPEN` 전환 거부) — T048 통과
-- [ ] T055 [P] [US2] `firestore.rules`에 `quizzes`/`problems`/`problemSecrets` 클라이언트
+- [X] T055 [P] [US2] `firestore.rules`에 `quizzes`/`problems`/`problemSecrets` 클라이언트
   write 전면 차단이 이미 걸려 있는지 확인하고 누락된 경로 보강
 - [ ] T056 [P] [US2] `web/src/teacher/QuizManager.tsx`에 교사 퀴즈 목록/생성/수정/상태전환
   화면 구현

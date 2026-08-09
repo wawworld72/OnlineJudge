@@ -22,6 +22,7 @@ export function testDb(): Firestore {
 }
 
 export async function clearFirestore(): Promise<void> {
+  testDb(); // 관리자 앱이 아직 초기화되지 않은 spec 파일도 있으므로 항상 먼저 보장한다.
   const projectId = "demo-c-quiz-judge-system";
   await fetch(
     `http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/${projectId}/databases/(default)/documents`,
