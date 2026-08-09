@@ -152,6 +152,11 @@
 
 ### `syncRoster`
 - **Request**: `{ courseId: string }`
+- **처리**: Classroom 계정 이메일의 로컬파트(`@` 앞)를 학번으로 간주해 `students`/`rosters`를
+  갱신한다. 숫자로만 된 학번 형식이 아닌 계정은 건너뛰고 `skipped`에 집계한다(FR-027).
+  이 경로는 `registerStudentEmail`(학생이 직접 호출, 한 번 등록하면 불변, FR-012)과 달리
+  Classroom을 신뢰된 출처로 보고 이미 등록된 학번의 이메일도 최신 값으로 덮어쓸 수 있다
+  (research.md §21).
 - **Response**: `{ newStudents, updatedEmails, newRosterEntries, updatedRosterEntries, skipped }` (FR-026~027)
 
 ### `deployClassroomAssignment`

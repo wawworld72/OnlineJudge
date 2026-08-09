@@ -353,30 +353,30 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T070 [P] [US5] Contract test for `syncRoster`(FR-026~027, 학번 추출 불가 계정 건너뛰기
+- [X] T070 [P] [US5] Contract test for `syncRoster`(FR-026~027, 학번 추출 불가 계정 건너뛰기
   집계, googleapis 모킹) in `functions/test/contract/syncRoster.spec.ts`
-- [ ] T071 [P] [US5] Contract test for `deployClassroomAssignment`/
+- [X] T071 [P] [US5] Contract test for `deployClassroomAssignment`/
   `resetClassroomDeployment`(FR-028~029, 중복 배포 차단) in
   `functions/test/contract/classroomAssignment.spec.ts`
-- [ ] T072 [P] [US5] Contract test for `pushGrades`(FR-030~031, 확정 참가자 없을 시
+- [X] T072 [P] [US5] Contract test for `pushGrades`(FR-030~031, 확정 참가자 없을 시
   `NO_FINALIZED_PARTICIPANTS`, 연결 끊김 학생 스킵+사유 기록) in
   `functions/test/contract/pushGrades.spec.ts`
-- [ ] T073 [US5] Integration test — 수강생 동기화→과제 배포→성적 반영 전체 흐름(모킹된
+- [X] T073 [US5] Integration test — 수강생 동기화→과제 배포→성적 반영 전체 흐름(모킹된
   Classroom API, quickstart.md User Story 5 시나리오) in
   `functions/test/integration/classroomFlow.spec.ts`
 
 ### Implementation for User Story 5
 
-- [ ] T074 [P] [US5] `functions/src/services/classroomClient.ts`에 Google Classroom API
+- [X] T074 [P] [US5] `functions/src/services/classroomClient.ts`에 Google Classroom API
   클라이언트 구현(googleapis, T012 재시도 래퍼 사용)
-- [ ] T075 [US5] `functions/src/callable/syncRoster.ts`에 `syncRoster` 구현(FR-026~027) —
+- [X] T075 [US5] `functions/src/callable/syncRoster.ts`에 `syncRoster` 구현(FR-026~027) —
   T070 통과
-- [ ] T076 [US5] `functions/src/callable/classroomAssignment.ts`에
+- [X] T076 [US5] `functions/src/callable/classroomAssignment.ts`에
   `deployClassroomAssignment`/`resetClassroomDeployment` 구현(FR-028~029, 중복 배포 차단) —
   T071 통과
-- [ ] T077 [US5] `functions/src/callable/pushGrades.ts`에 `pushGrades` 구현(FR-030~031) —
+- [X] T077 [US5] `functions/src/callable/pushGrades.ts`에 `pushGrades` 구현(FR-030~031) —
   T072 통과
-- [ ] T078 [US5] `web/src/teacher/ClassroomPanel.tsx`에 동기화/배포/성적반영 버튼과 결과
+- [X] T078 [US5] `web/src/teacher/ClassroomPanel.tsx`에 동기화/배포/성적반영 버튼과 결과
   팝업 화면 구현 — T073 통과
 
 **Checkpoint**: User Story 1~5가 함께, 각각 독립적으로 동작한다(US5의 구현·테스트는 다른

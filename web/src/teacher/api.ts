@@ -45,6 +45,8 @@ export interface QuizDetail {
   status: QuizStatus;
   maxRunsPerProblem: number;
   courseId: string | null;
+  courseWorkId: string | null;
+  courseWorkLink: string | null;
   problems: ProblemDetail[];
 }
 
@@ -182,4 +184,37 @@ export interface ParticipantDetail {
 
 export function getParticipantDetail(input: { quizId: string; studentId: string }) {
   return callFunction<typeof input, ParticipantDetail>("getParticipantDetail", input);
+}
+
+export interface SyncRosterResponse {
+  newStudents: number;
+  updatedEmails: number;
+  newRosterEntries: number;
+  updatedRosterEntries: number;
+  skipped: number;
+}
+
+export function syncRoster(input: { courseId: string }) {
+  return callFunction<typeof input, SyncRosterResponse>("syncRoster", input);
+}
+
+export function deployClassroomAssignment(input: { quizId: string }) {
+  return callFunction<typeof input, { courseWorkId: string; alternateLink: string }>(
+    "deployClassroomAssignment",
+    input,
+  );
+}
+
+export function resetClassroomDeployment(input: { quizId: string }) {
+  return callFunction<typeof input, { ok: true }>("resetClassroomDeployment", input);
+}
+
+export interface PushGradesResponse {
+  succeeded: number;
+  failed: number;
+  failedStudentIds: string[];
+}
+
+export function pushGrades(input: { quizId: string }) {
+  return callFunction<typeof input, PushGradesResponse>("pushGrades", input);
 }

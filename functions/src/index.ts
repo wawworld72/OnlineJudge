@@ -19,3 +19,6 @@ export { setQuizStatus } from "./callable/setQuizStatus";
 export { batchGrade } from "./callable/batchGrade";
 export { getParticipantOverview } from "./callable/getParticipantOverview";
 export { getParticipantDetail } from "./callable/getParticipantDetail";
+export { syncRoster } from "./callable/syncRoster";
+export { deployClassroomAssignment, resetClassroomDeployment } from "./callable/classroomAssignment";
+export { pushGrades } from "./callable/pushGrades";

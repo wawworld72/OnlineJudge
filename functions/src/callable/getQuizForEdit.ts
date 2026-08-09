@@ -54,6 +54,8 @@ export const getQuizForEdit = createCallable(getQuizForEditSchema, async ({ data
     status: quiz.status,
     maxRunsPerProblem: quiz.maxRunsPerProblem,
     courseId: quiz.courseId,
+    courseWorkId: quiz.courseWorkId,
+    courseWorkLink: quiz.courseWorkLink,
     problems,
   };
 });
