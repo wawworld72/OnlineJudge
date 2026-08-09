@@ -1,0 +1,102 @@
+name: Deploy to Firebase
+
+on:
+  push:
+    branches:
+      - claude/speckit-setup-b66nnc
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies (firebase-tools)
+        run: npm ci
+
+      - name: Install functions dependencies
+        run: npm ci
+        working-directory: functions
+
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: web
+
+      - name: Lint & typecheck functions
+        run: |
+          npm run lint
+          npm run typecheck
+        working-directory: functions
+
+      - name: Lint & typecheck web
+        run: |
+          npm run lint
+          npx tsc -b
+        working-directory: web
+
+      - name: Run functions test suite against the emulator
+        run: npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies (firebase-tools)
+        run: npm ci
+
+      - name: Install functions dependencies
+        run: npm ci
+        working-directory: functions
+
+      - name: Install web dependencies
+        run: npm ci
+        working-directory: web
+
+      - name: Build web
+        run: npm run build
+        working-directory: web
+        env:
+          VITE_USE_EMULATORS: "false"
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_RECAPTCHA_V3_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_V3_SITE_KEY }}
+          VITE_TEACHER_EMAILS: ${{ secrets.TEACHER_EMAILS }}
+
+      - name: Write functions runtime env vars
+        working-directory: functions
+        run: |
+          cat > .env <<EOF
+          GRADER_SERVICE_URL=${{ secrets.GRADER_SERVICE_URL }}
+          GRADER_AUTH_TOKEN=${{ secrets.GRADER_AUTH_TOKEN }}
+          TEACHER_EMAILS=${{ secrets.TEACHER_EMAILS }}
+          ALLOWED_EMAIL_DOMAIN=${{ secrets.ALLOWED_EMAIL_DOMAIN }}
+          EOF
+
+      - name: Build functions
+        run: npm run build
+        working-directory: functions
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Firebase
+        run: npx firebase-tools deploy --only hosting,functions,firestore:rules,firestore:indexes --project "${{ secrets.FIREBASE_PROJECT_ID }}" --non-interactive
