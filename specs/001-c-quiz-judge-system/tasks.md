@@ -129,52 +129,54 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 
 > **먼저 작성하고 구현 전에 실패를 확인한다.**
 
-- [ ] T024 [P] [US1] Contract test for `enterQuiz`(출입코드/학번·이름·이메일 불일치 시 거부,
+- [X] T024 [P] [US1] Contract test for `enterQuiz`(출입코드/학번·이름·이메일 불일치 시 거부,
   이메일 미등록 시 `NEEDS_EMAIL_REGISTRATION`, 성공 시 `participants` 문서가 `runsUsedByProblem
   /submissions/runResults: {}`로 생성되는지) in `functions/test/contract/enterQuiz.spec.ts`
-- [ ] T025 [P] [US1] Contract test for `registerStudentEmail`(FR-011~012 중복/도용 방지) in
+- [X] T025 [P] [US1] Contract test for `registerStudentEmail`(FR-011~012 중복/도용 방지) in
   `functions/test/contract/registerStudentEmail.spec.ts`
-- [ ] T026 [P] [US1] Contract test for `practiceRun`(횟수 소진 거부, 비공개 TC 마스킹, 캐시
+- [X] T026 [P] [US1] Contract test for `practiceRun`(횟수 소진 거부, 비공개 TC 마스킹, 캐시
   재사용 시 횟수 미차감, 동시(`Promise.all`) 호출 시에도 `runsUsedByProblem`이 한도를 넘지
   않는지) in `functions/test/contract/practiceRun.spec.ts`
-- [ ] T027 [P] [US1] Contract test for `finalSubmit`(제출 후 재제출 시 기존 결과 반환, 종료
+- [X] T027 [P] [US1] Contract test for `finalSubmit`(제출 후 재제출 시 기존 결과 반환, 종료
   시각 이후 거부, `submissions` map이 한 번의 업데이트로 기록되는지) in
   `functions/test/contract/finalSubmit.spec.ts`
-- [ ] T028 [P] [US1] Contract test for `getMyResult`(FINALIZED 이전엔 점수 미노출) in
+- [X] T028 [P] [US1] Contract test for `getMyResult`(FINALIZED 이전엔 점수 미노출) in
   `functions/test/contract/getMyResult.spec.ts`
-- [ ] T029 [US1] Integration test — 입장(참가자 문서 생성 확인)→연습실행(캐시 재사용 포함)→
+- [X] T029 [US1] Integration test — 입장(참가자 문서 생성 확인)→연습실행(캐시 재사용 포함)→
   최종제출 전체 흐름을 Firebase Emulator로 실행(quickstart.md User Story 1 시나리오 그대로) in
   `functions/test/integration/studentQuizFlow.spec.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T030 [P] [US1] `functions/src/callable/enterQuiz.ts`에 `enterQuiz` 구현(FR-009~011,
+- [X] T030 [P] [US1] `functions/src/callable/enterQuiz.ts`에 `enterQuiz` 구현(FR-009~011,
   T009/T010/T011 유틸 사용, T016 팩토리로 생성). 검증 통과 시 `participants` 문서가 없으면
   `finalStatus: 'IN_PROGRESS'`와 빈 map 필드들로 생성(research.md §10) — T024 통과
-- [ ] T031 [P] [US1] `functions/src/callable/registerStudentEmail.ts`에
+- [X] T031 [P] [US1] `functions/src/callable/registerStudentEmail.ts`에
   `registerStudentEmail` 구현(FR-011~012) — T025 통과
-- [ ] T032 [US1] `functions/src/services/graderClient.ts`에 Grader `/grade` 호출 클라이언트
+- [X] T032 [US1] `functions/src/services/graderClient.ts`에 Grader `/grade` 호출 클라이언트
   구현(contracts/grader-api.md, T012 재시도 래퍼 사용). 테스트케이스는
   `quizzes/{quizId}/problemSecrets/{problemId}.items`를 1회 읽어 구성
-- [ ] T033 [US1] `functions/src/services/practiceRunCache.ts`에 연습 실행 결과 캐시 구현
+- [X] T033 [US1] `functions/src/services/practiceRunCache.ts`에 연습 실행 결과 캐시 구현
   (FR-016, research.md §13 — 캐시 키: quizId+problemId+code+`problems.updatedAt`, TTL 5분,
   `SYSTEM_ERROR`는 캐시 제외. TTL은 성능 파라미터일 뿐이고 정확성은 키에 포함된 `updatedAt`이
   보장함을 유의)
-- [ ] T034 [US1] `functions/src/services/runCountTransaction.ts`에 실행 횟수 원자적
+- [X] T034 [US1] `functions/src/services/runCountTransaction.ts`에 실행 횟수 원자적
   확인·차감 구현(FR-014) — `participants/{quizId}_{studentId}` 문서를 `runTransaction`으로 읽어
   `runsUsedByProblem.{problemId} < maxRuns`일 때만 1 증가시켜 커밋
   (`FieldValue.increment()` 단독 사용은 조건부 거부가 안 되므로 쓰지 않음, research.md §5)
-- [ ] T035 [US1] `functions/src/callable/practiceRun.ts`에 `practiceRun` 구현(T032, T033,
+- [X] T035 [US1] `functions/src/callable/practiceRun.ts`에 `practiceRun` 구현(T032, T033,
   T034 통합 + 비공개 TC 마스킹, FR-013~016) — T026 통과
-- [ ] T036 [US1] `functions/src/callable/finalSubmit.ts`에 `finalSubmit` 구현(FR-017~019,
+- [X] T036 [US1] `functions/src/callable/finalSubmit.ts`에 `finalSubmit` 구현(FR-017~019,
   FR-032, FR-036 — 서버 시각 재검증, 장애로 인한 자동 연장 없음). 문항별 코드를
   `participants.submissions` map 필드에 트랜잭션으로 한 번에 기록하고 `finalStatus`를
   `'SUBMITTED'`로 갱신 — T027 통과
-- [ ] T037 [P] [US1] `functions/src/callable/getMyResult.ts`에 `getMyResult` 구현(FR-024,
+- [X] T037 [P] [US1] `functions/src/callable/getMyResult.ts`에 `getMyResult` 구현(FR-024,
   참가자 문서의 `runResults` map 필드를 그대로 반환) — T028 통과
-- [ ] T038 [P] [US1] `firestore.rules`에 `quizzes`/`problems`(OPEN 상태 + `deletedAt == null`,
-  정답 없는 필드) 읽기 허용 규칙 추가(자신의 경로 줄만 추가, T007이 만든 다른 줄은 수정하지
-  않음). `participants`는 T007에서 이미 전면 차단됨(직접 읽기 경로 불필요)
+- [X] T038 [P] [US1] `firestore.rules`에 `quizzes`/`problems`(OPEN 상태 + `deletedAt == null`,
+  정답 없는 필드) 읽기 허용 규칙 추가 — T007에서 firestore.rules 전체를 한 번에 작성할 때 이미
+  포함됨(자신의 경로 줄만 추가하는 원칙은 병렬 작업자가 있을 때를 위한 것이며, 단일 작업
+  흐름에서는 추가로 수정할 내용 없음 확인). `participants`는 T007에서 이미 전면 차단됨(직접
+  읽기 경로 불필요)
 - [ ] T039 [P] [US1] `web/src/student/QuizList.tsx`에 퀴즈 목록 화면 구현(OPEN 퀴즈만, 딥링크
   지원)
 - [ ] T040 [US1] `web/src/student/QuizEntry.tsx`에 입장 화면 구현(출입코드·학번·이름 입력,

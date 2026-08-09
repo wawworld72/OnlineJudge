@@ -68,12 +68,19 @@ export interface Submission {
   submittedAt: Timestamp;
 }
 
-export type RunStatus = "AC" | "WA" | "CE" | "RE" | "TLE" | "MLE";
+export type RunStatus = "AC" | "WA" | "CE";
 
+/**
+ * `isPublic`이 false인 항목은 `input`/`expectedOutput`/`actualOutput`을 제거하고
+ * `passed`만 전달한다(contracts/grader-api.md "비공개 테스트케이스 처리", 헌법 III).
+ */
 export interface TestCaseResult {
   tcId: string;
-  status: RunStatus;
+  passed: boolean;
   isPublic: boolean;
+  input?: string;
+  expectedOutput?: string;
+  actualOutput?: string;
 }
 
 export interface RunResult {

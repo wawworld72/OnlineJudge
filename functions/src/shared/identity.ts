@@ -46,3 +46,17 @@ export async function verifyStudentIdentity(
 
   return { studentId, student };
 }
+
+/**
+ * `practiceRun`/`finalSubmit`/`getMyResult`는 요청에 `studentId`를 담지 않는다(입장 시
+ * 이미 3중 대조를 통과했으므로 매 호출마다 다시 요구하지 않음). 대신 로그인 이메일로
+ * `students` 문서를 조회해 학번을 역으로 확인한다 — 클라이언트가 studentId를 보내더라도
+ * 신뢰하지 않는다는 원칙(헌법 I)의 연장선이다.
+ */
+export async function resolveStudentIdByEmail(db: Firestore, authEmail: string): Promise<string> {
+  const snap = await db.collection("students").where("email", "==", authEmail).limit(1).get();
+  if (snap.empty) {
+    throw domainError("IDENTITY_MISMATCH", "학번 또는 이름이 일치하지 않습니다.");
+  }
+  return snap.docs[0]!.id;
+}

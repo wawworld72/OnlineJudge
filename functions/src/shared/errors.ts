@@ -16,7 +16,8 @@ export type DomainErrorCode =
   | "NO_FINALIZED_PARTICIPANTS"
   | "NOT_ARCHIVED_YET"
   | "BLOCKED_BY_PREDEPLOY_CHECK"
-  | "INVALID_REQUEST";
+  | "INVALID_REQUEST"
+  | "NOT_ENTERED";
 
 /**
  * 예상된 업무 규칙 위반(FR-010 등 "서로 구분된 사유")은 사용자에게 그대로 보여줘도 되는
