@@ -269,9 +269,12 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
 ### Implementation for User Story 3
 
 - [ ] T061 [US3] `functions/src/callable/batchGrade.ts`에 `batchGrade` 구현(FR-020~023,
-  T032 Grader 클라이언트 재사용). `participants`에서 `quizId == X && finalStatus ==
-  'SUBMITTED'`로 조회(등호 필터만 조합이라 복합 인덱스 불필요), 참가자별로 `runResults` map
-  필드와 `finalTotal`/`finalStatus: 'FINALIZED'`를 한 번의 문서 업데이트로 기록 — T059 통과
+  T032 Grader 클라이언트 재사용, research.md §15). `participants`에서 `quizId == X &&
+  finalStatus == 'SUBMITTED'`로 조회(등호 필터만 조합이라 복합 인덱스 불필요), 대상 참가자를
+  동시성 상한(잠정 10)을 둔 청크로 나눠 처리하고, Cloud Functions 2세대 `timeoutSeconds`를
+  540으로 설정한다(100명×문항5개=최대 500회 Grader 호출이 기본 타임아웃을 넘기지 않도록).
+  참가자별로 `runResults` map 필드와 `finalTotal`/`finalStatus: 'FINALIZED'`를 한 번의 문서
+  업데이트로 기록 — T059 통과
 - [ ] T062 [P] [US3] `functions/src/services/scoreAggregation.ts`에 문항 배점 기준 총점
   재계산 유틸 구현(헌법 I — Grader가 준 score를 그대로 신뢰하지 않고 서버가 재계산)
 - [ ] T063 [P] [US3] `web/src/teacher/BatchGrade.tsx`에 일괄 채점 실행 버튼 + 결과 요약
@@ -410,6 +413,12 @@ I·II·III을 실제로 구현하는 지점이므로 모든 학생/교사 Callab
 - [ ] T092 100명/문항 5개 기준 실제 Firestore 읽기·쓰기 횟수를 에뮬레이터 로그로 추정해
   헌법 원칙 IV(Spark 무료 한도) 대비 여유율 재확인(map 필드 통합 이후 참가자 조회가 11회 →
   1회로 줄어든 효과를 실측치로 반영)
+- [ ] T093 `batchGrade`의 SC-004(100명 규모) 실측 검증 — (실제 또는 스텁) Grader 서버로
+  참가자 100명(문항 5개, 스킵/실패 없는 최악 케이스)을 시드해 `batchGrade`를 1회 실행하고
+  실제 소요 시간을 기록한다. T061의 동시성 상한(잠정 10)·`timeoutSeconds`(잠정 540)가 실측
+  Grader 응답 시간 기준으로 충분한지 확인하고, 부족하면 research.md §15의 잠정값을 실측
+  근거로 갱신한다(SC-004는 이 실측 없이는 충족 여부를 확인할 수 없음 — 설계 문서 검토만으로
+  닫을 수 있는 항목이 아니다)
 
 ---
 
