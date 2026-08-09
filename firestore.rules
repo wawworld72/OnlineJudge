@@ -1,0 +1,54 @@
+rules_version = '2';
+
+// 이 파일이 규율하는 것은 "클라이언트 SDK로부터의" 접근뿐이다. Cloud Functions는
+// Firebase Admin SDK를 사용하며 Admin SDK는 이 규칙을 완전히 우회한다 — 서버 쓰기의
+// 정확성은 Callable Function 내부 로직(신원 검증, 트랜잭션, Zod 검증)이 책임진다.
+// (근거: specs/001-c-quiz-judge-system/contracts/firestore-access-summary.md)
+//
+// 기본값은 전면 거부(deny-by-default)다. 아래에 "허용"으로 명시하지 않은 모든 경로는
+// read/write 모두 금지된다. 학생/교사 화면이 필요로 하는 모든 조회·수정은 Callable
+// Function을 통해서만 제공한다("조회 경로 단일화" — 학생·교사 동일 적용).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /quizzes/{quizId} {
+      // 이 문서엔 정답 필드가 없으므로 문서 전체 read를 허용해도 안전하다.
+      allow read: if resource.data.status == 'OPEN';
+      allow write: if false;
+
+      match /problems/{problemId} {
+        // 이 문서에도 정답 필드가 없다(정답은 problemSecrets에만 있음).
+        allow read: if get(/databases/$(database)/documents/quizzes/$(quizId)).data.status == 'OPEN'
+          && resource.data.deletedAt == null;
+        allow write: if false;
+      }
+
+      // 정답(items.expected)이 담긴 문서 — 전면 금지.
+      match /problemSecrets/{problemId} {
+        allow read, write: if false;
+      }
+    }
+
+    // enterQuiz/practiceRun/finalSubmit/getMyResult가 이미 응답으로 필요한 데이터를
+    // 돌려주므로 클라이언트 직접 읽기 경로가 필요 없다.
+    match /participants/{participantId} {
+      allow read, write: if false;
+    }
+
+    match /students/{studentId} {
+      allow read, write: if false;
+    }
+
+    match /rosters/{rosterId} {
+      allow read, write: if false;
+    }
+
+    match /accessLogs/{logId} {
+      allow read, write: if false;
+    }
+
+    match /archives/{quizId} {
+      allow read, write: if false;
+    }
+  }
+}

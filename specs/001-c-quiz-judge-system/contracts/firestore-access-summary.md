@@ -31,15 +31,16 @@
 |---|---|---|
 | `students/{studentId}` | 금지 (Callable Function 응답으로만 필요한 값 전달) | 금지 |
 | `rosters/**` | 금지 | 금지 |
-| `quizzes/{quizId}` | 허용 — `status == 'OPEN'`인 문서만, 정답 없는 필드(제목/기간/설명/상태)만 | 금지 |
-| `quizzes/{quizId}/problems/{problemId}` | 허용 — 설명/초기코드/순서 등 정답 없는 필드만, 상위 퀴즈가 OPEN이고 `deletedAt == null`일 때만 | 금지 |
+| `quizzes/{quizId}` | 허용 — `status == 'OPEN'`인 문서만(이 문서엔 정답 필드 자체가 없어 문서 전체 read를 허용해도 안전함) | 금지 |
+| `quizzes/{quizId}/problems/{problemId}` | 허용 — 상위 퀴즈가 OPEN이고 `deletedAt == null`일 때만(이 문서에도 정답 필드가 없음, 정답은 `problemSecrets`에만 있음) | 금지 |
 | `quizzes/{quizId}/problemSecrets/{problemId}` | **전면 금지** (헌법 III, `items` 배열의 `expected` 노출 방지) | 금지 |
-| `participants/{quizId}_{studentId}` | 본인 문서만 허용 (`request.auth`로 도출한 studentId와 문서ID가 일치할 때만) — `submissions`/`runResults`/`runsUsedByProblem` 필드가 이 문서 안에 있으므로 별도 경로가 없다 | 금지 |
+| `participants/{quizId}_{studentId}` 및 그 하위 모든 필드 | **금지** — `enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResult` Callable Function이 이미 학생 본인의 참가자 데이터를 응답으로 돌려주므로 클라이언트 직접 읽기 경로가 필요 없다("조회 경로 단일화"를 학생에게도 동일하게 적용, 인증 이메일→학번 역매핑을 규칙에서 구현할 필요도 없어짐) | 금지 |
 | `accessLogs/**` | 금지 | 금지 |
 | `archives/{quizId}` | 금지(교사 전용 정보는 Callable Function 응답으로 전달) | 금지 |
 
 **원칙**: 위 표에서 "허용"이 아닌 모든 경로는 기본적으로 `allow read, write: if false;`로
-막는다. 교사 화면이 필요로 하는 모든 조회(참가자 현황, 문항 편집 등)는 클라이언트 SDK 직접
-쿠리 대신 Callable Function(`getParticipantOverview`, `getParticipantDetail` 등)을 통해서만
-제공한다 — 이렇게 하면 "교사는 전체 조회 가능"이라는 예외를 규칙에 추가하지 않고도 헌법
-"쓰기 경로 단일화"와 대칭되는 "조회 경로 단일화"를 유지해 규칙 복잡도를 낮춘다.
+막는다. 교사 화면이 필요로 하는 모든 조회(참가자 현황, 문항 편집 등)와, 학생이 필요로 하는
+자신의 참가 데이터 조회(입장/연습 실행/제출/결과)는 모두 클라이언트 SDK 직접 쿠리 대신
+Callable Function을 통해서만 제공한다 — 이렇게 하면 역할별로 다른 예외 규칙을 규칙 파일에
+추가하지 않고도 헌법 "쓰기 경로 단일화"와 대칭되는 "조회 경로 단일화"를 학생·교사 모두에게
+동일하게 적용해 규칙 복잡도를 낮춘다.

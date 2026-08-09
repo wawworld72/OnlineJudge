@@ -1,0 +1,12 @@
+{
+  "name": "c-quiz-judge-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "emulators": "firebase emulators:start --only auth,firestore,functions",
+    "test": "firebase emulators:exec --only auth,firestore,functions \"npm --prefix functions test && npm --prefix web test\""
+  },
+  "devDependencies": {
+    "firebase-tools": "^13.0.0"
+  }
+}

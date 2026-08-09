@@ -37,17 +37,17 @@ Foundational 단계에 추가됐다.
 
 **Purpose**: 프로젝트 초기화
 
-- [ ] T001 plan.md 구조대로 `functions/`, `web/`, `firebase.json`, `firestore.rules`,
+- [X] T001 plan.md 구조대로 `functions/`, `web/`, `firebase.json`, `firestore.rules`,
   `firestore.indexes.json` 뼈대 생성
-- [ ] T002 `functions/`에 TypeScript Cloud Functions 프로젝트 초기화(`package.json`,
+- [X] T002 `functions/`에 TypeScript Cloud Functions 프로젝트 초기화(`package.json`,
   `tsconfig.json`, `firebase-admin`/`firebase-functions`/`googleapis`/`zod` 의존성 +
   Vitest, `firebase-functions-test`, `@firebase/rules-unit-testing` 개발 의존성)
-- [ ] T003 [P] `web/`에 Vite + React 프로젝트 초기화(`package.json`, `tsconfig.json`,
+- [X] T003 [P] `web/`에 Vite + React 프로젝트 초기화(`package.json`, `tsconfig.json`,
   `vite.config.ts`, Firebase JS SDK + `firebase/app-check` 의존성)
-- [ ] T004 [P] `functions/`와 `web/`에 ESLint/Prettier 설정
-- [ ] T005 [P] `web/`에 CodeMirror 6 + `@codemirror/lang-cpp` 설치 및 기본 에디터 래퍼
+- [X] T004 [P] `functions/`와 `web/`에 ESLint/Prettier 설정
+- [X] T005 [P] `web/`에 CodeMirror 6 + `@codemirror/lang-cpp` 설치 및 기본 에디터 래퍼
   `web/src/editor/CEditor.tsx` 생성
-- [ ] T006 `firebase.json`에 Emulator Suite(auth, firestore, functions) 설정 및
+- [X] T006 `firebase.json`에 Emulator Suite(auth, firestore, functions) 설정 및
   `npm run emulators`/`npm test`(에뮬레이터 기동 후 Vitest 실행) 스크립트 추가
 
 **Checkpoint**: 빈 프로젝트가 빌드/에뮬레이터 기동까지 성공하는 상태
@@ -69,9 +69,11 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 공용 모듈에서 절대 임포트하지 않는다 — 콜드 스타트 번들 크기가 커지면 SC-001(1초)/SC-002
 (2초) 목표를 첫 요청에서 넘기기 쉽다.
 
-- [ ] T007 `firestore.rules`에 기본 거부(default-deny) 규칙과 contracts/
-  firestore-access-summary.md의 허용 예외(퀴즈/문항 — `deletedAt == null`인 문서만 — OPEN 시
-  읽기, 본인 `participants` 문서 읽기)를 작성. `problemSecrets`는 예외 없이 전면 차단
+- [ ] T007 `firestore.rules`에 기본 거부(default-deny) 규칙 골격 작성. `problemSecrets`/
+  `participants`/`students`/`rosters`/`accessLogs`/`archives`는 예외 없이 전면 차단(참가자
+  데이터는 `enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResult` 응답으로만 전달 — "조회
+  경로 단일화"를 학생에게도 동일 적용). `quizzes`/`problems`의 조건부 read 허용은 T038(US1)에서
+  자신의 경로 줄로 추가
 - [ ] T008 [P] `functions/src/models/types.ts`에 data-model.md의 모든 엔티티 타입 정의
   (Quiz(`deletedAt` 없음, 퀴즈 자체는 소프트삭제 대상 아님), Problem(`deletedAt`),
   ProblemSecrets(`items: TestCase[]`), StudentRosterEntry, Roster,
@@ -170,8 +172,8 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 - [ ] T037 [P] [US1] `functions/src/callable/getMyResult.ts`에 `getMyResult` 구현(FR-024,
   참가자 문서의 `runResults` map 필드를 그대로 반환) — T028 통과
 - [ ] T038 [P] [US1] `firestore.rules`에 `quizzes`/`problems`(OPEN 상태 + `deletedAt == null`,
-  정답 없는 필드) 읽기 허용과 `participants` 본인 문서 읽기 허용 규칙 추가
-  (`problemSecrets`는 T007에서 이미 전면 차단됨)
+  정답 없는 필드) 읽기 허용 규칙 추가(자신의 경로 줄만 추가, T007이 만든 다른 줄은 수정하지
+  않음). `participants`는 T007에서 이미 전면 차단됨(직접 읽기 경로 불필요)
 - [ ] T039 [P] [US1] `web/src/student/QuizList.tsx`에 퀴즈 목록 화면 구현(OPEN 퀴즈만, 딥링크
   지원)
 - [ ] T040 [US1] `web/src/student/QuizEntry.tsx`에 입장 화면 구현(출입코드·학번·이름 입력,
@@ -412,7 +414,7 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 
 - [ ] T086 [P] `functions/test/rules.spec.ts`에 `@firebase/rules-unit-testing`으로 전체
   컬렉션 접근 규칙 매트릭스(contracts/firestore-access-summary.md 표 전체) 검증 작성 —
-  `problemSecrets` 전면 차단, 타인 `participants` 문서 read 거부 포함
+  `problemSecrets` 전면 차단, `participants` 문서 read 전면 거부(본인 포함) 검증 포함
 - [ ] T087 [P] `functions/test/unit/`에 identity, timeAuthority, scoreAggregation,
   runCountTransaction 유틸 Vitest 단위 테스트 작성(경합 상황 시뮬레이션 포함, FR-014 —
   동시에 여러 `runTransaction` 호출을 걸어 `runsUsedByProblem`이 한도를 넘지 않는지 검증)

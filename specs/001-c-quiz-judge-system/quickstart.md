@@ -81,8 +81,9 @@ Google Sheets API도 모킹한다.
 
 - Firestore 에뮬레이터의 보안 규칙 테스트(`@firebase/rules-unit-testing`)로 `problemSecrets`
   문서에 대한 클라이언트 SDK read/write가 모두 거부되는지 검증(헌법 III).
-- 클라이언트 SDK로 다른 학생의 `participants/{quizId}_{otherStudentId}` 문서를 읽으려 하면
-  거부되는지 검증(헌법 I·III).
+- 클라이언트 SDK로 `participants/{quizId}_{studentId}` 문서를 읽으려 하면(본인 문서 포함)
+  항상 거부되는지 검증 — 참가자 데이터는 `enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResult`
+  응답으로만 전달된다(헌법 I·III).
 - App Check 디버그 토큰 없이 Callable Function을 호출하면 거부되는지 확인(에뮬레이터에서 App
   Check 디버그 공급자를 켠 상태와 끈 상태를 각각 테스트, research.md §6).
 - 같은 문항에 `practiceRun`을 동시에 여러 번(예: `Promise.all`로 5개) 호출해 남은 횟수가
