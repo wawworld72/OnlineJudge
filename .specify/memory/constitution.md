@@ -1,50 +1,126 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version change: (unratified template) → 1.0.0
+Rationale for bump: Initial ratification — no prior concrete version existed.
+Modified principles: N/A (initial ratification; all principles newly defined)
+Added sections:
+  - Core Principles: I. 서버 신뢰 경계, II. 3중 신원 검증, III. 정답 및 상태 무결성 보호,
+    IV. 무료 운영 비용 상한, V. 화면별 응답 시간 목표, VI. 장애 복원력 있는 오류 처리,
+    VII. 단일 기준 시간
+  - 기술 스택 및 아키텍처 제약
+  - 운영 규모 및 범위 가정
+  - Governance
+Removed sections: none (replacing template placeholders only)
+Templates requiring follow-up: none — .specify/templates/{spec,plan,tasks,checklist}-template.md
+  reference the constitution generically and need no edits for this ratification.
+Deferred TODOs: none
+-->
+
+# C언어 온라인 저지 퀴즈 시스템 Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. 서버 신뢰 경계 (Server-Authoritative Trust Boundary)
+클라이언트(학생/교사 웹앱)는 화면 표시와 사용자 입력 수집만 담당한다. 신뢰가 필요한 모든 판단
+(시간 경과, 점수, 신원, 상태 전이)은 반드시 서버(Cloud Functions)가 재검증한다. 클라이언트가
+보낸 시각, 잔여 시간, 참가자 식별자, 점수 등의 값은 그 자체로 신뢰하지 않으며, 서버가 원본
+데이터로부터 다시 계산·대조한 결과만을 최종 판단 근거로 사용한다. 참가자 식별자는 클라이언트가
+보낸 값을 그대로 신뢰하지 않고, 서버가 (퀴즈ID, 검증된 학번)으로부터 결정적으로 재계산한 값과
+대조하여 불일치 시 거부한다.
+**Rationale**: 클라이언트 코드는 학생이 자유롭게 조작할 수 있는 실행 환경이다. 신뢰 경계를 서버
+함수 내부로 한정해야 성적 조작·타인 사칭·시간 조작을 원천적으로 차단할 수 있다.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. 3중 신원 검증 (Triple-Factor Identity Verification)
+모든 학생 요청은 학번(사용자 입력) + 이름(사용자 입력) + 이메일(Firebase Authentication으로
+인증된 값) 3개가 학생명부와 전부 일치해야 처리된다. 하나라도 불일치하면 즉시 거부한다. 이메일은
+학번당 1회만 영구 등록되며, 이미 등록된 학번의 재등록 요청과 다른 학번에 이미 등록된 이메일의
+재사용 요청은 거부한다. 허용된 이메일 도메인 외 계정의 로그인은 차단한다.
+**Rationale**: 학번과 이름은 위조 가능한 입력이므로, 조작 불가능한 인증 이메일과 학생명부를 매
+요청마다 대조해야 대리 응시와 계정 도용을 막을 수 있다.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. 정답 및 상태 무결성 보호 (Answer Confidentiality & Write Integrity)
+테스트케이스의 기대 출력값은 어떤 API 응답 경로로도 학생 브라우저에 노출되지 않는다(비공개
+테스트케이스는 입력·출력을 마스킹해 전달한다). 점수, 제출 상태, 채점 결과, 참가 기록 등 신뢰가
+필요한 모든 데이터는 클라이언트가 데이터베이스에 직접 쓸 수 없으며, 오직 서버 함수 호출을 통해서만
+변경된다. 데이터 접근 규칙은 클라이언트의 직접 쓰기 경로를 차단하는 것을 기본값으로 한다.
+**Rationale**: 정답 노출과 클라이언트 직접 쓰기는 이 시스템에서 가장 치명적인 취약점이다. 서버
+함수를 유일한 쓰기 경로로 강제해야 채점의 공정성을 보장할 수 있다.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. 무료 운영 비용 상한 (Free-Tier Cost Ceiling)
+시스템은 Firestore 무료(Spark) 플랜의 일일 한도(읽기 50,000건, 쓰기 20,000건, 저장 1GiB, 월
+아웃바운드 10GiB) 안에서 학기 전체를 운영 가능해야 한다. 비용 폭증을 유발하는 설계는 금지한다:
+잔여 시간 표시에 실시간 리스너(onSnapshot)를 사용하지 않고 클라이언트가 서버로부터 받은 종료
+시각을 기준으로 로컬 카운트다운을 계산한다; 코드 자동저장은 브라우저 로컬 저장소에만 남기고
+서버 쓰기는 최종 제출 시점 1회로 제한한다; 연습 실행 결과는 서버에 영구 저장하지 않는다. 신규
+기능이 읽기·쓰기 트래픽을 구조적으로 늘리는 경우, 도입 전 무료 한도 대비 예상 사용률을 검토한다.
+**Rationale**: 전면 무료 운영은 이 프로젝트의 존재 조건이다. 실시간 리스너나 불필요한 쓰기
+하나가 학기 전체 운영을 유료 전환으로 몰 수 있으므로, 설계 단계에서부터 비용을 구조적으로
+통제해야 한다.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. 화면별 응답 시간 목표 (Performance Budgets)
+사용자가 체감하는 동작별 목표 응답 시간을 다음과 같이 정한다: 퀴즈 목록 조회 1초, 입장(출입코드·
+학번·이름 검증 후 문항 로드) 2초, 연습 실행(채점 서비스 응답 포함) 3초, 최종 제출 3초. 목표를
+초과할 수 있는 동작(입장, 최종 제출)에는 단계적 지연 안내 UX(진행 중 표시 → 지연 안내 → 재시도
+유도)를 반드시 동반하여, 사용자가 응답 지연을 실패로 오인해 중복 요청을 보내지 않도록 한다.
+**Rationale**: 시험이라는 시간 제약 상황에서 응답 지연은 학생에게 실패로 오인되기 쉽다. 목표
+시간과 지연 시 UX 대응을 함께 명문화해야 실제 서비스 경험이 보장된다.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### VI. 장애 복원력 있는 오류 처리 (Resilient Failure Handling)
+외부 서비스(채점 서비스, Google Classroom API) 호출이 일시적으로 실패하면 짧은 대기 후 1회
+자동 재시도한다. 재시도까지 실패한 경우에만 사용자에게 실패로 안내한다. 사용자에게는 항상
+이해 가능한 일반 안내 메시지("일시적인 오류입니다. 잠시 후 다시 시도해 주세요")만 노출하며,
+상세 오류 원인(스택 트레이스, 외부 서비스 응답 등)은 민감정보를 제외하고 서버 로그에만 기록한다.
+처리 시간이 길어질 수 있는 요청(입장, 최종 제출, 일괄 채점 등)은 이미 전송된 요청을 취소하지
+않고, 지연 중에도 사용자가 같은 동작을 반복 시도하지 않도록 진행 상태를 계속 안내한다.
+**Rationale**: 외부 의존(채점 서비스, Classroom)의 일시 장애는 상시 발생 가능한 정상 상황이다.
+재시도 한도와 메시지 정책을 고정해야 오류 처리가 기능마다 제각각으로 구현되는 것을 막을 수 있다.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### VII. 단일 기준 시간 (Canonical Server Time)
+퀴즈의 시작/종료 시각 판단과 제출 가능 여부의 최종 판단은 항상 서버가 보유한 단일 기준 시간대로
+수행하며, 클라이언트가 전달하는 시각·잔여 시간 정보는 표시 용도로만 사용하고 판단에 반영하지
+않는다. 서버·클라이언트 간 시각 데이터 교환 형식은 `yyyy-MM-dd HH:mm:ss`로 고정하고, 화면에
+노출하는 사람이 읽기 편한 표시 형식(예: `11/12(목) 13:00`)은 표시 전용이며 역산에 사용하지 않는다.
+**Rationale**: 시각은 제출 마감이라는 공정성이 걸린 판단 기준이다. 클라이언트 시계나 네트워크
+지연에 좌우되는 시간 판단은 특정 학생에게 불공정한 결과를 줄 수 있다.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## 기술 스택 및 아키텍처 제약
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- **플랫폼**: Firebase(Authentication, Firestore, Cloud Functions, Hosting)를 표준 스택으로
+  사용한다. Hosting에 배포되는 프론트엔드는 정적 자산이며, 업무 로직을 포함하지 않는다.
+- **외부 채점 서비스(Grader)**: 코드 컴파일·실행·채점은 시스템 외부의 채점 서비스에 HTTP로
+  위임하며, Cloud Functions만이 이 서비스를 호출한다.
+- **Google Classroom 연동**: 수강생 동기화, 과제 배포, 성적 반영은 Cloud Functions를 통해
+  Google Classroom API로만 수행하며, 플랫폼이 반환하는 링크·식별자를 그대로 저장한다(직접
+  조합 금지).
+- **쓰기 경로 단일화**: Firestore에 대한 모든 쓰기는 Cloud Functions를 거쳐야 하며, 클라이언트
+  SDK의 직접 쓰기는 허용하지 않는다.
+
+## 운영 규모 및 범위 가정
+
+- 분반 2개, 분반당 학생 50명(총 100명), 학기당 주 1회 × 15주, 회당 문항 5개 내외 규모를 기준
+  운영 규모로 가정한다.
+- 현재 설계는 한국어 UI 전용, 단일 채점 서비스, 최종 제출 코드 1개(LATEST) 채점 정책을
+  전제로 한다. 다국어 지원, 표절 검사, 대규모 동시 접속(수백 명 이상) 대응, 채점 서비스 큐잉
+  등은 이번 헌법이 다루는 범위 밖의 향후 확장 과제로 별도 검토한다.
+- 운영 규모나 무료 한도 가정이 실제 사용량과 어긋나는 것이 확인되면(예: 학기 초 1~2주 실사용량
+  점검 결과), Principle IV의 재검토를 통해 헌법을 개정한다.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+이 헌법은 다른 모든 실행 관행(스펙, 계획, 구현)보다 우선한다. 모든 `/speckit-specify`,
+`/speckit-plan`, `/speckit-tasks` 산출물은 위 7개 핵심 원칙, 특히 신뢰 경계(I)·신원 검증(II)·
+쓰기 무결성(III)·비용 상한(IV)을 위반하지 않아야 하며, `/speckit-analyze` 또는
+`/speckit-checklist` 실행 시 이 헌법과의 상충 여부를 확인 항목에 포함한다.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**개정 절차**: 원칙 추가·삭제·재정의는 이 문서를 직접 수정하고, 아래 버전 규칙에 따라 버전을
+올린 뒤 Sync Impact Report를 파일 상단 주석과 커밋 메시지에 남긴다.
+
+**버전 규칙(Semantic Versioning)**: MAJOR — 기존 원칙의 하위 호환 불가능한 삭제·재정의,
+MINOR — 신규 원칙/섹션 추가 또는 기존 원칙의 실질적 확장, PATCH — 표현 수정, 오타, 비의미적
+명확화.
+
+**준수 검토**: 신규 기능이 비용 상한(IV)에 영향을 줄 수 있는 구조적 트래픽 증가를 유발하는
+경우, 도입 전 검토를 거친다. 보안·신뢰 경계 관련 원칙(I~III)을 위반하는 설계는 예외 없이
+반려한다.
+
+**Version**: 1.0.0 | **Ratified**: 2026-08-09 | **Last Amended**: 2026-08-09
