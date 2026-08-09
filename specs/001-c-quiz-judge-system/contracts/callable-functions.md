@@ -136,8 +136,11 @@
 ### `getParticipantOverview`
 - **Request**: `{ quizId: string }`
 - **처리**: `participants`에서 `quizId == X`, `finalSubmittedAt` 정렬 조회 — 이 조합은 복합
-  인덱스가 필요하다(data-model.md "필요한 복합 인덱스" 참고).
-- **Response**: `{ participants: [{studentId, name, status, submittedAt?, finalTotal?}] }` (FR-025)
+  인덱스가 필요하다(data-model.md "필요한 복합 인덱스" 참고). `quizzes.courseId`가 있으면
+  `rosters`(`courseId ==`)로 "대상 학생 전원" 목록을 얻어, 참가자 문서가 없는 수강생은
+  `status: 'NOT_ENTERED'`(미입장)로 정렬된 결과 뒤에 이어 붙인다(research.md §20).
+  `courseId`가 없으면 이미 입장한 참가자만 반환한다(전원을 판단할 명부가 없음).
+- **Response**: `{ participants: [{studentId, name, status: 'NOT_ENTERED'|'IN_PROGRESS'|'SUBMITTED'|'FINALIZED', submittedAt?, finalTotal?}] }` (FR-025)
 
 ### `getParticipantDetail`
 - **Request**: `{ quizId: string, studentId: string }`

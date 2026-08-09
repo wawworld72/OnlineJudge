@@ -148,3 +148,38 @@ export interface BatchGradeResponse {
 export function batchGrade(input: { quizId: string }) {
   return callFunction<typeof input, BatchGradeResponse>("batchGrade", input);
 }
+
+export type ParticipantOverviewStatus = "NOT_ENTERED" | "IN_PROGRESS" | "SUBMITTED" | "FINALIZED";
+
+export interface ParticipantOverviewItem {
+  studentId: string;
+  name: string;
+  status: ParticipantOverviewStatus;
+  submittedAt?: number;
+  finalTotal?: number;
+}
+
+export function getParticipantOverview(input: { quizId: string }) {
+  return callFunction<typeof input, { participants: ParticipantOverviewItem[] }>(
+    "getParticipantOverview",
+    input,
+  );
+}
+
+export interface ParticipantDetail {
+  submissions: Record<string, { code: string; submittedAt: number }>;
+  runResults: Record<
+    string,
+    {
+      status: "AC" | "WA" | "CE" | "NOT_ATTEMPTED";
+      score: number;
+      maxScore: number;
+      compileErrorMessage: string | null;
+      tcResults: Array<{ tcId: string; passed: boolean; isPublic: boolean }>;
+    }
+  >;
+}
+
+export function getParticipantDetail(input: { quizId: string; studentId: string }) {
+  return callFunction<typeof input, ParticipantDetail>("getParticipantDetail", input);
+}

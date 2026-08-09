@@ -274,6 +274,25 @@
   `failedStudentIds`가 있음) 퀴즈 단위 하나의 시각으로는 "그때 실패한 참가자가 이후 재시도로
   성공했는지"를 구분할 수 없다 — 참가자별 필드가 필요하다.
 
+## 20. `getParticipantOverview`의 "대상 학생 전원" 판단 — 구현 중 식별된 누락 항목
+
+- **Decision**: `quizzes.courseId`가 있으면 `rosters`에서 `courseId ==` 조회로 "대상 학생
+  전원" 목록을 얻고, 각 수강생을 `participants` 조회 결과와 매칭한다 — 매칭되는 참가자
+  문서가 없으면 상태를 `'NOT_ENTERED'`(미입장)로 채운다. `courseId`가 없는 퀴즈(분반
+  미연동)는 "전원"을 판단할 명부 자체가 없으므로, 이미 입장한 참가자만 반환한다(미입장
+  학생은 애초에 나열할 근거 데이터가 없음).
+- **Rationale**: FR-025는 "대상 학생 전원의 응시 상태(**미입장**/응시중/제출완료/채점완료)"를
+  요구하지만, `participants` 컬렉션은 입장한 학생만 문서를 갖는다(§10) — 미입장 학생은
+  이 컬렉션에 아예 나타나지 않으므로, "전원" 목록의 기준이 되는 별도 명부(`rosters`)가
+  필요하다는 것이 `getParticipantOverview`(T067) 구현 중 드러났다. `rosters`는 이미
+  `name`/`email` 스냅샷을 갖고 있어(data-model.md) 별도로 `students`를 조회하지 않고도
+  이름을 채울 수 있다.
+- **정렬과의 상호작용**: T023의 복합 인덱스(`participants`의 `quizId ASC, finalSubmittedAt
+  ASC`)는 여전히 "이미 입장한 참가자" 조회에 그대로 쓰인다 — `finalSubmittedAt`이 없는
+  `IN_PROGRESS` 참가자는 오름차순 정렬에서 자연히 맨 앞에 온다(Firestore는 null을 가장
+  작은 값으로 정렬). `NOT_ENTERED` 항목은 이 정렬된 결과 뒤에 이어 붙인다 — 인덱스가
+  다루는 대상이 아니므로 별도 정렬 기준(이름 등)을 적용해도 무방하다.
+
 ## Open Items (구현 착수 전 확인 필요)
 
 - Grader `/grade` 응답의 런타임 오류 표현 필드명과 개별 테스트케이스 타임아웃 시 `status` 값은

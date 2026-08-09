@@ -319,24 +319,24 @@ Function)는 학생용 함수(`enterQuiz`/`practiceRun`/`finalSubmit`/`getMyResu
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T064 [P] [US4] Contract test for `getParticipantOverview`(FR-025, 전체 대상 학생 상태
+- [X] T064 [P] [US4] Contract test for `getParticipantOverview`(FR-025, 전체 대상 학생 상태
   표시, `quizId ==` + `finalSubmittedAt` 정렬 쿼리가 T023 복합 인덱스로 동작하는지) in
   `functions/test/contract/getParticipantOverview.spec.ts`
-- [ ] T065 [P] [US4] Contract test for `getParticipantDetail`(FR-025, 참가자 문서 1건에서
+- [X] T065 [P] [US4] Contract test for `getParticipantDetail`(FR-025, 참가자 문서 1건에서
   `submissions`/`runResults` map을 그대로 반환하는지) in
   `functions/test/contract/getParticipantDetail.spec.ts`
-- [ ] T066 [US4] Integration test — 상태가 서로 다른 학생들이 섞인 퀴즈에서 현황 조회→상세
+- [X] T066 [US4] Integration test — 상태가 서로 다른 학생들이 섞인 퀴즈에서 현황 조회→상세
   열람 흐름(quickstart.md User Story 4 시나리오) in
   `functions/test/integration/participantStatus.spec.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T067 [P] [US4] `functions/src/callable/getParticipantOverview.ts`에
+- [X] T067 [P] [US4] `functions/src/callable/getParticipantOverview.ts`에
   `getParticipantOverview` 구현(FR-025, `quizId ==` + `finalSubmittedAt` 정렬 쿼리) —
   T064 통과
-- [ ] T068 [P] [US4] `functions/src/callable/getParticipantDetail.ts`에
+- [X] T068 [P] [US4] `functions/src/callable/getParticipantDetail.ts`에
   `getParticipantDetail` 구현(FR-025, 참가자 문서 1건 읽기) — T065 통과
-- [ ] T069 [US4] `web/src/teacher/ParticipantStatus.tsx`에 참가자 현황 목록 + 상세 열람
+- [X] T069 [US4] `web/src/teacher/ParticipantStatus.tsx`에 참가자 현황 목록 + 상세 열람
   화면 구현 — T066 통과
 
 **Checkpoint**: User Story 1~4가 함께, 각각 독립적으로 동작한다
