@@ -7,6 +7,6 @@
     "test": "firebase emulators:exec --only auth,firestore,functions \"npm --prefix functions test && npm --prefix web test\""
   },
   "devDependencies": {
-    "firebase-tools": "^13.0.0"
+    "firebase-tools": "^15.26.0"
   }
 }
