@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 
 export const testCaseInputSchema = z.object({
-  tcId: z.string().min(1).optional(),
+  tcId: z.string().min(1).nullish(),
   tcNo: z.number().int().nonnegative(),
   input: z.string(),
   expected: z.string(),
@@ -54,7 +54,7 @@ export const getQuizForEditSchema = z.object({
 });
 
 export const upsertQuizSchema = z.object({
-  quizId: z.string().min(1).optional(),
+  quizId: z.string().min(1).nullish(),
   title: z.string().min(1),
   description: z.string(),
   startAt: z.number(),
@@ -66,7 +66,7 @@ export const upsertQuizSchema = z.object({
 
 export const upsertProblemSchema = z.object({
   quizId: z.string().min(1),
-  problemId: z.string().min(1).optional(),
+  problemId: z.string().min(1).nullish(),
   order: z.number().int().nonnegative(),
   title: z.string().min(1),
   description: z.string(),
@@ -135,5 +135,5 @@ export const archiveQuizSchema = z.object({
 
 export const deleteQuizDataSchema = z.object({
   quizId: z.string().min(1),
-  confirmWithoutArchive: z.boolean().optional(),
+  confirmWithoutArchive: z.boolean().nullish(),
 });
