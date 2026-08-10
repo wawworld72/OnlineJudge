@@ -7,6 +7,14 @@
         { "fieldPath": "quizId", "order": "ASCENDING" },
         { "fieldPath": "finalSubmittedAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "problems",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "deletedAt", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
