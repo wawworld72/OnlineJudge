@@ -1,0 +1,39 @@
+name: Seed Test Student
+
+on:
+  workflow_dispatch:
+    inputs:
+      student_id:
+        description: "학번"
+        required: true
+      student_name:
+        description: "이름"
+        required: true
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install functions dependencies
+        run: npm ci
+        working-directory: functions
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Seed student document
+        working-directory: functions
+        env:
+          STUDENT_ID: ${{ github.event.inputs.student_id }}
+          STUDENT_NAME: ${{ github.event.inputs.student_name }}
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: npx tsx scripts/seedProdStudent.ts
