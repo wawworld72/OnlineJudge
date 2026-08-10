@@ -2,7 +2,7 @@ import { useState } from "react";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { firebaseApp } from "./firebaseApp";
 
-const ALLOWED_EMAIL_DOMAIN = "hoseo.edu";
+const ALLOWED_EMAIL_DOMAIN = import.meta.env.VITE_ALLOWED_EMAIL_DOMAIN ?? "hoseo.edu";
 
 const auth = getAuth(firebaseApp);
 

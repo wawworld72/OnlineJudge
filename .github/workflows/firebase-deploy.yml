@@ -78,6 +78,7 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_RECAPTCHA_V3_SITE_KEY: ${{ secrets.VITE_RECAPTCHA_V3_SITE_KEY }}
           VITE_TEACHER_EMAILS: ${{ secrets.TEACHER_EMAILS }}
+          VITE_ALLOWED_EMAIL_DOMAIN: ${{ secrets.ALLOWED_EMAIL_DOMAIN }}
 
       - name: Write functions runtime env vars
         working-directory: functions
