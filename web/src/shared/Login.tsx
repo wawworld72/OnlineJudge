@@ -15,7 +15,8 @@ export function Login() {
     const result = await signInWithPopup(auth, provider);
     const email = result.user.email ?? "";
 
-    if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+    const domainAllowed = ALLOWED_EMAIL_DOMAIN === "*" || email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`);
+    if (!domainAllowed) {
       await signOut(auth);
       setError(`@${ALLOWED_EMAIL_DOMAIN} 이메일 계정으로만 로그인할 수 있습니다.`);
     }
