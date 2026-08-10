@@ -1,9 +1,17 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
+import { db } from "../shared/firestoreClient";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
 import { getErrorCode } from "../shared/functionsClient";
 import { enterQuiz, registerStudentEmail, type EnterQuizResponse } from "./api";
 import { QuizTaking } from "./QuizTaking";
+
+interface QuizInfo {
+  title: string;
+  description: string;
+  endAt: number;
+}
 
 /**
  * 입장 화면(FR-009~011). 이메일 미등록 학번은 `NEEDS_EMAIL_REGISTRATION` 오류로 등록
@@ -11,12 +19,31 @@ import { QuizTaking } from "./QuizTaking";
  */
 export function QuizEntry() {
   const { quizId } = useParams<{ quizId: string }>();
+  const navigate = useNavigate();
+  const [quizInfo, setQuizInfo] = useState<QuizInfo | null>(null);
   const [accessCode, setAccessCode] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [name, setName] = useState("");
+  const [studentId, setStudentId] = useState(() => localStorage.getItem("cquiz_studentId") ?? "");
+  const [name, setName] = useState(() => localStorage.getItem("cquiz_studentName") ?? "");
   const [needsEmailRegistration, setNeedsEmailRegistration] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [entered, setEntered] = useState<EnterQuizResponse | null>(null);
+
+  useEffect(() => {
+    if (!quizId) return;
+    // 응시 화면 표시용 정보일 뿐이라 실패해도 조용히 무시한다 — 입장 자체는
+    // enterQuiz Callable Function이 다시 전부 검증한다.
+    getDoc(doc(db, "quizzes", quizId))
+      .then((snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        setQuizInfo({
+          title: data.title,
+          description: data.description,
+          endAt: (data.endAt as Timestamp).toMillis(),
+        });
+      })
+      .catch(() => {});
+  }, [quizId]);
 
   if (!quizId) return null;
 
@@ -26,6 +53,8 @@ export function QuizEntry() {
 
   async function attemptEntry() {
     setError(null);
+    localStorage.setItem("cquiz_studentId", studentId);
+    localStorage.setItem("cquiz_studentName", name);
     try {
       const response = await enterQuiz({ quizId: quizId!, accessCode, studentId, name });
       setNeedsEmailRegistration(false);
@@ -50,41 +79,61 @@ export function QuizEntry() {
   }
 
   return (
-    <div>
-      <h1>퀴즈 입장</h1>
-      <label>
-        출입코드
-        <input value={accessCode} onChange={(e) => setAccessCode(e.target.value)} />
-      </label>
-      <label>
-        학번
-        <input value={studentId} onChange={(e) => setStudentId(e.target.value)} />
-      </label>
-      <label>
-        이름
-        <input value={name} onChange={(e) => setName(e.target.value)} />
-      </label>
+    <div className="container">
+      <div className="card">
+        <h1>OJHG</h1>
+        <button className="secondary" onClick={() => navigate("/")}>
+          ← 목록
+        </button>
 
-      {needsEmailRegistration ? (
-        <div>
-          <p>최초 입장입니다. 로그인한 이메일을 이 학번에 등록할까요?</p>
+        {quizInfo && (
+          <div className="selected-quiz-info">
+            <h3>{quizInfo.title}</h3>
+            {quizInfo.description && <p className="quiz-meta">{quizInfo.description}</p>}
+          </div>
+        )}
+
+        <label>
+          출입코드
+          <input value={accessCode} onChange={(e) => setAccessCode(e.target.value)} />
+        </label>
+        <label>
+          학번
+          <input value={studentId} onChange={(e) => setStudentId(e.target.value)} />
+        </label>
+        <label>
+          이름
+          <input value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+
+        {needsEmailRegistration ? (
+          <div>
+            <p className="warning" style={{ whiteSpace: "pre-wrap" }}>
+              최초 입장입니다. 로그인한 이메일을 이 학번에 등록할까요?{"\n"}
+              (등록 후에는 직접 변경할 수 없습니다.)
+            </p>
+            <DelayedActionButton
+              label="이메일 등록하고 입장"
+              pendingLabel="등록 중..."
+              delayedLabel="등록에 시간이 걸리고 있습니다..."
+              onAction={confirmEmailRegistration}
+            />
+          </div>
+        ) : (
           <DelayedActionButton
-            label="이메일 등록하고 입장"
-            pendingLabel="등록 중..."
-            delayedLabel="등록에 시간이 걸리고 있습니다..."
-            onAction={confirmEmailRegistration}
+            label="입장"
+            pendingLabel="입장 중..."
+            delayedLabel="입장에 시간이 걸리고 있습니다. 잠시만 기다려주세요..."
+            onAction={attemptEntry}
           />
-        </div>
-      ) : (
-        <DelayedActionButton
-          label="입장"
-          pendingLabel="입장 중..."
-          delayedLabel="입장에 시간이 걸리고 있습니다. 잠시만 기다려주세요..."
-          onAction={attemptEntry}
-        />
-      )}
+        )}
 
-      {error && <p role="alert">{error}</p>}
+        {error && (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

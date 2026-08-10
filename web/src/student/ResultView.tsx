@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getMyResult, type GetMyResultResponse } from "./api";
+import { TcResultTable } from "./TcResultTable";
 
 interface ResultViewProps {
   quizId: string;
@@ -18,22 +19,31 @@ export function ResultView({ quizId, initialStatus }: ResultViewProps) {
   }, [quizId]);
 
   if (result.participantStatus !== "FINALIZED") {
-    return <p>제출이 완료되었습니다. 채점이 끝나면 결과를 확인할 수 있습니다.</p>;
+    return (
+      <div className="container">
+        <div className="card">
+          <p>제출이 완료되었습니다. 채점이 끝나면 결과를 확인할 수 있습니다.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h2>채점 결과</h2>
-      <p>
-        총점: {result.finalTotal} / {result.maxTotal}
-      </p>
-      <ul>
+    <div className="container">
+      <div className="card">
+        <div className="final-banner">
+          채점이 완료되었습니다. 확정 점수: {result.finalTotal} / {result.maxTotal}점
+        </div>
+
         {result.perProblem?.map((problem) => (
-          <li key={problem.problemId}>
-            {problem.problemId}: {problem.status} ({problem.score} / {problem.maxScore})
-          </li>
+          <div key={problem.problemId} style={{ marginBottom: 16 }}>
+            <h3>
+              {problem.problemId} — {problem.status} ({problem.score} / {problem.maxScore}점)
+            </h3>
+            <TcResultTable tcResults={problem.tcResults} />
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

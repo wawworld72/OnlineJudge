@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { db } from "../shared/firestoreClient";
 
 interface QuizListItem {
   quizId: string;
   title: string;
   description: string;
+  endAt: number;
 }
 
 /**
@@ -17,31 +18,81 @@ interface QuizListItem {
  */
 export function QuizList() {
   const [quizzes, setQuizzes] = useState<QuizListItem[] | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  function loadQuizzes(): Promise<QuizListItem[]> {
+    const q = query(collection(db, "quizzes"), where("status", "==", "OPEN"));
+    return getDocs(q).then((snapshot) =>
+      snapshot.docs.map((doc) => {
+        const data = doc.data();
+        const endAt = data.endAt as Timestamp;
+        return {
+          quizId: doc.id,
+          title: data.title,
+          description: data.description,
+          endAt: endAt.toMillis(),
+        };
+      }),
+    );
+  }
 
   useEffect(() => {
-    const q = query(collection(db, "quizzes"), where("status", "==", "OPEN"));
-    getDocs(q).then((snapshot) => {
-      setQuizzes(
-        snapshot.docs.map((doc) => ({
-          quizId: doc.id,
-          title: doc.data().title,
-          description: doc.data().description,
-        })),
-      );
-    });
+    loadQuizzes().then(setQuizzes);
   }, []);
 
-  if (quizzes === null) return <p>불러오는 중...</p>;
-  if (quizzes.length === 0) return <p>지금 응시할 수 있는 퀴즈가 없습니다.</p>;
+  function refresh() {
+    setQuizzes(null);
+    loadQuizzes().then(setQuizzes);
+  }
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
-    <ul>
-      {quizzes.map((quiz) => (
-        <li key={quiz.quizId}>
-          <Link to={`/quiz/${quiz.quizId}`}>{quiz.title}</Link>
-          <p>{quiz.description}</p>
-        </li>
-      ))}
-    </ul>
+    <div className="container">
+      <div className="card">
+        <h1>OJHG</h1>
+        <p className="muted">퀴즈를 선택하세요.</p>
+        <button className="secondary" onClick={refresh}>
+          새로고침
+        </button>
+      </div>
+
+      {quizzes === null ? (
+        <div className="card">
+          <p className="muted">불러오는 중...</p>
+        </div>
+      ) : quizzes.length === 0 ? (
+        <div className="card">
+          <p className="muted">지금 응시할 수 있는 퀴즈가 없습니다.</p>
+        </div>
+      ) : (
+        <div className="quiz-grid">
+          {quizzes.map((quiz) => {
+            const diffMs = quiz.endAt - now;
+            const ending = diffMs < 10 * 60 * 1000;
+            return (
+              <Link key={quiz.quizId} to={`/quiz/${quiz.quizId}`} className="quiz-card">
+                <h3>{quiz.title}</h3>
+                {quiz.description && <div className="quiz-desc">{quiz.description}</div>}
+                <span className={`quiz-remaining${ending ? " ending" : ""}`}>
+                  남은 시간 {formatRemainingShort(Math.max(0, diffMs))}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
+}
+
+function formatRemainingShort(diffMs: number): string {
+  const totalMinutes = Math.floor(diffMs / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0) return `${hours}시간 ${minutes}분`;
+  return `${minutes}분`;
 }

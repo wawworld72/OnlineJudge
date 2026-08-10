@@ -6,6 +6,7 @@ import { Login } from "./shared/Login";
 import { QuizList } from "./student/QuizList";
 import { QuizEntry } from "./student/QuizEntry";
 import { QuizManager } from "./teacher/QuizManager";
+import "./student/student.css";
 
 const auth = getAuth(firebaseApp);
 
