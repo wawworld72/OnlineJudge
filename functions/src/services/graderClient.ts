@@ -12,10 +12,11 @@ interface GraderWireTestCase {
 
 /**
  * 실제 배포된 Grader가 돌려주는 모양(2026-08-11 Cloud Logging으로 실측 확인) — `id`/
- * `passed` 필드가 없고, 요청에 보낸 `testCases`와 같은 순서로 결과 배열을 돌려준다. 통과
- * 여부는 `earned`(이 테스트케이스에서 획득한 점수)가 0보다 큰지로 판단한다. `isPublic`은
- * Grader가 항상 `false`로 채워 보내므로(요청에 안 넘기니 당연히 기본값) 신뢰하지 않고,
- * 우리가 저장한 `items[].isPublic`을 그대로 쓴다.
+ * `passed` 필드가 없고, 요청에 보낸 `testCases`와 같은 순서로 결과 배열을 돌려준다. `earned`는
+ * 요청에 `points`를 안 보냈을 때 항상 0으로 오므로(실제 출력이 기대 출력과 완전히 같아도
+ * earned:0 — 실측으로 확인) 신뢰하지 않는다. 통과 여부는 `result`(`"✅PASS"`/`"❌FAIL"`류
+ * 문자열)로 판단한다. `isPublic`도 Grader가 항상 `false`로 채워 보내므로(요청에 안 넘기니
+ * 당연히 기본값) 신뢰하지 않고, 우리가 저장한 `items[].isPublic`을 그대로 쓴다.
  */
 interface GraderTcResult {
   result: string;
@@ -93,7 +94,7 @@ function buildRunResult(response: GraderWireResultOk, items: TestCase[]): RunRes
   let score = 0;
   const tcResults: TestCaseResult[] = items.map((item, index) => {
     const result = response.tcResultsFull[index];
-    const passed = (result?.earned ?? 0) > 0;
+    const passed = (result?.result ?? "").includes("PASS");
     if (passed) score += item.points;
 
     return item.isPublic && result
@@ -101,11 +102,13 @@ function buildRunResult(response: GraderWireResultOk, items: TestCase[]): RunRes
           tcId: item.tcId,
           passed,
           isPublic: true,
+          points: item.points,
           input: result.input,
           expectedOutput: result.expected,
           actualOutput: result.actual,
+          ...(result.memo ? { memo: result.memo } : {}),
         }
-      : { tcId: item.tcId, passed, isPublic: item.isPublic };
+      : { tcId: item.tcId, passed, isPublic: item.isPublic, points: item.points };
   });
 
   return {

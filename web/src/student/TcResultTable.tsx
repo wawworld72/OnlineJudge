@@ -6,8 +6,9 @@ interface TcResultTableProps {
 
 /**
  * 연습 실행(QuizTaking)과 최종 채점 결과(ResultView)가 같은 `TestCaseResult` 모양을 쓰므로
- * 표를 공유한다. 비공개 테스트케이스는 입력/기대출력/실제출력을 서버가 아예 보내지 않으므로
- * (functions/src/services/graderClient.ts) "비공개"로만 표시한다.
+ * 표를 공유한다. 비공개 테스트케이스는 입력/기대출력/실제출력/메모를 서버가 아예 보내지
+ * 않으므로(functions/src/services/graderClient.ts) "비공개"로만 표시한다. 배점은 정답
+ * 자체가 아니므로 공개 여부와 무관하게 항상 보여준다.
  */
 export function TcResultTable({ tcResults }: TcResultTableProps) {
   if (tcResults.length === 0) {
@@ -19,12 +20,14 @@ export function TcResultTable({ tcResults }: TcResultTableProps) {
       <table>
         <thead>
           <tr>
-            <th>#</th>
+            <th>TC</th>
             <th>공개</th>
             <th>결과</th>
+            <th>배점</th>
             <th>입력</th>
             <th>기대 출력</th>
             <th>실제 출력</th>
+            <th>메모</th>
           </tr>
         </thead>
         <tbody>
@@ -38,7 +41,8 @@ export function TcResultTable({ tcResults }: TcResultTableProps) {
                   <span className="tc-private">비공개</span>
                 )}
               </td>
-              <td>{tc.passed ? "통과" : "실패"}</td>
+              <td>{tc.passed ? "✅ PASS" : "❌ FAIL"}</td>
+              <td>{tc.points}</td>
               <td className="tc-io">{tc.isPublic ? tc.input : <span className="muted">비공개</span>}</td>
               <td className="tc-io">
                 {tc.isPublic ? tc.expectedOutput : <span className="muted">비공개</span>}
@@ -46,6 +50,7 @@ export function TcResultTable({ tcResults }: TcResultTableProps) {
               <td className="tc-io">
                 {tc.isPublic ? tc.actualOutput : <span className="muted">비공개</span>}
               </td>
+              <td className="tc-io">{tc.isPublic ? tc.memo : ""}</td>
             </tr>
           ))}
         </tbody>

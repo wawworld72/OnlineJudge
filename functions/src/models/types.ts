@@ -71,16 +71,19 @@ export interface Submission {
 export type RunStatus = "AC" | "WA" | "CE" | "NOT_ATTEMPTED";
 
 /**
- * `isPublic`이 false인 항목은 `input`/`expectedOutput`/`actualOutput`을 제거하고
- * `passed`만 전달한다(contracts/grader-api.md "비공개 테스트케이스 처리", 헌법 III).
+ * `isPublic`이 false인 항목은 `input`/`expectedOutput`/`actualOutput`/`memo`를 제거하고
+ * `passed`/`points`만 전달한다(contracts/grader-api.md "비공개 테스트케이스 처리", 헌법
+ * III). `points`는 배점(정답 여부와 무관하게 항상 노출 — 정답 자체가 아니므로 안전하다).
  */
 export interface TestCaseResult {
   tcId: string;
   passed: boolean;
   isPublic: boolean;
+  points: number;
   input?: string;
   expectedOutput?: string;
   actualOutput?: string;
+  memo?: string;
 }
 
 export interface RunResult {

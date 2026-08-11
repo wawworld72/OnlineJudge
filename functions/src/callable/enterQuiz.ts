@@ -92,13 +92,23 @@ export const enterQuiz = createCallable(
     const response: {
       participantStatus: Participant["finalStatus"];
       problems: typeof problems;
+      startAt: number;
       endAt: number;
+      quizTitle: string;
+      studentId: string;
+      studentName: string;
+      studentEmail: string;
       existingSubmission?: Participant["submissions"];
       gradedResult?: Participant["runResults"];
     } = {
       participantStatus: participant.finalStatus,
       problems,
+      startAt: quiz.startAt.toMillis(),
       endAt: quiz.endAt.toMillis(),
+      quizTitle: quiz.title,
+      studentId: data.studentId,
+      studentName: data.name,
+      studentEmail: authEmail,
     };
 
     if (participant.finalStatus !== "IN_PROGRESS") {

@@ -24,6 +24,16 @@ function tabStatusClass(run: PracticeRunResponse | undefined): string {
   return "status-failed";
 }
 
+function formatDateTime(ms: number): string {
+  return new Date(ms).toLocaleString("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /**
  * 문항 탭 + 코드 에디터 + 실행/제출 + 카운트다운 화면(FR-013~019). 코드는 서버에 저장하지
  * 않고 로컬 저장소에만 자동저장한다(헌법 IV) — 서버 쓰기는 최종 제출 시점 1회뿐이다.
@@ -44,6 +54,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
     ),
   );
   const [lastRunByProblem, setLastRunByProblem] = useState<Record<string, PracticeRunResponse>>({});
+  const [elapsedMsByProblem, setElapsedMsByProblem] = useState<Record<string, number>>({});
   const [testedCodeByProblem, setTestedCodeByProblem] = useState<Record<string, string>>({});
   const [remainingMs, setRemainingMs] = useState(0);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -62,6 +73,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
   const ended = remainingMs <= 0;
   const maxRuns = activeProblem.maxRuns;
   const remaining = remainingRuns[activeProblem.problemId] ?? maxRuns;
+  const used = maxRuns > 0 ? maxRuns - remaining : 0;
   const runCountClass = maxRuns > 0 && remaining <= 0 ? "danger" : maxRuns > 0 && remaining <= 3 ? "warn" : "";
 
   function updateCode(problemId: string, code: string) {
@@ -69,13 +81,19 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
     localStorage.setItem(codeStorageKey(quizId, problemId), code);
   }
 
+  function resetToInitialCode() {
+    updateCode(activeProblem!.problemId, activeProblem!.initialCode);
+  }
+
   async function runActiveProblem() {
     if (ended) return;
     setRunError(null);
     const code = codeByProblem[activeProblem!.problemId] ?? "";
+    const startedAt = Date.now();
     try {
       const result = await practiceRun({ quizId, problemId: activeProblem!.problemId, code });
       setLastRunByProblem((prev) => ({ ...prev, [activeProblem!.problemId]: result }));
+      setElapsedMsByProblem((prev) => ({ ...prev, [activeProblem!.problemId]: Date.now() - startedAt }));
       setTestedCodeByProblem((prev) => ({ ...prev, [activeProblem!.problemId]: code }));
       setRemainingRuns((prev) => ({ ...prev, [activeProblem!.problemId]: result.remainingRuns }));
     } catch {
@@ -99,7 +117,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
   return (
     <div className="container">
       <div className="card">
-        <h1>{"퀴즈 풀이"}</h1>
+        <h1>{initial.quizTitle}</h1>
 
         {remainingMs > 0 && remainingMs <= 60 * 1000 && (
           <div className="time-warning-banner danger">1분 미만 남았습니다. 지금 제출하세요.</div>
@@ -111,9 +129,34 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
 
         <div className="top-info">
           <div>
-            <b>남은 시간:</b> <span className={ended ? "remaining-time danger" : "remaining-time"}>
+            <b>학번:</b> {initial.studentId}
+          </div>
+          <div>
+            <b>퀴즈 ID:</b> {quizId}
+          </div>
+          <div>
+            <b>이름:</b> {initial.studentName}
+          </div>
+          <div>
+            <b>시작:</b> {formatDateTime(initial.startAt)}
+          </div>
+          <div>
+            <b>이메일:</b> {initial.studentEmail}
+          </div>
+          <div>
+            <b>종료:</b> {formatDateTime(initial.endAt)}
+          </div>
+          <div>
+            <b>채점 기준:</b> 최종 제출 코드
+          </div>
+          <div>
+            <b>남은 시간:</b>{" "}
+            <span className={ended ? "remaining-time danger" : "remaining-time"}>
               {formatRemaining(remainingMs)}
             </span>
+          </div>
+          <div>
+            <b>상태:</b> OPEN
           </div>
         </div>
 
@@ -167,9 +210,12 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
                 delayedLabel="채점이 지연되고 있습니다..."
                 onAction={runActiveProblem}
               />
+              <button className="secondary" onClick={resetToInitialCode} disabled={ended}>
+                기본 코드
+              </button>
               {maxRuns > 0 && (
                 <span className={`run-count-box ${runCountClass}`.trim()}>
-                  <span className="run-count-label">남은 실행 횟수:</span> {remaining} / {maxRuns}회
+                  <span className="run-count-label">실행 횟수:</span> {used}/{maxRuns}회 · 남은 횟수 {remaining}회
                 </span>
               )}
             </div>
@@ -185,7 +231,9 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
             ) : lastRun ? (
               <>
                 <p>
-                  실행 결과: {lastRun.score} / {lastRun.maxScore}점
+                  실행 결과: {lastRun.score} / {lastRun.maxScore}
+                  {elapsedMsByProblem[activeProblem.problemId] !== undefined &&
+                    ` (${elapsedMsByProblem[activeProblem.problemId]}ms)`}
                   {lastRun.usedCache && " · 같은 코드의 이전 결과를 사용했습니다(횟수 차감 없음)."}
                 </p>
                 <TcResultTable tcResults={lastRun.tcResults} />

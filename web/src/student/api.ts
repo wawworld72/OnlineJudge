@@ -15,7 +15,12 @@ export type ParticipantStatus = "IN_PROGRESS" | "SUBMITTED" | "FINALIZED";
 export interface EnterQuizResponse {
   participantStatus: ParticipantStatus;
   problems: ProblemSummary[];
+  startAt: number;
   endAt: number;
+  quizTitle: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
   existingSubmission?: Record<string, { code: string; submittedAt: number }>;
   gradedResult?: Record<string, PerProblemResult>;
 }
@@ -37,9 +42,11 @@ export interface TestCaseResult {
   tcId: string;
   passed: boolean;
   isPublic: boolean;
+  points: number;
   input?: string;
   expectedOutput?: string;
   actualOutput?: string;
+  memo?: string;
 }
 
 export interface PracticeRunResponse {
