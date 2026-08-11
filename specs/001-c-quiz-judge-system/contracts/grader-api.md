@@ -18,7 +18,7 @@
 {
   "code": "string",
   "testCases": [
-    { "id": "tc1", "input": "string", "expectedOutput": "string" }
+    { "id": "tc1", "input": "string", "expected": "string" }
   ],
   "timeLimitSec": 2,
   "memLimitKb": 65536
@@ -29,6 +29,10 @@
   문항 설정값을 매핑한다(현재 스펙에는 문항별 시간/메모리 제한이 없으므로 고정값 2초/64MB를
   기본값으로 사용).
 - `code`에는 언어를 별도로 명시하지 않는다(이 Grader는 C 전용으로 가정).
+- **테스트케이스 필드명은 `expected`다** — 처음 이 문서를 작성할 때는 `expectedOutput`으로
+  추정했으나, 실제 배포된 Grader에 호출해 확인한 결과 `expected`가 아니면 기대출력을 못
+  받아 항상 실패로 채점된다(2026-08-11, Cloud Logging으로 실측). `id`는 Grader가 응답에서
+  그대로 안 쓰므로(아래 참고) 넘겨도 무해하지만 매칭에는 쓰이지 않는다.
 
 ### Response — HTTP 200, 정상 처리
 
@@ -40,19 +44,36 @@
   "maxScore": 100,
   "compileErrorMessage": null,
   "tcResultsFull": [
-    { "id": "tc1", "passed": true, "input": "string", "expectedOutput": "string", "actualOutput": "string" }
+    {
+      "result": "✅PASS",
+      "earned": 20,
+      "isPublic": false,
+      "input": "string",
+      "expected": "string",
+      "actual": "string",
+      "memo": ""
+    }
   ]
 }
 ```
 
+- **`tcResultsFull`의 개별 항목에는 `id`/`passed` 필드가 없다** — 요청에 보낸 `testCases`와
+  **같은 순서(배열 인덱스)**로만 대응된다. Cloud Functions는 `id`로 매칭하지 않고
+  `items[index]`로 순서를 맞춘다(`functions/src/services/graderClient.ts`).
+- 개별 테스트케이스의 통과 여부는 `earned > 0`으로 판단한다(`passed` boolean이 없음).
+  `result`는 사람이 읽는 표시용 문자열(예: `"✅PASS"`/`"❌FAIL"`)이라 파싱에 쓰지 않는다.
+- `isPublic`은 Grader가 항상 자체 기본값(`false`)으로 채워 보낸다 — 요청에 공개 여부를
+  넘기지 않기 때문이며, Cloud Functions는 이 값을 신뢰하지 않고 자신이 갖고 있는
+  `problemSecrets.items[].isPublic`을 그대로 쓴다.
+- 응답의 `input`/`expected`/`actual` 필드명도 요청과 마찬가지로 `expectedOutput`/
+  `actualOutput`이 아니라 `expected`/`actual`이다.
 - Grader가 테스트케이스별 배점을 이미 알고 있다고 가정하지 않는다 — 배점(`points`)은 Cloud
-  Functions가 요청에 넘긴 `testCases` 순서/`id`와 `tcResultsFull`을 대조해 자체적으로
-  재계산한다(Grader의 `score`/`maxScore`는 참고용으로만 로그에 남기고, 학생에게 전달하는
-  최종 점수는 Cloud Functions가 문항 배점 기준으로 재계산한 값을 사용한다 — 헌법 원칙 I).
+  Functions가 요청에 넘긴 `testCases`와 같은 순서의 `tcResultsFull`을 대조해 자체적으로
+  재계산한다(Grader의 `score`/`maxScore`/`earned`는 참고용으로만 로그에 남기고, 학생에게
+  전달하는 최종 점수는 Cloud Functions가 문항 배점 기준으로 재계산한 값을 사용한다 — 헌법
+  원칙 I).
 - `status`는 최소 `JUDGED`(정상 채점) / `COMPILE_ERROR`(컴파일 실패) 값을 사용한다. 컴파일
   실패 시 `tcResultsFull`은 빈 배열이고 `compileErrorMessage`에 메시지가 담긴다.
-- `tcResultsFull`의 개별 항목이 런타임 오류인 경우 `passed: false`와 함께 오류 메시지 필드가
-  포함될 수 있다(정확한 필드명은 실제 응답 샘플로 확인 필요 — Open Item 참고).
 
 ### Response — HTTP 200이지만 `ok: false`, 또는 HTTP 비-200
 

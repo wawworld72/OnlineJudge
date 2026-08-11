@@ -92,7 +92,7 @@ describe("일괄 채점: 제출완료/미제출/이미확정 참가자가 섞인
         score: 100,
         maxScore: 100,
         compileErrorMessage: null,
-        tcResultsFull: [{ id: "tc1", passed: true, input: "1", expectedOutput: "1", actualOutput: "1" }],
+        tcResultsFull: [{ result: "✅PASS", earned: 100, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" }],
       }),
     } as Response);
 

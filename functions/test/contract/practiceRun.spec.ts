@@ -101,8 +101,8 @@ describe("practiceRun", () => {
       maxScore: 100,
       compileErrorMessage: null,
       tcResultsFull: [
-        { id: "tc1", passed: true, input: "1", expectedOutput: "1", actualOutput: "1" },
-        { id: "tc2", passed: true, input: "2", expectedOutput: "2", actualOutput: "2" },
+        { result: "✅PASS", earned: 60, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" },
+        { result: "✅PASS", earned: 40, isPublic: false, input: "2", expected: "2", actual: "2", memo: "" },
       ],
     });
 
@@ -130,8 +130,8 @@ describe("practiceRun", () => {
       maxScore: 100,
       compileErrorMessage: null,
       tcResultsFull: [
-        { id: "tc1", passed: false, input: "1", expectedOutput: "1", actualOutput: "x" },
-        { id: "tc2", passed: false, input: "2", expectedOutput: "2", actualOutput: "x" },
+        { result: "❌FAIL", earned: 0, isPublic: false, input: "1", expected: "1", actual: "x", memo: "" },
+        { result: "❌FAIL", earned: 0, isPublic: false, input: "2", expected: "2", actual: "x", memo: "" },
       ],
     });
 
@@ -156,8 +156,8 @@ describe("practiceRun", () => {
       maxScore: 100,
       compileErrorMessage: null,
       tcResultsFull: [
-        { id: "tc1", passed: true, input: "1", expectedOutput: "1", actualOutput: "1" },
-        { id: "tc2", passed: false, input: "2", expectedOutput: "2", actualOutput: "x" },
+        { result: "✅PASS", earned: 60, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" },
+        { result: "❌FAIL", earned: 0, isPublic: false, input: "2", expected: "2", actual: "x", memo: "" },
       ],
     });
 
@@ -182,8 +182,8 @@ describe("practiceRun", () => {
       maxScore: 100,
       compileErrorMessage: null,
       tcResultsFull: [
-        { id: "tc1", passed: false, input: "1", expectedOutput: "1", actualOutput: "x" },
-        { id: "tc2", passed: false, input: "2", expectedOutput: "2", actualOutput: "x" },
+        { result: "❌FAIL", earned: 0, isPublic: false, input: "1", expected: "1", actual: "x", memo: "" },
+        { result: "❌FAIL", earned: 0, isPublic: false, input: "2", expected: "2", actual: "x", memo: "" },
       ],
     });
 

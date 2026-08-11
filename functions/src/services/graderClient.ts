@@ -7,7 +7,24 @@ import type { RunResult, TestCase, TestCaseResult } from "../models/types";
 interface GraderWireTestCase {
   id: string;
   input: string;
-  expectedOutput: string;
+  expected: string;
+}
+
+/**
+ * 실제 배포된 Grader가 돌려주는 모양(2026-08-11 Cloud Logging으로 실측 확인) — `id`/
+ * `passed` 필드가 없고, 요청에 보낸 `testCases`와 같은 순서로 결과 배열을 돌려준다. 통과
+ * 여부는 `earned`(이 테스트케이스에서 획득한 점수)가 0보다 큰지로 판단한다. `isPublic`은
+ * Grader가 항상 `false`로 채워 보내므로(요청에 안 넘기니 당연히 기본값) 신뢰하지 않고,
+ * 우리가 저장한 `items[].isPublic`을 그대로 쓴다.
+ */
+interface GraderTcResult {
+  result: string;
+  earned: number;
+  isPublic: boolean;
+  input: string;
+  actual: string;
+  expected: string;
+  memo: string;
 }
 
 interface GraderWireResultOk {
@@ -16,13 +33,7 @@ interface GraderWireResultOk {
   score: number;
   maxScore: number;
   compileErrorMessage: string | null;
-  tcResultsFull: Array<{
-    id: string;
-    passed: boolean;
-    input: string;
-    expectedOutput: string;
-    actualOutput: string;
-  }>;
+  tcResultsFull: GraderTcResult[];
 }
 
 interface GraderWireResultError {
@@ -60,7 +71,6 @@ async function callGraderOnce(code: string, testCases: GraderWireTestCase[]): Pr
 }
 
 function buildRunResult(response: GraderWireResultOk, items: TestCase[]): RunResult {
-  const itemsById = new Map(items.map((item) => [item.tcId, item]));
   const maxScore = items.reduce((sum, item) => sum + item.points, 0);
 
   if (response.status === "COMPILE_ERROR") {
@@ -73,34 +83,29 @@ function buildRunResult(response: GraderWireResultOk, items: TestCase[]): RunRes
     };
   }
 
-  const anyMismatch = response.tcResultsFull.some((result) => !itemsById.has(result.id));
-  if (anyMismatch) {
-    logger.warn("graderClient: tcResultsFull items don't match known tcIds — logging raw shape to find the real field name", {
-      knownTcIds: items.map((i) => i.tcId),
-      rawTcResultsFull: response.tcResultsFull.map((result) => ({
-        keys: Object.keys(result as object),
-        stringified: JSON.stringify(result),
-      })),
+  if (response.tcResultsFull.length !== items.length) {
+    logger.warn("graderClient: tcResultsFull length doesn't match the number of test cases sent", {
+      sent: items.length,
+      received: response.tcResultsFull.length,
     });
   }
 
   let score = 0;
-  const tcResults: TestCaseResult[] = response.tcResultsFull.map((result) => {
-    const item = itemsById.get(result.id);
-    const points = item?.points ?? 0;
-    const isPublic = item?.isPublic ?? false;
-    if (result.passed) score += points;
+  const tcResults: TestCaseResult[] = items.map((item, index) => {
+    const result = response.tcResultsFull[index];
+    const passed = (result?.earned ?? 0) > 0;
+    if (passed) score += item.points;
 
-    return isPublic
+    return item.isPublic && result
       ? {
-          tcId: result.id,
-          passed: result.passed,
-          isPublic,
+          tcId: item.tcId,
+          passed,
+          isPublic: true,
           input: result.input,
-          expectedOutput: result.expectedOutput,
-          actualOutput: result.actualOutput,
+          expectedOutput: result.expected,
+          actualOutput: result.actual,
         }
-      : { tcId: result.id, passed: result.passed, isPublic };
+      : { tcId: item.tcId, passed, isPublic: item.isPublic };
   });
 
   return {
@@ -114,14 +119,14 @@ function buildRunResult(response: GraderWireResultOk, items: TestCase[]): RunRes
 
 /**
  * 문항의 `problemSecrets.items`를 그대로 넘겨 Grader를 호출하고, 비공개 테스트케이스를
- * 마스킹한 `RunResult`로 변환한다(contracts/grader-api.md). 점수는 Grader의 `score`를
- * 신뢰하지 않고 이 문항의 배점(`items[].points`) 기준으로 여기서 재계산한다(헌법 원칙 I).
+ * 마스킹한 `RunResult`로 변환한다. 점수는 Grader의 `score`를 신뢰하지 않고 이 문항의
+ * 배점(`items[].points`) 기준으로 여기서 재계산한다(헌법 원칙 I).
  */
 export async function grade(items: TestCase[], code: string): Promise<RunResult> {
   const testCases: GraderWireTestCase[] = items.map((item) => ({
     id: item.tcId,
     input: item.input,
-    expectedOutput: item.expected,
+    expected: item.expected,
   }));
 
   try {

@@ -99,7 +99,7 @@ describe("batchGrade", () => {
       score: 60,
       maxScore: 60,
       compileErrorMessage: null,
-      tcResultsFull: [{ id: "tc1", passed: true, input: "1", expectedOutput: "1", actualOutput: "1" }],
+      tcResultsFull: [{ result: "✅PASS", earned: 1, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" }],
     });
 
     const response = await batchGrade.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
@@ -166,7 +166,7 @@ describe("batchGrade", () => {
       score: 60,
       maxScore: 60,
       compileErrorMessage: null,
-      tcResultsFull: [{ id: "tc1", passed: true, input: "1", expectedOutput: "1", actualOutput: "1" }],
+      tcResultsFull: [{ result: "✅PASS", earned: 1, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" }],
     });
 
     const response = await batchGrade.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
@@ -183,7 +183,7 @@ describe("batchGrade", () => {
       score: 60,
       maxScore: 60,
       compileErrorMessage: null,
-      tcResultsFull: [{ id: "tc1", passed: true, input: "1", expectedOutput: "1", actualOutput: "1" }],
+      tcResultsFull: [{ result: "✅PASS", earned: 1, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" }],
     });
 
     const response = await batchGrade.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));

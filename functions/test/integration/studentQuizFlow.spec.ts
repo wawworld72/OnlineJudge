@@ -94,7 +94,7 @@ describe("학생 응시 전체 흐름 (입장 → 연습 실행 → 최종 제�
       score: 100,
       maxScore: 100,
       compileErrorMessage: null,
-      tcResultsFull: [{ id: "tc1", passed: true, input: "1", expectedOutput: "1", actualOutput: "1" }],
+      tcResultsFull: [{ result: "✅PASS", earned: 100, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" }],
     });
 
     const code = "int main(){ return 0; }";
