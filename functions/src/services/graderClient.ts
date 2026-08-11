@@ -1,6 +1,7 @@
 import { getGraderConfig } from "../config";
 import { retryOnce } from "../shared/retryOnce";
 import { systemError } from "../shared/errors";
+import { logger } from "firebase-functions/v2";
 import type { RunResult, TestCase, TestCaseResult } from "../models/types";
 
 interface GraderWireTestCase {
@@ -70,6 +71,17 @@ function buildRunResult(response: GraderWireResultOk, items: TestCase[]): RunRes
       compileErrorMessage: response.compileErrorMessage,
       tcResults: [],
     };
+  }
+
+  const anyMismatch = response.tcResultsFull.some((result) => !itemsById.has(result.id));
+  if (anyMismatch) {
+    logger.warn("graderClient: tcResultsFull items don't match known tcIds — logging raw shape to find the real field name", {
+      knownTcIds: items.map((i) => i.tcId),
+      rawTcResultsFull: response.tcResultsFull.map((result) => ({
+        keys: Object.keys(result as object),
+        stringified: JSON.stringify(result),
+      })),
+    });
   }
 
   let score = 0;
