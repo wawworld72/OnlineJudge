@@ -87,6 +87,12 @@ function buildRunResult(response: GraderWireResultOk, items: TestCase[]): RunRes
   let score = 0;
   const tcResults: TestCaseResult[] = response.tcResultsFull.map((result) => {
     const item = itemsById.get(result.id);
+    if (!item) {
+      logger.warn("graderClient: tcResultsFull.id has no matching tcId — check the Grader's echoed id format", {
+        receivedId: result.id,
+        knownTcIds: items.map((i) => i.tcId),
+      });
+    }
     const points = item?.points ?? 0;
     const isPublic = item?.isPublic ?? false;
     if (result.passed) score += points;
