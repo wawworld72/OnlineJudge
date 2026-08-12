@@ -3,7 +3,7 @@ import { logger } from "firebase-functions/v2";
 import { createCallable } from "../shared/callableFactory";
 import { pushGradesSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
-import { domainError } from "../shared/errors";
+import { domainError, systemError } from "../shared/errors";
 import { listCourseStudents, listStudentSubmissions, patchGrade } from "../services/classroomClient";
 import type { Participant, Quiz, Student } from "../models/types";
 
@@ -34,9 +34,14 @@ export const pushGrades = createCallable(pushGradesSchema, async ({ data, authEm
     );
   }
 
-  const classroomStudents = await listCourseStudents(quiz.courseId);
+  let classroomStudents, submissions;
+  try {
+    classroomStudents = await listCourseStudents(quiz.courseId);
+    submissions = await listStudentSubmissions(quiz.courseId, quiz.courseWorkId);
+  } catch (cause) {
+    throw systemError("pushGrades.listCourseStudentsOrSubmissions", cause);
+  }
   const userIdByEmail = new Map(classroomStudents.map((s) => [s.email, s.userId]));
-  const submissions = await listStudentSubmissions(quiz.courseId, quiz.courseWorkId);
   const submissionIdByUserId = new Map(submissions.map((s) => [s.userId, s.submissionId]));
 
   let succeeded = 0;

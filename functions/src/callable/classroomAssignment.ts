@@ -2,7 +2,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { deployClassroomAssignmentSchema, resetClassroomDeploymentSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
-import { domainError } from "../shared/errors";
+import { domainError, systemError } from "../shared/errors";
 import { computePreDeployCheck } from "../services/preDeployCheck";
 import { createCourseWork } from "../services/classroomClient";
 import type { Problem, Quiz } from "../models/types";
@@ -36,13 +36,18 @@ export const deployClassroomAssignment = createCallable(
       0,
     );
 
-    const result = await createCourseWork(
-      quiz.courseId,
-      quiz.title,
-      quiz.description,
-      maxPoints,
-      quiz.endAt.toDate(),
-    );
+    let result;
+    try {
+      result = await createCourseWork(
+        quiz.courseId,
+        quiz.title,
+        quiz.description,
+        maxPoints,
+        quiz.endAt.toDate(),
+      );
+    } catch (cause) {
+      throw systemError("deployClassroomAssignment.createCourseWork", cause);
+    }
 
     await quizRef.update({ courseWorkId: result.courseWorkId, courseWorkLink: result.alternateLink });
     return result;

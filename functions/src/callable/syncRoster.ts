@@ -2,6 +2,7 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { syncRosterSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
+import { systemError } from "../shared/errors";
 import { listCourseStudents } from "../services/classroomClient";
 import type { Student } from "../models/types";
 
@@ -18,7 +19,12 @@ export const syncRoster = createCallable(syncRosterSchema, async ({ data, authEm
   requireTeacher(authEmail);
   const db = getFirestore();
 
-  const classroomStudents = await listCourseStudents(data.courseId);
+  let classroomStudents;
+  try {
+    classroomStudents = await listCourseStudents(data.courseId);
+  } catch (cause) {
+    throw systemError("syncRoster.listCourseStudents", cause);
+  }
 
   let newStudents = 0;
   let updatedEmails = 0;

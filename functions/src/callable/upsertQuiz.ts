@@ -2,6 +2,7 @@ import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { upsertQuizSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
+import { normalizeClassroomCourseId } from "../shared/classroomCourseId";
 import type { Quiz } from "../models/types";
 
 export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, authEmail }) => {
@@ -15,7 +16,7 @@ export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, authEm
     endAt: Timestamp.fromMillis(data.endAt),
     accessCode: data.accessCode,
     maxRunsPerProblem: data.maxRunsPerProblem,
-    courseId: data.courseId,
+    courseId: data.courseId ? normalizeClassroomCourseId(data.courseId) : null,
   };
 
   if (data.quizId) {
