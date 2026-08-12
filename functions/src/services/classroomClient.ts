@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { logger } from "firebase-functions/v2";
 import { retryOnce } from "../shared/retryOnce";
 import { getClassroomServiceAccountKey } from "../config";
 
@@ -45,6 +46,12 @@ export async function listCourseStudents(
     let pageToken: string | undefined;
     do {
       const res = await api.courses.students.list({ courseId, pageToken });
+      logger.info("classroomClient.listCourseStudents: raw response", {
+        courseId,
+        rawStudentCount: res.data.students?.length ?? 0,
+        rawStudents: res.data.students,
+        nextPageToken: res.data.nextPageToken,
+      });
       for (const s of res.data.students ?? []) {
         if (s.userId && s.profile?.emailAddress) {
           students.push({
