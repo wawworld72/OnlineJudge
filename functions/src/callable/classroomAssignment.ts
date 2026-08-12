@@ -3,6 +3,7 @@ import { createCallable } from "../shared/callableFactory";
 import { deployClassroomAssignmentSchema, resetClassroomDeploymentSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
 import { domainError, systemError } from "../shared/errors";
+import { isAfter } from "../shared/timeAuthority";
 import { computePreDeployCheck } from "../services/preDeployCheck";
 import { createCourseWork } from "../services/classroomClient";
 import type { Problem, Quiz } from "../models/types";
@@ -20,6 +21,14 @@ export const deployClassroomAssignment = createCallable(
     }
     if (!quiz.courseId) {
       throw domainError("BLOCKED_BY_PREDEPLOY_CHECK", "연결된 분반이 없어 배포할 수 없습니다.");
+    }
+    if (isAfter(quiz.endAt)) {
+      // Classroom API 자체가 과거 마감일로 과제 생성을 거부한다("Due date must be in the
+      // future.") — 여기서 먼저 걸러야 사용자가 의미 없는 SYSTEM_ERROR 대신 실제 원인을 본다.
+      throw domainError(
+        "BLOCKED_BY_PREDEPLOY_CHECK",
+        "종료 시각이 이미 지난 퀴즈입니다. 기본정보에서 종료 시각을 미래로 수정한 뒤 다시 시도해주세요.",
+      );
     }
 
     const { blockingCount } = await computePreDeployCheck(db, data.quizId);
