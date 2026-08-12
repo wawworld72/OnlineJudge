@@ -44,6 +44,7 @@ export const deployClassroomAssignment = createCallable(
         quiz.description,
         maxPoints,
         quiz.endAt.toDate(),
+        authEmail,
       );
     } catch (cause) {
       throw systemError("deployClassroomAssignment.createCourseWork", cause);

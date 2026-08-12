@@ -102,6 +102,6 @@ describe("교사의 Classroom 연동 흐름 (수강생 동기화 → 과제 배�
     const pushResult = await pushGrades.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
 
     expect(pushResult.succeeded).toBe(1);
-    expect(patchGrade).toHaveBeenCalledWith(COURSE_ID, "cw-1", "sub-1", 100);
+    expect(patchGrade).toHaveBeenCalledWith(COURSE_ID, "cw-1", "sub-1", 100, TEACHER_EMAIL);
   });
 });

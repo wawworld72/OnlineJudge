@@ -13,6 +13,20 @@ export function getGraderConfig() {
   };
 }
 
+/**
+ * Google Classroom API는 서비스 계정 단독으로는 강의 데이터에 접근할 수 없다 — Workspace
+ * 관리자가 도메인 전체 위임(Domain-wide delegation)으로 이 서비스 계정에 권한을 부여한
+ * 뒤에만, 이 키로 실제 교사 계정을 대신(impersonate)해서 호출할 수 있다
+ * (functions/src/services/classroomClient.ts). GitHub Actions 배포 워크플로우가
+ * FIREBASE_SERVICE_ACCOUNT를 그대로 재사용해 base64로 인코딩한 값을 여기 넣는다 — 개행이
+ * 있는 JSON 키를 .env에 안전하게 담기 위한 인코딩일 뿐, 별도 키가 아니다.
+ */
+export function getClassroomServiceAccountKey(): { client_email: string; private_key: string } {
+  const encoded = requireEnv("CLASSROOM_SERVICE_ACCOUNT_KEY_B64");
+  const decoded = Buffer.from(encoded, "base64").toString("utf8");
+  return JSON.parse(decoded);
+}
+
 export function getAllowedEmailDomain(): string {
   return process.env.ALLOWED_EMAIL_DOMAIN ?? "hoseo.edu";
 }

@@ -36,8 +36,8 @@ export const pushGrades = createCallable(pushGradesSchema, async ({ data, authEm
 
   let classroomStudents, submissions;
   try {
-    classroomStudents = await listCourseStudents(quiz.courseId);
-    submissions = await listStudentSubmissions(quiz.courseId, quiz.courseWorkId);
+    classroomStudents = await listCourseStudents(quiz.courseId, authEmail);
+    submissions = await listStudentSubmissions(quiz.courseId, quiz.courseWorkId, authEmail);
   } catch (cause) {
     throw systemError("pushGrades.listCourseStudentsOrSubmissions", cause);
   }
@@ -66,7 +66,7 @@ export const pushGrades = createCallable(pushGradesSchema, async ({ data, authEm
     }
 
     try {
-      await patchGrade(quiz.courseId, quiz.courseWorkId, submissionId, participant.finalTotal);
+      await patchGrade(quiz.courseId, quiz.courseWorkId, submissionId, participant.finalTotal, authEmail);
       await doc.ref.update({ gradePushedAt: FieldValue.serverTimestamp() });
       succeeded += 1;
     } catch (cause) {

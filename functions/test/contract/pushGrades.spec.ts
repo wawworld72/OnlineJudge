@@ -105,7 +105,7 @@ describe("pushGrades", () => {
 
     expect(response.succeeded).toBe(1);
     expect(response.failed).toBe(0);
-    expect(patchGrade).toHaveBeenCalledWith("course-1", "cw-1", "sub-1", 90);
+    expect(patchGrade).toHaveBeenCalledWith("course-1", "cw-1", "sub-1", 90, TEACHER_EMAIL);
 
     const participant = (
       await testDb().collection("participants").doc(`${QUIZ_ID}_20240001`).get()

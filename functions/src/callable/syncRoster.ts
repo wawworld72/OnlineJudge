@@ -21,7 +21,7 @@ export const syncRoster = createCallable(syncRosterSchema, async ({ data, authEm
 
   let classroomStudents;
   try {
-    classroomStudents = await listCourseStudents(data.courseId);
+    classroomStudents = await listCourseStudents(data.courseId, authEmail);
   } catch (cause) {
     throw systemError("syncRoster.listCourseStudents", cause);
   }
