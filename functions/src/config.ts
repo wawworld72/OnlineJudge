@@ -27,6 +27,11 @@ export function getClassroomServiceAccountKey(): { client_email: string; private
   return JSON.parse(decoded);
 }
 
+/** Classroom 과제에 첨부하는 "바로가기" 링크(`/quiz/{quizId}`)를 만들 때 쓰는 배포된 웹앱의 기본 URL. */
+export function getAppBaseUrl(): string {
+  return requireEnv("APP_BASE_URL");
+}
+
 export function getAllowedEmailDomain(): string {
   return process.env.ALLOWED_EMAIL_DOMAIN ?? "hoseo.edu";
 }

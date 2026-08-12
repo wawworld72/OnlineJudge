@@ -8,6 +8,7 @@ process.env.GRADER_SERVICE_URL ??= "http://127.0.0.1:9999";
 process.env.GRADER_AUTH_TOKEN ??= "test-grader-token";
 process.env.ALLOWED_EMAIL_DOMAIN ??= "hoseo.edu";
 process.env.TEACHER_EMAILS ??= "teacher@hoseo.edu";
+process.env.APP_BASE_URL ??= "https://demo-c-quiz-judge-system.web.app";
 
 let db: Firestore | null = null;
 

@@ -71,6 +71,7 @@ export async function createCourseWork(
   description: string,
   maxPoints: number,
   dueAt: Date,
+  joinUrl: string,
   impersonateEmail: string,
 ): Promise<CreateCourseWorkResult> {
   return retryOnce(async () => {
@@ -85,6 +86,7 @@ export async function createCourseWork(
         maxPoints,
         dueDate: { year: dueAt.getUTCFullYear(), month: dueAt.getUTCMonth() + 1, day: dueAt.getUTCDate() },
         dueTime: { hours: dueAt.getUTCHours(), minutes: dueAt.getUTCMinutes() },
+        materials: [{ link: { url: joinUrl } }],
       },
     });
     return {

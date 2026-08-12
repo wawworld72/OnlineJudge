@@ -4,6 +4,7 @@ import { deployClassroomAssignmentSchema, resetClassroomDeploymentSchema } from 
 import { requireTeacher } from "../shared/authorization";
 import { domainError, systemError } from "../shared/errors";
 import { isAfter } from "../shared/timeAuthority";
+import { getAppBaseUrl } from "../config";
 import { computePreDeployCheck } from "../services/preDeployCheck";
 import { createCourseWork } from "../services/classroomClient";
 import type { Problem, Quiz } from "../models/types";
@@ -45,6 +46,8 @@ export const deployClassroomAssignment = createCallable(
       0,
     );
 
+    const joinUrl = `${getAppBaseUrl()}/quiz/${data.quizId}`;
+
     let result;
     try {
       result = await createCourseWork(
@@ -53,6 +56,7 @@ export const deployClassroomAssignment = createCallable(
         quiz.description,
         maxPoints,
         quiz.endAt.toDate(),
+        joinUrl,
         authEmail,
       );
     } catch (cause) {
