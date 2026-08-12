@@ -66,17 +66,21 @@ export function ParticipantStatus({ quizId }: ParticipantStatusProps) {
       </table>
 
       {detail && (
-        <div role="dialog" aria-modal="true">
-          <h4>{detail.studentId} 상세</h4>
-          {Object.entries(detail.data.runResults).map(([problemId, result]) => (
-            <div key={problemId}>
-              <p>
-                {problemId}: {result.status} ({result.score} / {result.maxScore})
-              </p>
-              <pre>{detail.data.submissions[problemId]?.code}</pre>
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-box">
+            <h4>{detail.studentId} 상세</h4>
+            {Object.entries(detail.data.runResults).map(([problemId, result]) => (
+              <div key={problemId} style={{ marginBottom: 12 }}>
+                <p>
+                  {problemId}: {result.status} ({result.score} / {result.maxScore})
+                </p>
+                <pre className="result-box">{detail.data.submissions[problemId]?.code}</pre>
+              </div>
+            ))}
+            <div className="modal-actions">
+              <button onClick={() => setDetail(null)}>닫기</button>
             </div>
-          ))}
-          <button onClick={() => setDetail(null)}>닫기</button>
+          </div>
         </div>
       )}
     </div>

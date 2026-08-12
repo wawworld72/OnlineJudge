@@ -28,18 +28,22 @@ export function BatchGrade({ quizId }: BatchGradeProps) {
       />
 
       {result && (
-        <div role="dialog" aria-modal="true">
-          <h3>일괄 채점 결과</h3>
-          <p>처리: {result.processed}명</p>
-          <p>스킵(이미 확정): {result.skipped}명</p>
-          <p>실패: {result.failed}명</p>
-          {result.failed > 0 && <p>실패한 학번: {result.failedParticipantIds.join(", ")}</p>}
-          {result.classroomGradesPending && (
-            <p role="alert">
-              확정된 성적이 아직 Classroom에 반영되지 않았습니다. 성적 반영을 실행해주세요.
-            </p>
-          )}
-          <button onClick={() => setResult(null)}>닫기</button>
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-box">
+            <h3>일괄 채점 결과</h3>
+            <p>처리: {result.processed}명</p>
+            <p>스킵(이미 확정): {result.skipped}명</p>
+            <p>실패: {result.failed}명</p>
+            {result.failed > 0 && <p>실패한 학번: {result.failedParticipantIds.join(", ")}</p>}
+            {result.classroomGradesPending && (
+              <p role="alert" className="warning">
+                확정된 성적이 아직 Classroom에 반영되지 않았습니다. 성적 반영을 실행해주세요.
+              </p>
+            )}
+            <div className="modal-actions">
+              <button onClick={() => setResult(null)}>닫기</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

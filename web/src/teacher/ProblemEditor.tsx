@@ -54,40 +54,43 @@ export function ProblemEditor({ quizId, problems, onChanged }: ProblemEditorProp
   return (
     <div>
       <h3>문항</h3>
+      {problems.length === 0 && <p className="muted">아직 등록된 문항이 없습니다.</p>}
       {problems.map((problem) => (
         <ProblemPanel key={problem.problemId} quizId={quizId} problem={problem} onChanged={onChanged} />
       ))}
 
-      <h4>새 문항 추가</h4>
-      <label>
-        제목
-        <input
-          value={newProblem.title}
-          onChange={(e) => setNewProblem({ ...newProblem, title: e.target.value })}
-        />
-      </label>
-      <label>
-        설명 (Markdown)
-        <textarea
-          value={newProblem.description}
-          onChange={(e) => setNewProblem({ ...newProblem, description: e.target.value })}
-        />
-      </label>
-      <label>
-        초기 코드
-        <textarea
-          value={newProblem.initialCode}
-          onChange={(e) => setNewProblem({ ...newProblem, initialCode: e.target.value })}
-        />
-      </label>
-      <label>
-        문항별 최대 실행 횟수 (비우면 퀴즈 기본값 사용)
-        <input
-          value={newProblem.maxRuns}
-          onChange={(e) => setNewProblem({ ...newProblem, maxRuns: e.target.value })}
-        />
-      </label>
-      <button onClick={addProblem}>문항 추가</button>
+      <div className="problem-panel">
+        <h4>새 문항 추가</h4>
+        <label>
+          제목
+          <input
+            value={newProblem.title}
+            onChange={(e) => setNewProblem({ ...newProblem, title: e.target.value })}
+          />
+        </label>
+        <label>
+          설명 (Markdown)
+          <textarea
+            value={newProblem.description}
+            onChange={(e) => setNewProblem({ ...newProblem, description: e.target.value })}
+          />
+        </label>
+        <label>
+          초기 코드
+          <textarea
+            value={newProblem.initialCode}
+            onChange={(e) => setNewProblem({ ...newProblem, initialCode: e.target.value })}
+          />
+        </label>
+        <label>
+          문항별 최대 실행 횟수 (비우면 퀴즈 기본값 사용)
+          <input
+            value={newProblem.maxRuns}
+            onChange={(e) => setNewProblem({ ...newProblem, maxRuns: e.target.value })}
+          />
+        </label>
+        <button onClick={addProblem}>문항 추가</button>
+      </div>
     </div>
   );
 }
@@ -137,7 +140,7 @@ function ProblemPanel({
   }
 
   return (
-    <div>
+    <div className="problem-panel">
       <h4>
         {problem.title} (배점 합계: {problem.pointsTotal})
       </h4>
@@ -148,10 +151,14 @@ function ProblemPanel({
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
           <textarea value={initialCode} onChange={(e) => setInitialCode(e.target.value)} />
           <button onClick={saveMetadata}>저장</button>
-          <button onClick={() => setEditing(false)}>취소</button>
+          <button className="secondary" onClick={() => setEditing(false)}>
+            취소
+          </button>
         </div>
       ) : (
-        <button onClick={() => setEditing(true)}>문항 정보 수정</button>
+        <button className="secondary" onClick={() => setEditing(true)}>
+          문항 정보 수정
+        </button>
       )}
 
       <DelayedActionButton
@@ -162,7 +169,8 @@ function ProblemPanel({
       />
 
       <h5>테스트케이스</h5>
-      <ul>
+      {problem.testCases.length === 0 && <p className="muted">아직 등록된 테스트케이스가 없습니다.</p>}
+      <ul className="tc-list">
         {problem.testCases.map((tc) => (
           <TestCaseRow
             key={tc.tcId}
@@ -198,12 +206,12 @@ function ProblemPanel({
         />
       </label>
       <label>
-        공개 여부
         <input
           type="checkbox"
           checked={newTestCase.isPublic}
           onChange={(e) => setNewTestCase({ ...newTestCase, isPublic: e.target.checked })}
         />
+        공개 여부
       </label>
       <button onClick={addTestCase}>테스트케이스 추가</button>
     </div>
@@ -221,15 +229,73 @@ function TestCaseRow({
   testCase: TestCaseDetail;
   onChanged: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(testCase);
+
+  async function saveEdit() {
+    await upsertTestCase({ quizId, problemId, testCase: draft });
+    setEditing(false);
+    onChanged();
+  }
+
   async function removeTestCase() {
     await deleteTestCase({ quizId, problemId, tcId: testCase.tcId });
     onChanged();
   }
 
+  if (editing) {
+    return (
+      <li style={{ flexDirection: "column", alignItems: "stretch" }}>
+        <label>
+          입력값
+          <textarea value={draft.input} onChange={(e) => setDraft({ ...draft, input: e.target.value })} />
+        </label>
+        <label>
+          기대 출력값
+          <textarea
+            value={draft.expected}
+            onChange={(e) => setDraft({ ...draft, expected: e.target.value })}
+          />
+        </label>
+        <label>
+          배점
+          <input
+            type="number"
+            value={draft.points}
+            onChange={(e) => setDraft({ ...draft, points: Number(e.target.value) })}
+          />
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={draft.isPublic}
+            onChange={(e) => setDraft({ ...draft, isPublic: e.target.checked })}
+          />
+          공개 여부
+        </label>
+        <div>
+          <button onClick={saveEdit}>저장</button>
+          <button className="secondary" onClick={() => setEditing(false)}>
+            취소
+          </button>
+        </div>
+      </li>
+    );
+  }
+
   return (
     <li>
-      #{testCase.tcNo} {testCase.isPublic ? "(공개)" : "(비공개)"} - {testCase.points}점
-      <button onClick={removeTestCase}>삭제</button>
+      <span>
+        #{testCase.tcNo} {testCase.isPublic ? "(공개)" : "(비공개)"} - {testCase.points}점
+      </span>
+      <span>
+        <button className="secondary" onClick={() => setEditing(true)}>
+          수정
+        </button>
+        <button className="danger" onClick={removeTestCase}>
+          삭제
+        </button>
+      </span>
     </li>
   );
 }

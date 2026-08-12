@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
-import { runPreDeployCheck, type CheckItem } from "./api";
+import { runPreDeployCheck, type CheckItem, type CheckLevel } from "./api";
 
 interface PreDeployCheckProps {
   quizId: string;
 }
+
+const LEVEL_CLASS: Record<CheckLevel, string> = {
+  PASS: "success",
+  WARN: "warning",
+  BLOCK: "error",
+};
 
 /**
  * 배포 전 점검 결과 패널(FR-007). Classroom 두 항목(`classroomRosterSync`/
@@ -31,11 +37,13 @@ export function PreDeployCheck({ quizId }: PreDeployCheckProps) {
       />
 
       {items && (
-        <div>
-          <p>{blockingCount > 0 ? `차단 항목 ${blockingCount}건` : "차단 항목 없음"}</p>
+        <div className="result-box">
+          <p className={blockingCount > 0 ? "error" : "success"}>
+            {blockingCount > 0 ? `차단 항목 ${blockingCount}건` : "차단 항목 없음"}
+          </p>
           <ul>
             {items.map((item) => (
-              <li key={item.key}>
+              <li key={item.key} className={LEVEL_CLASS[item.level]}>
                 [{item.level}] {item.message}
               </li>
             ))}

@@ -1,0 +1,110 @@
+/* 교사 화면(QuizManager 등) 전용 스타일 — student.css의 카드/버튼/테이블 스타일을
+   그대로 공유하고, 여기서는 탭 내비게이션과 상태 배지만 추가한다. */
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.status-badge.DRAFT {
+  background: #eee;
+  color: #555;
+}
+
+.status-badge.OPEN {
+  background: #e8f5e9;
+  color: #0b7a28;
+}
+
+.status-badge.CLOSED {
+  background: #fff0f0;
+  color: #b00020;
+}
+
+.quiz-list-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.quiz-list-item:hover {
+  border-color: #222;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 16px 0 0;
+  border-bottom: 2px solid #ddd;
+}
+
+.tab-btn {
+  padding: 10px 16px;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: #f5f5f5;
+  color: #444;
+  margin: 0;
+}
+
+.tab-btn.active {
+  background: white;
+  border-color: #222;
+  color: #222;
+  font-weight: bold;
+  position: relative;
+  top: 1px;
+}
+
+.tab-panel {
+  border-top: none;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #888;
+  font-weight: normal;
+  margin: 2px 0 0;
+}
+
+.problem-panel {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fafafa;
+}
+
+.problem-panel h4 {
+  margin-top: 0;
+}
+
+.tc-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+
+.tc-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  margin-bottom: 6px;
+}

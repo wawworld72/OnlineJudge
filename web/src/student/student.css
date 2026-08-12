@@ -33,7 +33,7 @@ label {
   margin: 12px 0 6px;
 }
 
-input {
+input:not([type="checkbox"]) {
   width: 100%;
   max-width: 420px;
   box-sizing: border-box;
@@ -41,6 +41,25 @@ input {
   font-size: 15px;
   border: 1px solid #bbb;
   border-radius: 6px;
+}
+
+input[type="checkbox"] {
+  width: auto;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  min-height: 80px;
+  resize: vertical;
 }
 
 button {

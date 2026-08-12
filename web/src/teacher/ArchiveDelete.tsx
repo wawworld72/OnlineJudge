@@ -57,16 +57,26 @@ export function ArchiveDelete({
       <button onClick={() => setConfirmingDelete(true)}>데이터 삭제</button>
 
       {confirmingDelete && (
-        <div role="dialog" aria-modal="true">
-          <p>삭제된 데이터는 복구할 수 없습니다.</p>
-          {!archivedAt && <p role="alert">아직 아카이브하지 않았습니다. 그래도 삭제하시겠습니까?</p>}
-          <button onClick={() => setConfirmingDelete(false)}>취소</button>
-          <DelayedActionButton
-            label="삭제 확정"
-            pendingLabel="삭제 중..."
-            delayedLabel="삭제에 시간이 걸리고 있습니다..."
-            onAction={confirmDelete}
-          />
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-box">
+            <p>삭제된 데이터는 복구할 수 없습니다.</p>
+            {!archivedAt && (
+              <p role="alert" className="error">
+                아직 아카이브하지 않았습니다. 그래도 삭제하시겠습니까?
+              </p>
+            )}
+            <div className="modal-actions">
+              <button className="secondary" onClick={() => setConfirmingDelete(false)}>
+                취소
+              </button>
+              <DelayedActionButton
+                label="삭제 확정"
+                pendingLabel="삭제 중..."
+                delayedLabel="삭제에 시간이 걸리고 있습니다..."
+                onAction={confirmDelete}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
