@@ -6,6 +6,11 @@ import { getClassroomServiceAccountKey } from "../config";
 const SCOPES = [
   "https://www.googleapis.com/auth/classroom.rosters.readonly",
   "https://www.googleapis.com/auth/classroom.coursework.students",
+  // rosters.readonly만으로는 학생 프로필에 emailAddress가 채워지지 않는다 — 이 범위가
+  // 별도로 있어야 한다(2026-08-12, 실제 응답에 profile.name만 있고 emailAddress가
+  // 통째로 빠져 있음을 로그로 확인). Workspace 관리자 콘솔의 도메인 위임 설정도 이 범위를
+  // 포함해서 다시 승인해야 한다 — 코드만 바꿔서는 적용되지 않는다.
+  "https://www.googleapis.com/auth/classroom.profile.emails",
 ];
 
 /**
@@ -46,12 +51,6 @@ export async function listCourseStudents(
     let pageToken: string | undefined;
     do {
       const res = await api.courses.students.list({ courseId, pageToken });
-      logger.info("classroomClient.listCourseStudents: raw response", {
-        courseId,
-        rawStudentCount: res.data.students?.length ?? 0,
-        rawStudents: res.data.students,
-        nextPageToken: res.data.nextPageToken,
-      });
       for (const s of res.data.students ?? []) {
         if (s.userId && s.profile?.emailAddress) {
           students.push({
@@ -59,6 +58,10 @@ export async function listCourseStudents(
             email: s.profile.emailAddress,
             name: s.profile.name?.fullName ?? s.profile.emailAddress,
           });
+        } else if (s.userId) {
+          // classroom.profile.emails 범위가 없으면 profile.emailAddress가 통째로 비어
+          // 온다 — 학생 이름/ID를 로그에 남기지 않고 건수만 남긴다(개인정보 보호).
+          logger.warn("classroomClient.listCourseStudents: student missing emailAddress", { courseId });
         }
       }
       pageToken = res.data.nextPageToken ?? undefined;
