@@ -4,6 +4,7 @@ import { getParticipantDetailSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
 import { computeParticipantId } from "../shared/participantId";
 import { domainError } from "../shared/errors";
+import { normalizeStudentId } from "../shared/identity";
 import type { Participant } from "../models/types";
 
 export const getParticipantDetail = createCallable(
@@ -11,7 +12,7 @@ export const getParticipantDetail = createCallable(
   async ({ data, authEmail }) => {
     requireTeacher(authEmail);
     const db = getFirestore();
-    const participantId = computeParticipantId(data.quizId, data.studentId);
+    const participantId = computeParticipantId(data.quizId, normalizeStudentId(data.studentId));
     const snap = await db.collection("participants").doc(participantId).get();
     if (!snap.exists) {
       throw domainError("NOT_ENTERED", "아직 입장하지 않은 학생입니다.");

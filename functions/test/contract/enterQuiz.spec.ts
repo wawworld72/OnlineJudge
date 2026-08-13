@@ -112,6 +112,27 @@ describe("enterQuiz", () => {
     expect(participant.runResults).toEqual({});
   });
 
+  it("영문 계정명 학번은 대소문자가 달라도 정규화되어 입장에 성공한다", async () => {
+    const db = testDb();
+    await db.collection("students").doc("gihyun.hong").set({
+      name: "Gihyun Hong",
+      email: "gihyun.hong@gmail.com",
+      status: "ACTIVE",
+    });
+
+    const response = await enterQuiz.run(
+      makeRequest(
+        { quizId: QUIZ_ID, accessCode: "ABC123", studentId: "Gihyun.Hong", name: "gihyun hong" },
+        "gihyun.hong@gmail.com",
+      ),
+    );
+
+    expect(response.participantStatus).toBe("IN_PROGRESS");
+    expect(response.studentId).toBe("gihyun.hong");
+    const participantSnap = await db.collection("participants").doc(`${QUIZ_ID}_gihyun.hong`).get();
+    expect(participantSnap.exists).toBe(true);
+  });
+
   it("이미 입장한 참가자가 다시 호출해도 기존 문서를 덮어쓰지 않는다(멱등성)", async () => {
     const request = makeRequest(
       { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },

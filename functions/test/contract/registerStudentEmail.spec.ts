@@ -62,4 +62,24 @@ describe("registerStudentEmail", () => {
       ),
     ).rejects.toMatchObject({ details: { code: "IDENTITY_MISMATCH" } });
   });
+
+  it("영문 계정명 학번·이름은 대소문자·공백이 달라도 등록에 성공한다", async () => {
+    const db = testDb();
+    await db.collection("students").doc("gihyun.hong").set({
+      name: "Gihyun Hong",
+      email: null,
+      status: "ACTIVE",
+    });
+
+    const response = await registerStudentEmail.run(
+      makeRequest(
+        { studentId: "Gihyun.Hong", name: "  gihyun hong  " },
+        "gihyun.hong@gmail.com",
+      ),
+    );
+
+    expect(response.ok).toBe(true);
+    const student = (await db.collection("students").doc("gihyun.hong").get()).data()!;
+    expect(student.email).toBe("gihyun.hong@gmail.com");
+  });
 });

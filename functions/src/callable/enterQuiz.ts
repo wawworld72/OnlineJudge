@@ -1,7 +1,7 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { enterQuizSchema } from "../shared/schemas";
-import { verifyStudentIdentity } from "../shared/identity";
+import { normalizeStudentId, verifyStudentIdentity } from "../shared/identity";
 import { computeParticipantId } from "../shared/participantId";
 import { isWithin } from "../shared/timeAuthority";
 import { domainError } from "../shared/errors";
@@ -30,13 +30,15 @@ export const enterQuiz = createCallable(
       throw domainError("QUIZ_NOT_OPEN", "지금은 응시할 수 없는 퀴즈입니다.");
     }
 
+    const studentId = normalizeStudentId(data.studentId);
+
     await verifyStudentIdentity(db, {
-      studentId: data.studentId,
+      studentId,
       name: data.name,
       authEmail,
     });
 
-    const participantId = computeParticipantId(data.quizId, data.studentId);
+    const participantId = computeParticipantId(data.quizId, studentId);
     const participantRef = db.collection("participants").doc(participantId);
     const participantSnap = await participantRef.get();
 
@@ -46,7 +48,7 @@ export const enterQuiz = createCallable(
     } else {
       const newParticipant: Participant = {
         quizId: data.quizId,
-        studentId: data.studentId,
+        studentId,
         enteredAt: FieldValue.serverTimestamp() as never,
         finalStatus: "IN_PROGRESS",
         finalSubmittedAt: null,
@@ -106,7 +108,7 @@ export const enterQuiz = createCallable(
       startAt: quiz.startAt.toMillis(),
       endAt: quiz.endAt.toMillis(),
       quizTitle: quiz.title,
-      studentId: data.studentId,
+      studentId,
       studentName: data.name,
       studentEmail: authEmail,
     };

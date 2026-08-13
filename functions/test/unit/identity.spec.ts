@@ -1,6 +1,10 @@
 import { beforeEach, afterAll, describe, expect, it } from "vitest";
 import { clearFirestore, teardownTestApp, testDb } from "../testEnv";
-import { resolveStudentIdByEmail, verifyStudentIdentity } from "../../src/shared/identity";
+import {
+  normalizeStudentId,
+  resolveStudentIdByEmail,
+  verifyStudentIdentity,
+} from "../../src/shared/identity";
 
 describe("identity", () => {
   beforeEach(async () => {
@@ -72,6 +76,30 @@ describe("identity", () => {
           authEmail: "someone-else@hoseo.edu",
         }),
       ).rejects.toMatchObject({ details: { code: "IDENTITY_MISMATCH" } });
+    });
+
+    it("영문 이름은 대소문자·앞뒤 공백이 달라도 통과한다", async () => {
+      await testDb().collection("students").doc("gihyun.hong").set({
+        name: "Gihyun Hong",
+        email: "gihyun.hong@gmail.com",
+        status: "ACTIVE",
+      });
+      const result = await verifyStudentIdentity(testDb(), {
+        studentId: "gihyun.hong",
+        name: "  gihyun hong  ",
+        authEmail: "gihyun.hong@gmail.com",
+      });
+      expect(result.studentId).toBe("gihyun.hong");
+    });
+  });
+
+  describe("normalizeStudentId", () => {
+    it("앞뒤 공백을 제거하고 소문자로 바꾼다", () => {
+      expect(normalizeStudentId("  Gihyun.Hong  ")).toBe("gihyun.hong");
+    });
+
+    it("숫자 학번은 그대로 유지된다", () => {
+      expect(normalizeStudentId("20240001")).toBe("20240001");
     });
   });
 
