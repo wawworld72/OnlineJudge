@@ -59,8 +59,6 @@ export const enterQuiz = createCallable(
         finalStatus: "IN_PROGRESS",
         finalSubmittedAt: null,
         finalTotal: 0,
-        completedCount: 0,
-        totalCount: 0,
         runsUsedByProblem: {},
         submissions: {},
         runResults: {},

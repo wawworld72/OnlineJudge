@@ -89,8 +89,6 @@ describe("교사의 Classroom 연동 흐름 (수강생 동기화 → 과제 배�
         finalStatus: "FINALIZED",
         finalSubmittedAt: Timestamp.now(),
         finalTotal: 100,
-        completedCount: 1,
-        totalCount: 1,
         runsUsedByProblem: {},
         submissions: {},
         runResults: {},

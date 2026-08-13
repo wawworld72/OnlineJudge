@@ -51,8 +51,6 @@ async function seedParticipant(studentId: string, finalStatus: "SUBMITTED" | "IN
       finalStatus,
       finalSubmittedAt: finalStatus === "IN_PROGRESS" ? null : FieldValue.serverTimestamp(),
       finalTotal: finalStatus === "FINALIZED" ? 100 : 0,
-      completedCount: 0,
-      totalCount: 1,
       runsUsedByProblem: {},
       submissions:
         finalStatus === "IN_PROGRESS" ? {} : { [PROBLEM_ID]: { code: "int main(){}", submittedAt: Timestamp.now() } },

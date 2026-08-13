@@ -69,7 +69,6 @@ export const syncRoster = createCallable(syncRosterSchema, async ({ data, authEm
     const rosterSnap = await rosterRef.get();
     const rosterFields = {
       courseId: data.courseId,
-      courseName: data.courseId,
       studentId,
       name: classroomStudent.name,
       email: classroomStudent.email,

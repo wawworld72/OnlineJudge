@@ -47,8 +47,6 @@ async function seedQuiz(archivedAt: Timestamp | null) {
       finalStatus: "FINALIZED",
       finalSubmittedAt: Timestamp.now(),
       finalTotal: 100,
-      completedCount: 1,
-      totalCount: 1,
       runsUsedByProblem: {},
       submissions: {},
       runResults: {},

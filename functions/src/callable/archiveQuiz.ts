@@ -1,4 +1,4 @@
-import { getFirestore, FieldValue, type Timestamp } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { archiveQuizSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
@@ -90,14 +90,5 @@ export const archiveQuiz = createCallable(archiveQuizSchema, async ({ data, auth
   }
 
   await quizRef.update({ archivedAt: FieldValue.serverTimestamp(), archiveSpreadsheetUrl: created.url });
-  const archiveRef = db.collection("archives").doc(data.quizId);
-  await archiveRef.set({
-    quizId: data.quizId,
-    createdAt: FieldValue.serverTimestamp(),
-    spreadsheetUrl: created.url,
-    createdBy: authEmail,
-  });
-
-  const archive = (await archiveRef.get()).data()!;
-  return { spreadsheetUrl: created.url, createdAt: (archive.createdAt as Timestamp).toMillis() };
+  return { spreadsheetUrl: created.url };
 });

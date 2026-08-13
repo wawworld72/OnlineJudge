@@ -71,8 +71,6 @@ async function seedQuizAndProblem() {
       finalStatus: "IN_PROGRESS",
       finalSubmittedAt: null,
       finalTotal: 0,
-      completedCount: 0,
-      totalCount: 1,
       runsUsedByProblem: {},
       submissions: {},
       runResults: {},

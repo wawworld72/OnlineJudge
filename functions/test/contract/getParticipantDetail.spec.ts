@@ -27,8 +27,6 @@ describe("getParticipantDetail", () => {
         finalStatus: "FINALIZED",
         finalSubmittedAt: Timestamp.now(),
         finalTotal: 100,
-        completedCount: 1,
-        totalCount: 1,
         runsUsedByProblem: {},
         submissions: { p1: { code: "int main(){}", submittedAt: Timestamp.now() } },
         runResults: {

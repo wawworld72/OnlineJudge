@@ -10,7 +10,6 @@ export interface Student {
 
 export interface Roster {
   courseId: string;
-  courseName: string;
   studentId: string;
   name: string;
   email: string;
@@ -101,8 +100,6 @@ export interface Participant {
   finalStatus: FinalStatus;
   finalSubmittedAt: Timestamp | null;
   finalTotal: number;
-  completedCount: number;
-  totalCount: number;
   runsUsedByProblem: Record<string, number>;
   submissions: Record<string, Submission>;
   runResults: Record<string, RunResult>;
@@ -121,11 +118,4 @@ export interface AccessLog {
   timestamp: Timestamp;
   userAgent: string;
   expiresAt: Timestamp;
-}
-
-export interface ArchiveExport {
-  quizId: string;
-  createdAt: Timestamp;
-  spreadsheetUrl: string;
-  createdBy: string;
 }

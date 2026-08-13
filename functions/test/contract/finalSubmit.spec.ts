@@ -50,8 +50,6 @@ async function seedQuiz(endAtMs: number, status: "OPEN" | "CLOSED" = "OPEN") {
       finalStatus: "IN_PROGRESS",
       finalSubmittedAt: null,
       finalTotal: 0,
-      completedCount: 0,
-      totalCount: 1,
       runsUsedByProblem: {},
       submissions: {},
       runResults: {},

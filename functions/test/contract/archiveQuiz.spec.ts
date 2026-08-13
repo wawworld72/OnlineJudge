@@ -49,8 +49,6 @@ async function seedQuizWithParticipant() {
       finalStatus: "FINALIZED",
       finalSubmittedAt: Timestamp.now(),
       finalTotal: 100,
-      completedCount: 1,
-      totalCount: 1,
       runsUsedByProblem: {},
       submissions: { p1: { code: "int main(){}", submittedAt: Timestamp.now() } },
       runResults: {
@@ -70,7 +68,7 @@ describe("archiveQuiz", () => {
     await teardownTestApp();
   });
 
-  it("4개 탭(퀴즈 개요/참가자 및 확정 점수/문항별 채점 결과/제출 코드)을 만들고 퀴즈/archives에 결과를 기록한다", async () => {
+  it("4개 탭(퀴즈 개요/참가자 및 확정 점수/문항별 채점 결과/제출 코드)을 만들고 퀴즈 문서에 결과를 기록한다", async () => {
     await seedQuizWithParticipant();
     vi.mocked(createArchiveSpreadsheet).mockResolvedValue({
       spreadsheetId: "sheet-1",
@@ -96,9 +94,5 @@ describe("archiveQuiz", () => {
     const quiz = (await testDb().collection("quizzes").doc(QUIZ_ID).get()).data()!;
     expect(quiz.archivedAt).not.toBeNull();
     expect(quiz.archiveSpreadsheetUrl).toBe("https://sheets.example/sheet-1");
-
-    const archive = (await testDb().collection("archives").doc(QUIZ_ID).get()).data()!;
-    expect(archive.spreadsheetUrl).toBe("https://sheets.example/sheet-1");
-    expect(archive.createdBy).toBe(TEACHER_EMAIL);
   });
 });

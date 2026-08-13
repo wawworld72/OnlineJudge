@@ -50,8 +50,6 @@ async function seedFinalizedParticipant(studentId: string, finalTotal: number) {
       finalStatus: "FINALIZED",
       finalSubmittedAt: Timestamp.now(),
       finalTotal,
-      completedCount: 1,
-      totalCount: 1,
       runsUsedByProblem: {},
       submissions: {},
       runResults: {},

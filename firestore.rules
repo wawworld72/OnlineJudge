@@ -46,9 +46,5 @@ service cloud.firestore {
     match /accessLogs/{logId} {
       allow read, write: if false;
     }
-
-    match /archives/{quizId} {
-      allow read, write: if false;
-    }
   }
 }

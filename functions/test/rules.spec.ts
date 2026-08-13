@@ -83,7 +83,7 @@ describe("firestore.rules 접근 규칙 매트릭스", () => {
     await assertFails(setDoc(doc(student, "participants/quiz-1_student1"), { studentId: "student1" }));
   });
 
-  it.each(["students/s1", "rosters/r1", "accessLogs/l1", "archives/quiz-1"])(
+  it.each(["students/s1", "rosters/r1", "accessLogs/l1"])(
     "%s: read/write를 전면 차단한다",
     async (path) => {
       await testEnv.withSecurityRulesDisabled(async (context) => {

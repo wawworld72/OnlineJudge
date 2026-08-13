@@ -38,8 +38,6 @@ async function seedParticipant(finalStatus: "IN_PROGRESS" | "SUBMITTED" | "FINAL
       finalStatus,
       finalSubmittedAt: finalStatus === "IN_PROGRESS" ? null : FieldValue.serverTimestamp(),
       finalTotal: finalStatus === "FINALIZED" ? 80 : 0,
-      completedCount: 1,
-      totalCount: 1,
       runsUsedByProblem: {},
       submissions: {},
       runResults:

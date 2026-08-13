@@ -67,8 +67,6 @@ async function seedParticipant(
       finalStatus: "SUBMITTED",
       finalSubmittedAt: FieldValue.serverTimestamp(),
       finalTotal: 0,
-      completedCount: 0,
-      totalCount: 2,
       runsUsedByProblem: {},
       submissions: { [P1]: { code: "int main(){}", submittedAt: Timestamp.now() } },
       runResults: {},

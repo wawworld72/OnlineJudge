@@ -167,8 +167,6 @@ describe("enterQuiz", () => {
           finalStatus: "FINALIZED",
           finalSubmittedAt: ts(-90_000),
           finalTotal: 10,
-          completedCount: 1,
-          totalCount: 1,
           runsUsedByProblem: {},
           submissions: { p1: { code: "int main(){}", submittedAt: ts(-90_000) } },
           runResults: {
@@ -201,8 +199,6 @@ describe("enterQuiz", () => {
           finalStatus: "IN_PROGRESS",
           finalSubmittedAt: null,
           finalTotal: 0,
-          completedCount: 0,
-          totalCount: 0,
           runsUsedByProblem: {},
           submissions: {},
           runResults: {},

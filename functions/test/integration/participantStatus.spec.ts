@@ -14,7 +14,6 @@ async function seedRosterEntry(studentId: string, name: string) {
     .doc(`${COURSE_ID}_${studentId}`)
     .set({
       courseId: COURSE_ID,
-      courseName: "1반",
       studentId,
       name,
       email: `${studentId}@hoseo.edu`,
@@ -36,8 +35,6 @@ async function seedParticipant(
       finalStatus,
       finalSubmittedAt: finalStatus === "IN_PROGRESS" ? null : Timestamp.now(),
       finalTotal: finalStatus === "FINALIZED" ? 100 : 0,
-      completedCount: 0,
-      totalCount: 1,
       runsUsedByProblem: {},
       submissions: finalStatus === "IN_PROGRESS" ? {} : { p1: { code: "int main(){}", submittedAt: Timestamp.now() } },
       runResults:

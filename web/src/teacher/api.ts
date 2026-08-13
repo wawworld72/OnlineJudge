@@ -222,10 +222,7 @@ export function pushGrades(input: { quizId: string }) {
 }
 
 export function archiveQuiz(input: { quizId: string }) {
-  return callFunction<typeof input, { spreadsheetUrl: string; createdAt: number }>(
-    "archiveQuiz",
-    input,
-  );
+  return callFunction<typeof input, { spreadsheetUrl: string }>("archiveQuiz", input);
 }
 
 export function deleteQuizData(input: { quizId: string; confirmWithoutArchive?: boolean }) {

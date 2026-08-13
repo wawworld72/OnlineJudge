@@ -35,8 +35,6 @@ async function seedParticipant(studentId: string, finalStatus: "IN_PROGRESS" | "
       finalStatus,
       finalSubmittedAt: finalStatus === "IN_PROGRESS" ? null : Timestamp.now(),
       finalTotal: finalStatus === "FINALIZED" ? 90 : 0,
-      completedCount: 0,
-      totalCount: 1,
       runsUsedByProblem: {},
       submissions: {},
       runResults: {},
@@ -57,7 +55,6 @@ describe("getParticipantOverview", () => {
     await seedQuiz("course-1");
     await testDb().collection("rosters").doc("course-1_20240001").set({
       courseId: "course-1",
-      courseName: "1반",
       studentId: "20240001",
       name: "홍길동",
       email: "hong@hoseo.edu",
@@ -65,7 +62,6 @@ describe("getParticipantOverview", () => {
     });
     await testDb().collection("rosters").doc("course-1_20240002").set({
       courseId: "course-1",
-      courseName: "1반",
       studentId: "20240002",
       name: "김철수",
       email: "kim@hoseo.edu",

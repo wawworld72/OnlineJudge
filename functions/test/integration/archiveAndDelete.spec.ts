@@ -54,8 +54,6 @@ describe("아카이브 없이 삭제 시도(거부) → 아카이브 실행 → 
         finalStatus: "FINALIZED",
         finalSubmittedAt: Timestamp.now(),
         finalTotal: 100,
-        completedCount: 1,
-        totalCount: 1,
         runsUsedByProblem: {},
         submissions: {},
         runResults: {},
