@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { db } from "../shared/firestoreClient";
+import { firebaseApp } from "../shared/firebaseApp";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
 import { getErrorCode } from "../shared/functionsClient";
 import { enterQuiz, registerStudentEmail, type EnterQuizResponse } from "./api";
@@ -20,6 +22,9 @@ interface QuizInfo {
 export function QuizEntry() {
   const { quizId } = useParams<{ quizId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromList = (location.state as { fromList?: boolean } | null)?.fromList === true;
+  const loggedInEmail = getAuth(firebaseApp).currentUser?.email ?? "";
   const [quizInfo, setQuizInfo] = useState<QuizInfo | null>(null);
   const [accessCode, setAccessCode] = useState("");
   const [studentId, setStudentId] = useState(() => localStorage.getItem("cquiz_studentId") ?? "");
@@ -82,9 +87,15 @@ export function QuizEntry() {
     <div className="container">
       <div className="card">
         <h1>OJHG</h1>
-        <button className="secondary" onClick={() => navigate("/")}>
-          ← 목록
-        </button>
+        {fromList && (
+          <button className="secondary" onClick={() => navigate("/")}>
+            ← 목록
+          </button>
+        )}
+
+        <p className="quiz-meta">
+          <b>현재 로그인 이메일:</b> {loggedInEmail || "(확인 불가)"}
+        </p>
 
         {quizInfo && (
           <div className="selected-quiz-info">

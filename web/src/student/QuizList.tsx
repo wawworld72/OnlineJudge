@@ -74,7 +74,12 @@ export function QuizList() {
             const diffMs = quiz.endAt - now;
             const ending = diffMs < 10 * 60 * 1000;
             return (
-              <Link key={quiz.quizId} to={`/quiz/${quiz.quizId}`} className="quiz-card">
+              <Link
+                key={quiz.quizId}
+                to={`/quiz/${quiz.quizId}`}
+                state={{ fromList: true }}
+                className="quiz-card"
+              >
                 <h3>{quiz.title}</h3>
                 {quiz.description && <div className="quiz-desc">{quiz.description}</div>}
                 <span className={`quiz-remaining${ending ? " ending" : ""}`}>
