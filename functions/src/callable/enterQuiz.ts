@@ -26,10 +26,6 @@ export const enterQuiz = createCallable(
       throw domainError("INVALID_ACCESS_CODE", "출입코드가 일치하지 않습니다.");
     }
 
-    if (quiz.status !== "OPEN" || !isWithin(quiz.startAt, quiz.endAt)) {
-      throw domainError("QUIZ_NOT_OPEN", "지금은 응시할 수 없는 퀴즈입니다.");
-    }
-
     const studentId = normalizeStudentId(data.studentId);
 
     await verifyStudentIdentity(db, {
@@ -41,6 +37,16 @@ export const enterQuiz = createCallable(
     const participantId = computeParticipantId(data.quizId, studentId);
     const participantRef = db.collection("participants").doc(participantId);
     const participantSnap = await participantRef.get();
+
+    // 이미 제출/채점이 끝난 참가자는 "새로 응시"가 아니라 "지난 결과 복기"이므로,
+    // 퀴즈가 CLOSED 상태거나 종료 시각을 지났어도 막지 않는다 — 시험이 끝난 뒤에도
+    // 학생이 자기 결과를 다시 확인할 수 있어야 한다(FR-024). 아직 IN_PROGRESS이거나
+    // 최초 응시라면 지금도 응시 가능한 시간인지를 그대로 확인한다.
+    const isReviewOnly =
+      participantSnap.exists && (participantSnap.data() as Participant).finalStatus !== "IN_PROGRESS";
+    if (!isReviewOnly && (quiz.status !== "OPEN" || !isWithin(quiz.startAt, quiz.endAt))) {
+      throw domainError("QUIZ_NOT_OPEN", "지금은 응시할 수 없는 퀴즈입니다.");
+    }
 
     let participant: Participant;
     if (participantSnap.exists) {

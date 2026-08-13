@@ -40,6 +40,9 @@ function formatDateTime(ms: number): string {
  */
 export function QuizTaking({ quizId, initial }: QuizTakingProps) {
   const [participantStatus, setParticipantStatus] = useState(initial.participantStatus);
+  const [justSubmittedCode, setJustSubmittedCode] = useState<Record<string, { code: string }> | null>(
+    null,
+  );
   const [activeIndex, setActiveIndex] = useState(0);
   const [descHidden, setDescHidden] = useState(false);
   const [remainingRuns, setRemainingRuns] = useState<Record<string, number>>(() =>
@@ -65,7 +68,18 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
   const activeProblem = initial.problems[activeIndex];
 
   if (participantStatus !== "IN_PROGRESS") {
-    return <ResultView quizId={quizId} initialStatus={participantStatus} />;
+    return (
+      <ResultView
+        quizId={quizId}
+        initial={{
+          ...initial,
+          participantStatus,
+          // 방금 이번 세션에서 최종 제출한 직후에는 `initial`(입장 시점 응답)이 아직
+          // 옛 값을 들고 있으므로, 실제로 서버에 보낸 코드로 덮어써서 보여준다.
+          existingSubmission: justSubmittedCode ?? initial.existingSubmission,
+        }}
+      />
+    );
   }
 
   if (!activeProblem) return null;
@@ -107,6 +121,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
       code: codeByProblem[p.problemId] ?? "",
     }));
     await finalSubmit({ quizId, submissions });
+    setJustSubmittedCode(Object.fromEntries(submissions.map((s) => [s.problemId, { code: s.code }])));
     setParticipantStatus("SUBMITTED");
   }
 
