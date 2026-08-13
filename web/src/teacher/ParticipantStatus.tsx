@@ -21,21 +21,10 @@ const STATUS_LABEL: Record<ParticipantOverviewItem["status"], string> = {
 export function ParticipantStatus({ quizId }: ParticipantStatusProps) {
   const [participants, setParticipants] = useState<ParticipantOverviewItem[] | null>(null);
   const [detail, setDetail] = useState<{ studentId: string; data: ParticipantDetail } | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     getParticipantOverview({ quizId }).then((response) => setParticipants(response.participants));
   }, [quizId]);
-
-  async function refresh() {
-    setRefreshing(true);
-    try {
-      const response = await getParticipantOverview({ quizId });
-      setParticipants(response.participants);
-    } finally {
-      setRefreshing(false);
-    }
-  }
 
   async function openDetail(studentId: string) {
     const data = await getParticipantDetail({ quizId, studentId });
@@ -46,12 +35,7 @@ export function ParticipantStatus({ quizId }: ParticipantStatusProps) {
 
   return (
     <div>
-      <h3>
-        참가자 현황
-        <button className="secondary" onClick={refresh} disabled={refreshing} style={{ marginLeft: 12 }}>
-          {refreshing ? "새로고침 중..." : "새로고침"}
-        </button>
-      </h3>
+      <h3>참가자 현황</h3>
       <table>
         <thead>
           <tr>
