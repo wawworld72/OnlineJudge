@@ -21,17 +21,20 @@ describe("syncRoster", () => {
     await teardownTestApp();
   });
 
-  it("학번 형식(숫자)이 아닌 계정은 건너뛰고 별도로 집계한다", async () => {
+  it("이메일 앞부분이 숫자가 아니어도 그대로 고유 식별자로 등록한다", async () => {
     vi.mocked(listCourseStudents).mockResolvedValue([
       { userId: "u1", email: "20240001@hoseo.edu", name: "홍길동" },
-      { userId: "u2", email: "prof.kim@hoseo.edu", name: "김교수" },
+      { userId: "u2", email: "gihyun.hong@gmail.com", name: "홍기웅" },
     ]);
 
     const response = await syncRoster.run(makeRequest({ courseId: COURSE_ID }, TEACHER_EMAIL));
 
-    expect(response.newStudents).toBe(1);
-    expect(response.newRosterEntries).toBe(1);
-    expect(response.skipped).toBe(1);
+    expect(response.newStudents).toBe(2);
+    expect(response.newRosterEntries).toBe(2);
+    expect(response.skipped).toBe(0);
+
+    const nonNumeric = (await testDb().collection("students").doc("gihyun.hong").get()).data();
+    expect(nonNumeric?.name).toBe("홍기웅");
   });
 
   it("신규 학생은 students/rosters에 새로 만들고, 기존 학생은 이메일이 다를 때만 갱신 집계한다", async () => {

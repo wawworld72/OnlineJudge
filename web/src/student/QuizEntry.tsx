@@ -100,6 +100,10 @@ export function QuizEntry() {
         <label>
           학번
           <input value={studentId} onChange={(e) => setStudentId(e.target.value)} />
+          <p className="field-hint">
+            Classroom 계정 이메일의 @ 앞부분과 정확히 같아야 합니다 (예: 학번 계정이면 학번,
+            개인 계정이면 그 계정명).
+          </p>
         </label>
         <label>
           이름
