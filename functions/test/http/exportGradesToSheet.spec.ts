@@ -68,8 +68,18 @@ describe("exportGradesToSheet", () => {
     expect(res.json).toHaveBeenCalledWith({ ok: false, error: "존재하지 않는 퀴즈입니다." });
   });
 
-  it("토큰과 quizId가 맞으면 학번/이름/상태/제출시각/확정점수 행을 반환한다", async () => {
+  it("토큰과 quizId가 맞으면 성적결과 탭과 문항별 TC결과 탭을 함께 반환한다", async () => {
     await seedQuiz();
+    await testDb().collection("quizzes").doc(QUIZ_ID).collection("problems").doc("p1").set({
+      order: 0,
+      title: "레벨업",
+      description: "",
+      initialCode: "",
+      maxRuns: null,
+      pointsTotal: 20,
+      updatedAt: ts(0),
+      deletedAt: null,
+    });
     await testDb()
       .collection("participants")
       .doc(`${QUIZ_ID}_20240001`)
@@ -82,7 +92,18 @@ describe("exportGradesToSheet", () => {
         finalTotal: 90,
         runsUsedByProblem: {},
         submissions: {},
-        runResults: {},
+        runResults: {
+          p1: {
+            status: "WA",
+            score: 10,
+            maxScore: 20,
+            compileErrorMessage: null,
+            tcResults: [
+              { tcId: "tc-1", passed: true, isPublic: true, points: 10 },
+              { tcId: "tc-2", passed: false, isPublic: false, points: 10 },
+            ],
+          },
+        },
         gradePushedAt: null,
       });
 
@@ -92,10 +113,30 @@ describe("exportGradesToSheet", () => {
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0]![0];
     expect(body.ok).toBe(true);
-    expect(body.sheetName).toBe("성적결과");
-    expect(body.rows[0]).toEqual(["학번", "이름", "상태", "제출시각", "확정점수"]);
-    expect(body.rows[1][0]).toBe("20240001");
-    expect(body.rows[1][2]).toBe("채점완료");
-    expect(body.rows[1][4]).toBe("90");
+    expect(body.tabs).toHaveLength(2);
+
+    const overview = body.tabs.find((t: { sheetName: string }) => t.sheetName === "성적결과");
+    expect(overview.rows[0]).toEqual(["학번", "이름", "상태", "제출시각", "확정점수"]);
+    expect(overview.rows[1][0]).toBe("20240001");
+    expect(overview.rows[1][2]).toBe("채점완료");
+    expect(overview.rows[1][4]).toBe("90");
+
+    const detail = body.tabs.find((t: { sheetName: string }) => t.sheetName === "문항별_TC결과");
+    expect(detail.rows[0]).toEqual([
+      "학번",
+      "이름",
+      "문항ID",
+      "문항제목",
+      "TC번호",
+      "공개여부",
+      "결과",
+      "배점",
+      "획득점수",
+    ]);
+    expect(detail.rows).toHaveLength(3);
+    const tc1 = detail.rows.find((r: string[]) => r[4] === "1");
+    expect(tc1).toEqual(["20240001", "20240001", "p1", "레벨업", "1", "공개", "PASS", "10", "10"]);
+    const tc2 = detail.rows.find((r: string[]) => r[4] === "2");
+    expect(tc2).toEqual(["20240001", "20240001", "p1", "레벨업", "2", "비공개", "FAIL", "10", "0"]);
   });
 });
