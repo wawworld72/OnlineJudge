@@ -9,6 +9,7 @@ process.env.GRADER_AUTH_TOKEN ??= "test-grader-token";
 process.env.ALLOWED_EMAIL_DOMAIN ??= "hoseo.edu";
 process.env.TEACHER_EMAILS ??= "teacher@hoseo.edu";
 process.env.APP_BASE_URL ??= "https://demo-c-quiz-judge-system.web.app";
+process.env.SHEET_EXPORT_API_TOKEN ??= "test-sheet-export-token";
 
 let db: Firestore | null = null;
 

@@ -97,6 +97,7 @@ jobs:
           ALLOWED_EMAIL_DOMAIN=${{ secrets.ALLOWED_EMAIL_DOMAIN }}
           APP_BASE_URL=https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app
           CLASSROOM_SERVICE_ACCOUNT_KEY_B64=$(printf '%s' "$CLASSROOM_SERVICE_ACCOUNT_JSON" | base64 -w0)
+          SHEET_EXPORT_API_TOKEN=${{ secrets.SHEET_EXPORT_API_TOKEN }}
           EOF
 
       - name: Build functions

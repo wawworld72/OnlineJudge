@@ -32,6 +32,15 @@ export function getAppBaseUrl(): string {
   return requireEnv("APP_BASE_URL");
 }
 
+/**
+ * Google Apps Script(수업 중 시트로 성적을 당겨가는 스크립트)가 Callable Function이
+ * 요구하는 Firebase Auth/App Check를 만들어낼 수 없어서, 별도의 정적 토큰으로만
+ * 인증하는 `exportGradesToSheet`(onRequest)에 쓴다.
+ */
+export function getSheetExportApiToken(): string {
+  return requireEnv("SHEET_EXPORT_API_TOKEN");
+}
+
 export function getAllowedEmailDomain(): string {
   return process.env.ALLOWED_EMAIL_DOMAIN ?? "hoseo.edu";
 }

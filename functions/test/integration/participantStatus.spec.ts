@@ -1,7 +1,8 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { clearFirestore, makeRequest, teardownTestApp, testDb, ts } from "../testEnv";
-import { getParticipantOverview, type OverviewItem } from "../../src/callable/getParticipantOverview";
+import { getParticipantOverview } from "../../src/callable/getParticipantOverview";
+import type { OverviewItem } from "../../src/services/participantOverview";
 import { getParticipantDetail } from "../../src/callable/getParticipantDetail";
 
 const TEACHER_EMAIL = "teacher@hoseo.edu";
