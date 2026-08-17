@@ -40,6 +40,10 @@ async function seedQuiz(quizId: string, title: string) {
   });
 }
 
+function findTab(tabs: Array<{ sheetName: string; rows: string[][] }>, sheetName: string) {
+  return tabs.find((t) => t.sheetName === sheetName)!;
+}
+
 describe("exportGradesToSheet", () => {
   beforeEach(async () => {
     await clearFirestore();
@@ -72,7 +76,7 @@ describe("exportGradesToSheet", () => {
     });
   });
 
-  it("같은 과목명의 퀴즈 여러 개를 묶어서 반환하고, 문항별 상세는 JSON 문자열로 담는다", async () => {
+  it("같은 과목명의 퀴즈 여러 개를 묶어 성적결과/문항별_TC결과 두 탭으로 반환한다", async () => {
     await seedQuiz("quiz-1", "중간고사");
     await seedQuiz("quiz-2", "기말고사");
     await testDb().collection("quizzes").doc("quiz-1").collection("problems").doc("p1").set({
@@ -133,24 +137,37 @@ describe("exportGradesToSheet", () => {
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0]![0];
     expect(body.ok).toBe(true);
-    expect(body.sheetName).toBe("성적결과");
-    expect(body.rows[0]).toEqual(["퀴즈명", "학번", "이름", "상태", "제출시각", "확정점수", "문항별상세"]);
-    expect(body.rows).toHaveLength(3); // 헤더 + quiz-1 참가자 1명 + quiz-2 참가자 1명
+    expect(body.tabs).toHaveLength(2);
 
-    const midtermRow = body.rows.find((r: string[]) => r[0] === "중간고사");
-    expect(midtermRow[1]).toBe("20240001");
-    expect(midtermRow[3]).toBe("채점완료");
-    expect(midtermRow[5]).toBe("10");
-    const detail = JSON.parse(midtermRow[6]);
-    expect(detail.p1.title).toBe("레벨업");
-    expect(detail.p1.score).toBe(10);
-    expect(detail.p1.tcResults).toEqual([
-      { tcNo: 1, isPublic: true, passed: true, points: 10, earned: 10 },
-      { tcNo: 2, isPublic: false, passed: false, points: 10, earned: 0 },
+    const detail = findTab(body.tabs, "문항별_TC결과");
+    expect(detail.rows[0]).toEqual(["이름", "학번", "과목명", "퀴즈명", "문항명", "TC", "획득 점수"]);
+    expect(detail.rows).toHaveLength(3); // 헤더 + TC 2개(중간고사만 runResults 있음)
+    expect(detail.rows).toContainEqual([
+      "20240001",
+      "20240001",
+      SUBJECT,
+      "중간고사",
+      "레벨업",
+      "1",
+      "10",
+    ]);
+    expect(detail.rows).toContainEqual([
+      "20240001",
+      "20240001",
+      SUBJECT,
+      "중간고사",
+      "레벨업",
+      "2",
+      "0",
     ]);
 
-    const finalRow = body.rows.find((r: string[]) => r[0] === "기말고사");
-    expect(finalRow[3]).toBe("응시중");
-    expect(JSON.parse(finalRow[6])).toEqual({});
+    const summary = findTab(body.tabs, "성적결과");
+    expect(summary.rows[0]).toEqual(["이름", "학번", "과목명", "퀴즈명", "상태", "제출시각", "확정점수"]);
+    expect(summary.rows).toHaveLength(3); // 헤더 + quiz-1 참가자 1명 + quiz-2 참가자 1명
+    const midterm = summary.rows.find((r) => r[3] === "중간고사")!;
+    expect(midterm[4]).toBe("채점완료");
+    expect(midterm[6]).toBe("10");
+    const final = summary.rows.find((r) => r[3] === "기말고사")!;
+    expect(final[4]).toBe("응시중");
   });
 });

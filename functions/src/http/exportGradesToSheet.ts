@@ -2,24 +2,40 @@ import { onRequest } from "firebase-functions/v2/https";
 import { getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions/v2";
 import { getSheetExportApiToken } from "../config";
-import { getGradeRowsForSubject, type GradeRow } from "../services/gradeExport";
+import {
+  getGradeExportForSubject,
+  type GradeDetailTcRow,
+  type GradeSummaryRow,
+} from "../services/gradeExport";
 
-const STATUS_LABEL: Record<GradeRow["status"], string> = {
+const STATUS_LABEL: Record<GradeSummaryRow["status"], string> = {
   NOT_ENTERED: "미입장",
   IN_PROGRESS: "응시중",
   SUBMITTED: "제출완료",
   FINALIZED: "채점완료",
 };
 
-function toRow(row: GradeRow): string[] {
+function toSummaryRow(row: GradeSummaryRow): string[] {
   return [
-    row.quizTitle,
-    row.studentId,
     row.name,
+    row.studentId,
+    row.subjectName,
+    row.quizTitle,
     STATUS_LABEL[row.status],
     row.submittedAt ? new Date(row.submittedAt).toISOString() : "",
     row.finalTotal !== undefined ? String(row.finalTotal) : "",
-    JSON.stringify(row.detail),
+  ];
+}
+
+function toDetailRow(row: GradeDetailTcRow): string[] {
+  return [
+    row.name,
+    row.studentId,
+    row.subjectName,
+    row.quizTitle,
+    row.problemTitle,
+    String(row.tcNo),
+    String(row.earned),
   ];
 }
 
@@ -32,9 +48,9 @@ function toRow(row: GradeRow): string[] {
  *
  * `quizId` 하나가 아니라 `subject`(과목명)를 받아, 같은 과목명의 퀴즈를 전부 묶어
  * 반환한다 — 중간고사·기말고사·매주 실습처럼 한 과목에 퀴즈가 여러 개 있는 경우를
- * 위함이다. 각 행이 어느 퀴즈인지는 `퀴즈명` 열로 구분한다. 문항·테스트케이스별
- * 획득 점수는 별도 탭이 아니라 `문항별상세` 열에 JSON 문자열로 담는다 — 시트 하나로
- * 총점과 상세를 함께 보고, 필요할 때만 그 셀을 파싱해서 들여다보면 된다.
+ * 위함이다. 탭 2개를 함께 내려준다: "문항별_TC결과"(문항·테스트케이스별 획득 점수,
+ * 1행=1 TC)와 "성적결과"(퀴즈별 상태·확정 점수, 1행=1 참가자). 각 행이 어느 과목·
+ * 어느 퀴즈인지는 "과목명"/"퀴즈명" 열로 구분한다.
  */
 export const exportGradesToSheet = onRequest(async (req, res) => {
   const authHeader = req.get("Authorization") ?? "";
@@ -52,12 +68,24 @@ export const exportGradesToSheet = onRequest(async (req, res) => {
 
   try {
     const db = getFirestore();
-    const gradeRows = await getGradeRowsForSubject(db, subject);
-    const rows = [
-      ["퀴즈명", "학번", "이름", "상태", "제출시각", "확정점수", "문항별상세"],
-      ...gradeRows.map(toRow),
+    const { summary, detail } = await getGradeExportForSubject(db, subject);
+
+    const detailRows = [
+      ["이름", "학번", "과목명", "퀴즈명", "문항명", "TC", "획득 점수"],
+      ...detail.map(toDetailRow),
     ];
-    res.status(200).json({ ok: true, sheetName: "성적결과", rows });
+    const summaryRows = [
+      ["이름", "학번", "과목명", "퀴즈명", "상태", "제출시각", "확정점수"],
+      ...summary.map(toSummaryRow),
+    ];
+
+    res.status(200).json({
+      ok: true,
+      tabs: [
+        { sheetName: "문항별_TC결과", rows: detailRows },
+        { sheetName: "성적결과", rows: summaryRows },
+      ],
+    });
   } catch (cause) {
     logger.error("exportGradesToSheet", cause);
     const message = cause instanceof Error ? cause.message : "일시적인 오류가 발생했습니다.";

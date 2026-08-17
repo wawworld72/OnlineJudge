@@ -2,37 +2,38 @@ import type { Firestore } from "firebase-admin/firestore";
 import type { Participant, Problem, Quiz } from "../models/types";
 import { getParticipantOverviewData, type OverviewItem } from "./participantOverview";
 
-export interface GradeDetailTc {
-  tcNo: number;
-  isPublic: boolean;
-  passed: boolean;
-  points: number;
-  earned: number;
-}
-
-export interface GradeDetailProblem {
-  title: string;
-  score: number;
-  maxScore: number;
-  tcResults: GradeDetailTc[];
-}
-
-export interface GradeRow {
+export interface GradeSummaryRow {
+  subjectName: string;
   quizTitle: string;
   studentId: string;
   name: string;
   status: OverviewItem["status"];
   submittedAt?: number;
   finalTotal?: number;
-  /** 문항ID → 문항별 상세(점수·테스트케이스별 획득 점수). 시트 셀에는 JSON 문자열로 담긴다. */
-  detail: Record<string, GradeDetailProblem>;
 }
 
-async function getGradeRowsForQuiz(
+export interface GradeDetailTcRow {
+  subjectName: string;
+  quizTitle: string;
+  studentId: string;
+  name: string;
+  problemTitle: string;
+  tcNo: number;
+  earned: number;
+}
+
+export interface GradeExportResult {
+  summary: GradeSummaryRow[];
+  detail: GradeDetailTcRow[];
+}
+
+async function collectForQuiz(
   db: Firestore,
+  subjectName: string,
   quizId: string,
   quizTitle: string,
-): Promise<GradeRow[]> {
+  out: GradeExportResult,
+): Promise<void> {
   const overview = await getParticipantOverviewData(db, quizId);
 
   const problemsSnap = await db
@@ -53,45 +54,47 @@ async function getGradeRowsForQuiz(
     }),
   );
 
-  return overview.map((item) => {
-    const runResults = runResultsByStudentId.get(item.studentId);
-    const detail: Record<string, GradeDetailProblem> = {};
-    if (runResults) {
-      for (const [problemId, result] of Object.entries(runResults)) {
-        detail[problemId] = {
-          title: titleByProblemId.get(problemId) ?? problemId,
-          score: result.score,
-          maxScore: result.maxScore,
-          tcResults: result.tcResults.map((tc, index) => ({
-            tcNo: index + 1,
-            isPublic: tc.isPublic,
-            passed: tc.passed,
-            points: tc.points,
-            earned: tc.passed ? tc.points : 0,
-          })),
-        };
-      }
-    }
-    return {
+  for (const item of overview) {
+    out.summary.push({
+      subjectName,
       quizTitle,
       studentId: item.studentId,
       name: item.name,
       status: item.status,
       submittedAt: item.submittedAt,
       finalTotal: item.finalTotal,
-      detail,
-    };
-  });
+    });
+
+    const runResults = runResultsByStudentId.get(item.studentId);
+    if (!runResults) continue;
+    for (const [problemId, result] of Object.entries(runResults)) {
+      const problemTitle = titleByProblemId.get(problemId) ?? problemId;
+      result.tcResults.forEach((tc, index) => {
+        out.detail.push({
+          subjectName,
+          quizTitle,
+          studentId: item.studentId,
+          name: item.name,
+          problemTitle,
+          tcNo: index + 1,
+          earned: tc.passed ? tc.points : 0,
+        });
+      });
+    }
+  }
 }
 
 /**
- * `exportGradesToSheet`가 "이 과목명의 퀴즈 전부"를 한 번에 내려주기 위한 조회. 같은
- * 과목명을 가진 퀴즈가 여러 개(중간고사·기말고사·매주 실습 등)일 수 있으므로, 학생별
- * 1행이 아니라 (퀴즈 × 학생) 조합별 1행으로 반환한다 — 어느 퀴즈의 결과인지 `quizTitle`로
- * 구분한다. `subjectName`은 Classroom `courseId`와 별개로 교사가 직접 붙이는 과목
- * 구분용 이름이다(models/types.ts `Quiz.subjectName`).
+ * `exportGradesToSheet`가 "이 과목명의 퀴즈 전부"를 요약(성적결과)과 상세(문항별
+ * 테스트케이스 획득 점수) 두 갈래로 내려주기 위한 조회. `subjectName`은 Classroom
+ * `courseId`와 별개로 교사가 직접 붙이는 과목 구분용 이름이다(models/types.ts
+ * `Quiz.subjectName`) — 같은 과목명을 가진 퀴즈가 여러 개(중간고사·기말고사·매주
+ * 실습 등)일 수 있으므로 각 행이 어느 퀴즈인지는 `quizTitle`로 구분한다.
  */
-export async function getGradeRowsForSubject(db: Firestore, subjectName: string): Promise<GradeRow[]> {
+export async function getGradeExportForSubject(
+  db: Firestore,
+  subjectName: string,
+): Promise<GradeExportResult> {
   const quizzesSnap = await db
     .collection("quizzes")
     .where("subjectName", "==", subjectName)
@@ -101,10 +104,10 @@ export async function getGradeRowsForSubject(db: Firestore, subjectName: string)
     throw new Error("해당 과목명의 퀴즈를 찾을 수 없습니다.");
   }
 
-  const rows: GradeRow[] = [];
+  const out: GradeExportResult = { summary: [], detail: [] };
   for (const doc of quizzesSnap.docs) {
     const quiz = doc.data() as Quiz;
-    rows.push(...(await getGradeRowsForQuiz(db, doc.id, quiz.title)));
+    await collectForQuiz(db, subjectName, doc.id, quiz.title, out);
   }
-  return rows;
+  return out;
 }
