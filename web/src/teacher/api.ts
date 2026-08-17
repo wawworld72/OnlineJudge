@@ -4,6 +4,7 @@ export type QuizStatus = "DRAFT" | "OPEN" | "CLOSED";
 
 export interface QuizListItem {
   quizId: string;
+  subjectName: string;
   title: string;
   status: QuizStatus;
   startAt: number;
@@ -37,6 +38,7 @@ export interface ProblemDetail {
 
 export interface QuizDetail {
   quizId: string;
+  subjectName: string;
   title: string;
   description: string;
   startAt: number;
@@ -58,6 +60,7 @@ export function getQuizForEdit(input: { quizId: string }) {
 
 export interface UpsertQuizInput {
   quizId?: string;
+  subjectName: string;
   title: string;
   description: string;
   startAt: number;

@@ -21,6 +21,7 @@ describe("교사의 퀴즈 준비 흐름 (생성 → 문항/테스트케이스 �
     const quiz = await upsertQuiz.run(
       makeRequest(
         {
+          subjectName: "컴퓨터프로그래밍심화",
           title: "중간고사",
           description: "",
           startAt: Date.now(),

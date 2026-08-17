@@ -46,6 +46,7 @@ export const getQuizForEdit = createCallable(getQuizForEditSchema, async ({ data
 
   return {
     quizId: data.quizId,
+    subjectName: quiz.subjectName,
     title: quiz.title,
     description: quiz.description,
     startAt: quiz.startAt.toMillis(),

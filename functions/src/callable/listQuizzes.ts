@@ -18,6 +18,7 @@ export const listQuizzes = createCallable(listQuizzesSchema, async ({ authEmail 
     const quiz = doc.data() as Quiz;
     return {
       quizId: doc.id,
+      subjectName: quiz.subjectName,
       title: quiz.title,
       status: quiz.status,
       startAt: quiz.startAt.toMillis(),

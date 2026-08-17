@@ -10,6 +10,7 @@ export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, authEm
   const db = getFirestore();
 
   const fields = {
+    subjectName: data.subjectName,
     title: data.title,
     description: data.description,
     startAt: Timestamp.fromMillis(data.startAt),

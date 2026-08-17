@@ -17,6 +17,7 @@ describe("upsertQuiz", () => {
     const response = await upsertQuiz.run(
       makeRequest(
         {
+          subjectName: "컴퓨터프로그래밍심화",
           title: "중간고사",
           description: "설명",
           startAt: Date.now(),
@@ -42,6 +43,7 @@ describe("upsertQuiz", () => {
       upsertQuiz.run(
         makeRequest(
           {
+            subjectName: "컴퓨터프로그래밍심화",
             title: "중간고사",
             description: "",
             startAt: Date.now(),
@@ -60,6 +62,7 @@ describe("upsertQuiz", () => {
     const created = await upsertQuiz.run(
       makeRequest(
         {
+          subjectName: "컴퓨터프로그래밍심화",
           title: "중간고사",
           description: "",
           startAt: Date.now(),
@@ -77,6 +80,7 @@ describe("upsertQuiz", () => {
       makeRequest(
         {
           quizId: created.quizId,
+          subjectName: "컴퓨터프로그래밍심화",
           title: "중간고사 (수정)",
           description: "",
           startAt: Date.now(),

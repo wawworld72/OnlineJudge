@@ -55,6 +55,7 @@ export const getQuizForEditSchema = z.object({
 
 export const upsertQuizSchema = z.object({
   quizId: z.string().min(1).nullish(),
+  subjectName: z.string().min(1),
   title: z.string().min(1),
   description: z.string(),
   startAt: z.number(),

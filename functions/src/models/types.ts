@@ -19,6 +19,12 @@ export interface Roster {
 export type QuizStatus = "DRAFT" | "OPEN" | "CLOSED";
 
 export interface Quiz {
+  /**
+   * 사람이 관리하는 과목 구분용 이름(예: "컴퓨터프로그래밍심화(01분반)") — Classroom
+   * `courseId`와 별개다. `exportGradesToSheet`가 이 값으로 같은 과목의 여러 퀴즈를
+   * 한꺼번에 묶어 조회한다(Google Apps Script 연동, functions/src/services/gradeExport.ts).
+   */
+  subjectName: string;
   title: string;
   description: string;
   startAt: Timestamp;

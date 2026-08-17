@@ -37,6 +37,7 @@ const TABS: Array<{ key: TabKey; label: string }> = [
 function toFormFields(quiz?: QuizDetail): UpsertQuizInput {
   return {
     quizId: quiz?.quizId,
+    subjectName: quiz?.subjectName ?? "",
     title: quiz?.title ?? "",
     description: quiz?.description ?? "",
     startAt: quiz?.startAt ?? Date.now(),
@@ -116,6 +117,8 @@ export function QuizManager() {
                 className="quiz-list-item"
                 onClick={() => openForEdit(quiz.quizId)}
               >
+                <span className="muted">{quiz.subjectName}</span>
+                <br />
                 {quiz.title}
                 <span className={`status-badge ${quiz.status}`}>{quiz.status}</span>
               </button>
@@ -137,6 +140,16 @@ export function QuizManager() {
           {selected && <span className={`status-badge ${selected.status}`}>{selected.status}</span>}
         </h2>
 
+        <label>
+          과목명
+          <input
+            value={form.subjectName}
+            onChange={(e) => setForm({ ...form, subjectName: e.target.value })}
+          />
+          <p className="field-hint">
+            같은 과목명을 쓰는 퀴즈들은 Apps Script 연동에서 한꺼번에 묶어 조회됩니다(예: "컴퓨터프로그래밍심화(01분반)").
+          </p>
+        </label>
         <label>
           제목
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
