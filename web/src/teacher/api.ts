@@ -13,6 +13,7 @@ export interface QuizListItem {
   status: QuizStatus;
   startAt: number;
   endAt: number;
+  accessCode: string;
 }
 
 export function listQuizzes() {

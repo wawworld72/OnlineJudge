@@ -23,6 +23,7 @@ export const listQuizzes = createCallable(listQuizzesSchema, async ({ isTeacher 
       status: quiz.status,
       startAt: quiz.startAt.toMillis(),
       endAt: quiz.endAt.toMillis(),
+      accessCode: quiz.accessCode,
     };
   });
 

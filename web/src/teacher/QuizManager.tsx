@@ -36,6 +36,15 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "archive", label: "아카이브 · 삭제" },
 ];
 
+function sortQuizzes(quizzes: QuizListItem[]): QuizListItem[] {
+  return [...quizzes].sort(
+    (a, b) =>
+      a.subjectName.localeCompare(b.subjectName) ||
+      a.title.localeCompare(b.title) ||
+      a.startAt - b.startAt,
+  );
+}
+
 function toFormFields(quiz?: QuizDetail): UpsertQuizInput {
   return {
     quizId: quiz?.quizId,
@@ -60,11 +69,11 @@ export function QuizManager() {
 
   async function refreshList() {
     const response = await listQuizzes();
-    setQuizzes(response.quizzes);
+    setQuizzes(sortQuizzes(response.quizzes));
   }
 
   useEffect(() => {
-    listQuizzes().then((response) => setQuizzes(response.quizzes));
+    listQuizzes().then((response) => setQuizzes(sortQuizzes(response.quizzes)));
   }, []);
 
   async function openForCreate() {
@@ -116,18 +125,47 @@ export function QuizManager() {
           ) : quizzes.length === 0 ? (
             <p className="muted">아직 만든 퀴즈가 없습니다.</p>
           ) : (
-            quizzes.map((quiz) => (
-              <button
-                key={quiz.quizId}
-                className="quiz-list-item"
-                onClick={() => openForEdit(quiz.quizId)}
-              >
-                <span className="muted">{quiz.subjectName}</span>
-                <br />
-                {quiz.title}
-                <span className={`status-badge ${quiz.status}`}>{quiz.status}</span>
-              </button>
-            ))
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>과목명</th>
+                    <th>퀴즈명</th>
+                    <th>시작시각</th>
+                    <th>종료시각</th>
+                    <th>상태</th>
+                    <th>출입코드</th>
+                    <th>URL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quizzes.map((quiz) => {
+                    const url = `${window.location.origin}/quiz/${quiz.quizId}`;
+                    return (
+                      <tr key={quiz.quizId}>
+                        <td>{quiz.subjectName}</td>
+                        <td>
+                          <button className="link-button" onClick={() => openForEdit(quiz.quizId)}>
+                            {quiz.title}
+                          </button>
+                        </td>
+                        <td>{new Date(quiz.startAt).toLocaleString()}</td>
+                        <td>{new Date(quiz.endAt).toLocaleString()}</td>
+                        <td>
+                          <span className={`status-badge ${quiz.status}`}>{quiz.status}</span>
+                        </td>
+                        <td>{quiz.accessCode}</td>
+                        <td>
+                          <a href={url} target="_blank" rel="noreferrer">
+                            {url}
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
