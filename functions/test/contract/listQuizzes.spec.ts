@@ -1,9 +1,13 @@
 import { beforeEach, afterAll, describe, expect, it } from "vitest";
 import { Timestamp } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb } from "../testEnv";
+import {
+  clearFirestore,
+  makeRequest,
+  makeTeacherRequest,
+  teardownTestApp,
+  testDb,
+} from "../testEnv";
 import { listQuizzes } from "../../src/callable/listQuizzes";
-
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 
 describe("listQuizzes", () => {
   beforeEach(async () => {
@@ -28,14 +32,20 @@ describe("listQuizzes", () => {
       archivedAt: null,
       archiveSpreadsheetUrl: null,
     };
-    await db.collection("quizzes").doc("draft-quiz").set({ ...base, title: "임시", status: "DRAFT", deletedAt: null });
-    await db.collection("quizzes").doc("open-quiz").set({ ...base, title: "공개", status: "OPEN", deletedAt: null });
+    await db
+      .collection("quizzes")
+      .doc("draft-quiz")
+      .set({ ...base, title: "임시", status: "DRAFT", deletedAt: null });
+    await db
+      .collection("quizzes")
+      .doc("open-quiz")
+      .set({ ...base, title: "공개", status: "OPEN", deletedAt: null });
     await db
       .collection("quizzes")
       .doc("deleted-quiz")
       .set({ ...base, title: "삭제됨", status: "CLOSED", deletedAt: Timestamp.now() });
 
-    const response = await listQuizzes.run(makeRequest({}, TEACHER_EMAIL));
+    const response = await listQuizzes.run(makeTeacherRequest({}));
 
     const quizIds: string[] = response.quizzes.map((q: { quizId: string }) => q.quizId);
     expect(quizIds.sort()).toEqual(["draft-quiz", "open-quiz"]);

@@ -1,10 +1,9 @@
 import { beforeEach, afterAll, describe, expect, it } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb } from "../testEnv";
 import { runPreDeployCheck } from "../../src/callable/runPreDeployCheck";
 import type { CheckItem } from "../../src/services/preDeployCheck";
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const QUIZ_ID = "quiz-1";
 
 async function seedQuiz(overrides: Record<string, unknown> = {}) {
@@ -41,13 +40,28 @@ async function seedProblemWithTestCase(pointsTotal = 100) {
     updatedAt: FieldValue.serverTimestamp(),
     deletedAt: null,
   });
-  await db.collection("quizzes").doc(QUIZ_ID).collection("problemSecrets").doc("p1").set({
-    items:
-      pointsTotal > 0
-        ? [{ tcId: "tc1", tcNo: 1, input: "1", expected: "1", points: pointsTotal, isPublic: true, description: "" }]
-        : [],
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+  await db
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .collection("problemSecrets")
+    .doc("p1")
+    .set({
+      items:
+        pointsTotal > 0
+          ? [
+              {
+                tcId: "tc1",
+                tcNo: 1,
+                input: "1",
+                expected: "1",
+                points: pointsTotal,
+                isPublic: true,
+                description: "",
+              },
+            ]
+          : [],
+      updatedAt: FieldValue.serverTimestamp(),
+    });
 }
 
 describe("runPreDeployCheck", () => {
@@ -63,7 +77,7 @@ describe("runPreDeployCheck", () => {
     await seedQuiz();
     await seedProblemWithTestCase();
 
-    const response = await runPreDeployCheck.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await runPreDeployCheck.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.blockingCount).toBe(0);
     const quiz = (await testDb().collection("quizzes").doc(QUIZ_ID).get()).data()!;
@@ -73,19 +87,23 @@ describe("runPreDeployCheck", () => {
   it("문항이 하나도 없으면 차단한다", async () => {
     await seedQuiz();
 
-    const response = await runPreDeployCheck.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await runPreDeployCheck.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.blockingCount).toBeGreaterThan(0);
-    expect((response.items as CheckItem[]).find((i) => i.key === "problemsExist")?.level).toBe("BLOCK");
+    expect((response.items as CheckItem[]).find((i) => i.key === "problemsExist")?.level).toBe(
+      "BLOCK",
+    );
   });
 
   it("문항에 테스트케이스가 없으면 차단한다", async () => {
     await seedQuiz();
     await seedProblemWithTestCase(0);
 
-    const response = await runPreDeployCheck.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await runPreDeployCheck.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
-    expect((response.items as CheckItem[]).find((i) => i.key === "testCasesExist")?.level).toBe("BLOCK");
+    expect((response.items as CheckItem[]).find((i) => i.key === "testCasesExist")?.level).toBe(
+      "BLOCK",
+    );
   });
 
   it("응시 기간이 역순이면 차단한다", async () => {
@@ -95,16 +113,18 @@ describe("runPreDeployCheck", () => {
     });
     await seedProblemWithTestCase();
 
-    const response = await runPreDeployCheck.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await runPreDeployCheck.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
-    expect((response.items as CheckItem[]).find((i) => i.key === "periodOrder")?.level).toBe("BLOCK");
+    expect((response.items as CheckItem[]).find((i) => i.key === "periodOrder")?.level).toBe(
+      "BLOCK",
+    );
   });
 
   it("분반이 연동된 경우 Classroom 항목은 WARN 이하로만 판정하며 절대 차단하지 않는다", async () => {
     await seedQuiz({ courseId: "course-1" });
     await seedProblemWithTestCase();
 
-    const response = await runPreDeployCheck.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await runPreDeployCheck.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     const rosterItem = (response.items as CheckItem[]).find((i) => i.key === "classroomRosterSync");
     const deployItem = (response.items as CheckItem[]).find((i) => i.key === "classroomDeployment");

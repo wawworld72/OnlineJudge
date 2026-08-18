@@ -8,8 +8,8 @@ import { requireTeacher } from "../shared/authorization";
  * 신규 생성 시에만 초기화하고, 이후 이 함수는 절대 건드리지 않는다 — 그 둘의 소유자는
  * `upsertTestCase`/`deleteTestCase`뿐이다(data-model.md "pointsTotal/updatedAt의 소유권").
  */
-export const upsertProblem = createCallable(upsertProblemSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const upsertProblem = createCallable(upsertProblemSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const db = getFirestore();
   const problemsRef = db.collection("quizzes").doc(data.quizId).collection("problems");
 
@@ -52,8 +52,8 @@ export const upsertProblem = createCallable(upsertProblemSchema, async ({ data, 
  * 하드 삭제가 아니라 `deletedAt`을 설정하는 소프트 삭제다 — Firestore에 캐스케이드 삭제가
  * 없어 하드 삭제하면 `problemSecrets`가 고아로 남기 때문(data-model.md).
  */
-export const deleteProblem = createCallable(deleteProblemSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const deleteProblem = createCallable(deleteProblemSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const db = getFirestore();
   const problemRef = db
     .collection("quizzes")

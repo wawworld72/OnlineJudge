@@ -1,5 +1,5 @@
 import { beforeEach, afterAll, describe, expect, it, vi } from "vitest";
-import { clearFirestore, makeRequest, teardownTestApp, testDb } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb } from "../testEnv";
 
 vi.mock("../../src/services/classroomClient", () => ({
   listCourseStudents: vi.fn(),
@@ -8,7 +8,6 @@ vi.mock("../../src/services/classroomClient", () => ({
 const { listCourseStudents } = await import("../../src/services/classroomClient");
 const { syncRoster } = await import("../../src/callable/syncRoster");
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const COURSE_ID = "course-1";
 
 describe("syncRoster", () => {
@@ -27,7 +26,7 @@ describe("syncRoster", () => {
       { userId: "u2", email: "gihyun.hong@gmail.com", name: "홍기웅" },
     ]);
 
-    const response = await syncRoster.run(makeRequest({ courseId: COURSE_ID }, TEACHER_EMAIL));
+    const response = await syncRoster.run(makeTeacherRequest({ courseId: COURSE_ID }));
 
     expect(response.newStudents).toBe(2);
     expect(response.newRosterEntries).toBe(2);
@@ -48,7 +47,7 @@ describe("syncRoster", () => {
       { userId: "u2", email: "20240002@hoseo.edu", name: "김철수" },
     ]);
 
-    const response = await syncRoster.run(makeRequest({ courseId: COURSE_ID }, TEACHER_EMAIL));
+    const response = await syncRoster.run(makeTeacherRequest({ courseId: COURSE_ID }));
 
     expect(response.newStudents).toBe(1);
     expect(response.updatedEmails).toBe(1);
@@ -61,9 +60,9 @@ describe("syncRoster", () => {
     vi.mocked(listCourseStudents).mockResolvedValue([
       { userId: "u1", email: "20240001@hoseo.edu", name: "홍길동" },
     ]);
-    await syncRoster.run(makeRequest({ courseId: COURSE_ID }, TEACHER_EMAIL));
+    await syncRoster.run(makeTeacherRequest({ courseId: COURSE_ID }));
 
-    const response = await syncRoster.run(makeRequest({ courseId: COURSE_ID }, TEACHER_EMAIL));
+    const response = await syncRoster.run(makeTeacherRequest({ courseId: COURSE_ID }));
 
     expect(response.newRosterEntries).toBe(0);
     expect(response.updatedRosterEntries).toBe(1);

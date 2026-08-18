@@ -1,6 +1,6 @@
 import { beforeEach, afterAll, describe, expect, it, vi } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb, ts } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb, ts } from "../testEnv";
 
 vi.mock("../../src/services/classroomClient", () => ({
   listCourseStudents: vi.fn(),
@@ -8,53 +8,54 @@ vi.mock("../../src/services/classroomClient", () => ({
   patchGrade: vi.fn(),
 }));
 
-const { listCourseStudents, listStudentSubmissions, patchGrade } = await import(
-  "../../src/services/classroomClient"
-);
+const { listCourseStudents, listStudentSubmissions, patchGrade } =
+  await import("../../src/services/classroomClient");
 const { pushGrades } = await import("../../src/callable/pushGrades");
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const QUIZ_ID = "quiz-1";
 
 async function seedDeployedQuiz() {
-  await testDb().collection("quizzes").doc(QUIZ_ID).set({
-    title: "중간고사",
-    description: "",
-    startAt: ts(-60_000),
-    endAt: ts(-1_000),
-    accessCode: "ABC123",
-    status: "CLOSED",
-    maxRunsPerProblem: 5,
-    courseId: "course-1",
-    courseWorkId: "cw-1",
-    courseWorkLink: "https://classroom.example/cw-1",
-    archivedAt: null,
-    archiveSpreadsheetUrl: null,
-    deletedAt: null,
-  });
+  await testDb()
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .set({
+      title: "중간고사",
+      description: "",
+      startAt: ts(-60_000),
+      endAt: ts(-1_000),
+      accessCode: "ABC123",
+      status: "CLOSED",
+      maxRunsPerProblem: 5,
+      courseId: "course-1",
+      courseWorkId: "cw-1",
+      courseWorkLink: "https://classroom.example/cw-1",
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+    });
 }
 
 async function seedFinalizedParticipant(studentId: string, finalTotal: number) {
-  await testDb().collection("students").doc(studentId).set({
-    name: studentId,
-    email: `${studentId}@hoseo.edu`,
-    status: "ACTIVE",
-  });
   await testDb()
-    .collection("participants")
-    .doc(`${QUIZ_ID}_${studentId}`)
+    .collection("students")
+    .doc(studentId)
     .set({
-      quizId: QUIZ_ID,
-      studentId,
-      enteredAt: FieldValue.serverTimestamp(),
-      finalStatus: "FINALIZED",
-      finalSubmittedAt: Timestamp.now(),
-      finalTotal,
-      runsUsedByProblem: {},
-      submissions: {},
-      runResults: {},
-      gradePushedAt: null,
+      name: studentId,
+      email: `${studentId}@hoseo.edu`,
+      status: "ACTIVE",
     });
+  await testDb().collection("participants").doc(`${QUIZ_ID}_${studentId}`).set({
+    quizId: QUIZ_ID,
+    studentId,
+    enteredAt: FieldValue.serverTimestamp(),
+    finalStatus: "FINALIZED",
+    finalSubmittedAt: Timestamp.now(),
+    finalTotal,
+    runsUsedByProblem: {},
+    submissions: {},
+    runResults: {},
+    gradePushedAt: null,
+  });
 }
 
 describe("pushGrades", () => {
@@ -72,9 +73,9 @@ describe("pushGrades", () => {
   it("확정 채점된 참가자가 없으면 NO_FINALIZED_PARTICIPANTS로 거부한다", async () => {
     await seedDeployedQuiz();
 
-    await expect(pushGrades.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL))).rejects.toMatchObject(
-      { details: { code: "NO_FINALIZED_PARTICIPANTS" } },
-    );
+    await expect(pushGrades.run(makeTeacherRequest({ quizId: QUIZ_ID }))).rejects.toMatchObject({
+      details: { code: "NO_FINALIZED_PARTICIPANTS" },
+    });
   });
 
   it("학번-이메일-Classroom 사용자-제출물 연결이 끊긴 학생은 건너뛰고 실패로 집계한다", async () => {
@@ -83,7 +84,7 @@ describe("pushGrades", () => {
     vi.mocked(listCourseStudents).mockResolvedValue([]);
     vi.mocked(listStudentSubmissions).mockResolvedValue([]);
 
-    const response = await pushGrades.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await pushGrades.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.succeeded).toBe(0);
     expect(response.failed).toBe(1);
@@ -99,11 +100,17 @@ describe("pushGrades", () => {
     vi.mocked(listStudentSubmissions).mockResolvedValue([{ userId: "u1", submissionId: "sub-1" }]);
     vi.mocked(patchGrade).mockResolvedValue(undefined);
 
-    const response = await pushGrades.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await pushGrades.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.succeeded).toBe(1);
     expect(response.failed).toBe(0);
-    expect(patchGrade).toHaveBeenCalledWith("course-1", "cw-1", "sub-1", 90, TEACHER_EMAIL);
+    expect(patchGrade).toHaveBeenCalledWith(
+      "course-1",
+      "cw-1",
+      "sub-1",
+      90,
+      process.env.CLASSROOM_TEACHER_EMAIL,
+    );
 
     const participant = (
       await testDb().collection("participants").doc(`${QUIZ_ID}_20240001`).get()

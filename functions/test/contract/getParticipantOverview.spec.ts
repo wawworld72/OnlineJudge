@@ -1,31 +1,36 @@
 import { beforeEach, afterAll, describe, expect, it } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb, ts } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb, ts } from "../testEnv";
 import { getParticipantOverview } from "../../src/callable/getParticipantOverview";
 import type { OverviewItem } from "../../src/services/participantOverview";
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const QUIZ_ID = "quiz-1";
 
 async function seedQuiz(courseId: string | null) {
-  await testDb().collection("quizzes").doc(QUIZ_ID).set({
-    title: "중간고사",
-    description: "",
-    startAt: ts(-60_000),
-    endAt: ts(60_000),
-    accessCode: "ABC123",
-    status: "OPEN",
-    maxRunsPerProblem: 5,
-    courseId,
-    courseWorkId: null,
-    courseWorkLink: null,
-    archivedAt: null,
-    archiveSpreadsheetUrl: null,
-    deletedAt: null,
-  });
+  await testDb()
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .set({
+      title: "중간고사",
+      description: "",
+      startAt: ts(-60_000),
+      endAt: ts(60_000),
+      accessCode: "ABC123",
+      status: "OPEN",
+      maxRunsPerProblem: 5,
+      courseId,
+      courseWorkId: null,
+      courseWorkLink: null,
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+    });
 }
 
-async function seedParticipant(studentId: string, finalStatus: "IN_PROGRESS" | "SUBMITTED" | "FINALIZED") {
+async function seedParticipant(
+  studentId: string,
+  finalStatus: "IN_PROGRESS" | "SUBMITTED" | "FINALIZED",
+) {
   await testDb()
     .collection("participants")
     .doc(`${QUIZ_ID}_${studentId}`)
@@ -70,9 +75,7 @@ describe("getParticipantOverview", () => {
     });
     await seedParticipant("20240001", "FINALIZED");
 
-    const response = await getParticipantOverview.run(
-      makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL),
-    );
+    const response = await getParticipantOverview.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     const participants = response.participants as OverviewItem[];
     expect(participants).toHaveLength(2);
@@ -88,9 +91,7 @@ describe("getParticipantOverview", () => {
     await seedQuiz(null);
     await seedParticipant("20240001", "IN_PROGRESS");
 
-    const response = await getParticipantOverview.run(
-      makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL),
-    );
+    const response = await getParticipantOverview.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.participants).toHaveLength(1);
     expect(response.participants[0]!.status).toBe("IN_PROGRESS");

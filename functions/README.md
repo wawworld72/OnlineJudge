@@ -12,8 +12,10 @@ Set these via `firebase functions:secrets:set` (for the two secrets) or
 |---|---|
 | `GRADER_SERVICE_URL` | Base URL of the external Grader service (contracts/grader-api.md) |
 | `GRADER_AUTH_TOKEN` | Sent as `X-Auth-Token` on every Grader request |
-| `ALLOWED_EMAIL_DOMAIN` | Login email domain allowed by `Login.tsx` and identity checks (default `hoseo.edu`) |
-| `TEACHER_EMAILS` | Comma-separated allowlist checked by `requireTeacher` (research.md §17) |
+| `ALLOWED_EMAIL_DOMAIN` | Student login email domain allowed by `Login.tsx` and identity checks (default `hoseo.edu`) |
+| `TEACHER_ACCESS_CODE` | Shared access code checked by `teacherLogin` (`/teacher`); on match the caller's anonymous Firebase account gets custom claim `teacher: true`, which `requireTeacher` then checks. Never exposed to the web build. |
+| `CLASSROOM_TEACHER_EMAIL` | Real Workspace teacher email impersonated (domain-wide delegation) for all Google Classroom API calls — independent of who is logged into `/teacher`, since that login is no longer a Google account |
+| `SHEET_EXPORT_API_TOKEN` | Static bearer token checked by `exportGradesToSheet` (Google Apps Script pulls grades via this, since it can't do Firebase Auth/App Check) |
 
 ## `accessLogs.expiresAt` TTL policy (research.md §8)
 

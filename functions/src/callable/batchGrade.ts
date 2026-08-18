@@ -15,8 +15,8 @@ const CONCURRENCY = 10;
  */
 export const batchGrade = createCallable(
   batchGradeSchema,
-  async ({ data, authEmail }) => {
-    requireTeacher(authEmail);
+  async ({ data, isTeacher }) => {
+    requireTeacher(isTeacher);
     const db = getFirestore();
     const quizRef = db.collection("quizzes").doc(data.quizId);
     const quiz = (await quizRef.get()).data() as Quiz;
@@ -29,7 +29,9 @@ export const batchGrade = createCallable(
           async (problem) =>
             [
               problem.id,
-              (await quizRef.collection("problemSecrets").doc(problem.id).get()).data() as ProblemSecrets,
+              (
+                await quizRef.collection("problemSecrets").doc(problem.id).get()
+              ).data() as ProblemSecrets,
             ] as const,
         ),
       ),

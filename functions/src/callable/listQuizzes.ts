@@ -9,8 +9,8 @@ import type { Quiz } from "../models/types";
  * 자신의 DRAFT/CLOSED 퀴즈까지 포함한 전체 목록을 보려면 별도 조회 경로가 필요하다 —
  * contracts/callable-functions.md에 빠져 있던 부분(research.md §18)을 이 함수로 채운다.
  */
-export const listQuizzes = createCallable(listQuizzesSchema, async ({ authEmail }) => {
-  requireTeacher(authEmail);
+export const listQuizzes = createCallable(listQuizzesSchema, async ({ isTeacher }) => {
+  requireTeacher(isTeacher);
   const db = getFirestore();
 
   const snap = await db.collection("quizzes").where("deletedAt", "==", null).get();

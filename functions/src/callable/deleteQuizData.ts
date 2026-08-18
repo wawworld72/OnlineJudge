@@ -1,4 +1,9 @@
-import { getFirestore, FieldValue, type DocumentReference, type Firestore } from "firebase-admin/firestore";
+import {
+  getFirestore,
+  FieldValue,
+  type DocumentReference,
+  type Firestore,
+} from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { deleteQuizDataSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
@@ -23,8 +28,8 @@ async function deleteAllDocs(db: Firestore, refs: DocumentReference[]): Promise<
  * `deletedAt`만 설정한다(data-model.md — "설정되면 하위 데이터는 이미 제거됨"이 그
  * 의미이며, 퀴즈 문서는 이력 조회를 위해 남긴다).
  */
-export const deleteQuizData = createCallable(deleteQuizDataSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const deleteQuizData = createCallable(deleteQuizDataSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const db = getFirestore();
   const quizRef = db.collection("quizzes").doc(data.quizId);
   const quiz = (await quizRef.get()).data() as Quiz;
@@ -38,7 +43,10 @@ export const deleteQuizData = createCallable(deleteQuizDataSchema, async ({ data
 
   const problemsSnap = await quizRef.collection("problems").get();
   const secretsSnap = await quizRef.collection("problemSecrets").get();
-  const participantsSnap = await db.collection("participants").where("quizId", "==", data.quizId).get();
+  const participantsSnap = await db
+    .collection("participants")
+    .where("quizId", "==", data.quizId)
+    .get();
 
   await deleteAllDocs(db, [
     ...problemsSnap.docs.map((doc) => doc.ref),

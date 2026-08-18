@@ -4,15 +4,15 @@ import { deployClassroomAssignmentSchema, resetClassroomDeploymentSchema } from 
 import { requireTeacher } from "../shared/authorization";
 import { domainError, systemError } from "../shared/errors";
 import { isAfter } from "../shared/timeAuthority";
-import { getAppBaseUrl } from "../config";
+import { getAppBaseUrl, getClassroomTeacherEmail } from "../config";
 import { computePreDeployCheck } from "../services/preDeployCheck";
 import { createCourseWork } from "../services/classroomClient";
 import type { Problem, Quiz } from "../models/types";
 
 export const deployClassroomAssignment = createCallable(
   deployClassroomAssignmentSchema,
-  async ({ data, authEmail }) => {
-    requireTeacher(authEmail);
+  async ({ data, isTeacher }) => {
+    requireTeacher(isTeacher);
     const db = getFirestore();
     const quizRef = db.collection("quizzes").doc(data.quizId);
     const quiz = (await quizRef.get()).data() as Quiz;
@@ -57,13 +57,16 @@ export const deployClassroomAssignment = createCallable(
         maxPoints,
         quiz.endAt.toDate(),
         joinUrl,
-        authEmail,
+        getClassroomTeacherEmail(),
       );
     } catch (cause) {
       throw systemError("deployClassroomAssignment.createCourseWork", cause);
     }
 
-    await quizRef.update({ courseWorkId: result.courseWorkId, courseWorkLink: result.alternateLink });
+    await quizRef.update({
+      courseWorkId: result.courseWorkId,
+      courseWorkLink: result.alternateLink,
+    });
     return result;
   },
 );
@@ -71,8 +74,8 @@ export const deployClassroomAssignment = createCallable(
 /** FR-029. 재배포는 이 명시적 초기화 이후에만 가능하다. */
 export const resetClassroomDeployment = createCallable(
   resetClassroomDeploymentSchema,
-  async ({ data, authEmail }) => {
-    requireTeacher(authEmail);
+  async ({ data, isTeacher }) => {
+    requireTeacher(isTeacher);
     await getFirestore()
       .collection("quizzes")
       .doc(data.quizId)

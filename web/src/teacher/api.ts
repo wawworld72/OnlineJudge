@@ -1,5 +1,9 @@
 import { callFunction } from "../shared/functionsClient";
 
+export function teacherLogin(input: { accessCode: string }) {
+  return callFunction<typeof input, { ok: true }>("teacherLogin", input);
+}
+
 export type QuizStatus = "DRAFT" | "OPEN" | "CLOSED";
 
 export interface QuizListItem {

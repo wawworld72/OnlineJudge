@@ -1,6 +1,6 @@
 import { beforeEach, afterAll, describe, expect, it, vi } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb, ts } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb, ts } from "../testEnv";
 
 vi.mock("../../src/services/sheetsClient", () => ({
   createArchiveSpreadsheet: vi.fn(),
@@ -9,26 +9,28 @@ vi.mock("../../src/services/sheetsClient", () => ({
 const { createArchiveSpreadsheet } = await import("../../src/services/sheetsClient");
 const { archiveQuiz } = await import("../../src/callable/archiveQuiz");
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const QUIZ_ID = "quiz-1";
 
 async function seedQuizWithParticipant() {
   const db = testDb();
-  await db.collection("quizzes").doc(QUIZ_ID).set({
-    title: "중간고사",
-    description: "설명",
-    startAt: ts(-60_000),
-    endAt: ts(-1_000),
-    accessCode: "ABC123",
-    status: "CLOSED",
-    maxRunsPerProblem: 5,
-    courseId: null,
-    courseWorkId: null,
-    courseWorkLink: null,
-    archivedAt: null,
-    archiveSpreadsheetUrl: null,
-    deletedAt: null,
-  });
+  await db
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .set({
+      title: "중간고사",
+      description: "설명",
+      startAt: ts(-60_000),
+      endAt: ts(-1_000),
+      accessCode: "ABC123",
+      status: "CLOSED",
+      maxRunsPerProblem: 5,
+      courseId: null,
+      courseWorkId: null,
+      courseWorkLink: null,
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+    });
   await db.collection("quizzes").doc(QUIZ_ID).collection("problems").doc("p1").set({
     order: 0,
     title: "문제1",
@@ -75,7 +77,7 @@ describe("archiveQuiz", () => {
       url: "https://sheets.example/sheet-1",
     });
 
-    const response = await archiveQuiz.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await archiveQuiz.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.spreadsheetUrl).toBe("https://sheets.example/sheet-1");
 

@@ -46,12 +46,23 @@ export function getAllowedEmailDomain(): string {
 }
 
 /**
- * 교사(관리자) 판별은 학생명부 소속 여부가 아니라 별도 허용 목록으로 한다 — 아직 명부에
- * 없는 학생 이메일을 "교사"로 잘못 판별하는 사고를 피하기 위함이다(헌법 I·II).
+ * 교사 홈페이지(/teacher)는 Google 이메일 로그인이 아니라 이 공유 출입코드로 접근한다
+ * (`teacherLogin`) — 값이 일치하면 그 요청의 익명 Firebase 계정에 커스텀 클레임
+ * `teacher: true`를 부여하고, 이후 모든 교사용 Callable Function은 `requireTeacher`로
+ * 그 클레임만 확인한다. 이메일 계정을 요구하지 않으므로 GitHub Secret으로만 관리하고
+ * 클라이언트 빌드에는 절대 포함하지 않는다.
  */
-export function getTeacherEmails(): string[] {
-  return requireEnv("TEACHER_EMAILS")
-    .split(",")
-    .map((email) => email.trim())
-    .filter(Boolean);
+export function getTeacherAccessCode(): string {
+  return requireEnv("TEACHER_ACCESS_CODE");
+}
+
+/**
+ * Google Classroom API는 서비스 계정 단독으로는 호출할 수 없고, 도메인 전체 위임으로
+ * 실제 Workspace 교사 계정을 대신(impersonate)해야 한다(getClassroomServiceAccountKey
+ * 참고). 교사 로그인이 더 이상 실제 Google 계정이 아니므로(출입코드+익명 인증), "지금
+ * 로그인한 사람의 이메일"이 아니라 이 값으로 항상 impersonate한다 — 웹앱 로그인 방식과
+ * Classroom 위임 대상 계정은 서로 다른 개념이다.
+ */
+export function getClassroomTeacherEmail(): string {
+  return requireEnv("CLASSROOM_TEACHER_EMAIL");
 }

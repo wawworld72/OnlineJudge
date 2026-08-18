@@ -5,8 +5,8 @@ import { requireTeacher } from "../shared/authorization";
 import { domainError } from "../shared/errors";
 import { computePreDeployCheck } from "../services/preDeployCheck";
 
-export const setQuizStatus = createCallable(setQuizStatusSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const setQuizStatus = createCallable(setQuizStatusSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const db = getFirestore();
 
   if (data.status === "OPEN") {

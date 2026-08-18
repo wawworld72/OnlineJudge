@@ -1,29 +1,31 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb, ts } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb, ts } from "../testEnv";
 import { batchGrade } from "../../src/callable/batchGrade";
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const QUIZ_ID = "quiz-1";
 const PROBLEM_ID = "p1";
 
 async function seedQuiz() {
   const db = testDb();
-  await db.collection("quizzes").doc(QUIZ_ID).set({
-    title: "중간고사",
-    description: "",
-    startAt: ts(-60_000),
-    endAt: ts(-1_000),
-    accessCode: "ABC123",
-    status: "CLOSED",
-    maxRunsPerProblem: 5,
-    courseId: null,
-    courseWorkId: null,
-    courseWorkLink: null,
-    archivedAt: null,
-    archiveSpreadsheetUrl: null,
-    deletedAt: null,
-  });
+  await db
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .set({
+      title: "중간고사",
+      description: "",
+      startAt: ts(-60_000),
+      endAt: ts(-1_000),
+      accessCode: "ABC123",
+      status: "CLOSED",
+      maxRunsPerProblem: 5,
+      courseId: null,
+      courseWorkId: null,
+      courseWorkLink: null,
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+    });
   await db.collection("quizzes").doc(QUIZ_ID).collection("problems").doc(PROBLEM_ID).set({
     order: 0,
     title: "문제1",
@@ -34,13 +36,31 @@ async function seedQuiz() {
     updatedAt: FieldValue.serverTimestamp(),
     deletedAt: null,
   });
-  await db.collection("quizzes").doc(QUIZ_ID).collection("problemSecrets").doc(PROBLEM_ID).set({
-    items: [{ tcId: "tc1", tcNo: 1, input: "1", expected: "1", points: 100, isPublic: true, description: "" }],
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+  await db
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .collection("problemSecrets")
+    .doc(PROBLEM_ID)
+    .set({
+      items: [
+        {
+          tcId: "tc1",
+          tcNo: 1,
+          input: "1",
+          expected: "1",
+          points: 100,
+          isPublic: true,
+          description: "",
+        },
+      ],
+      updatedAt: FieldValue.serverTimestamp(),
+    });
 }
 
-async function seedParticipant(studentId: string, finalStatus: "SUBMITTED" | "IN_PROGRESS" | "FINALIZED") {
+async function seedParticipant(
+  studentId: string,
+  finalStatus: "SUBMITTED" | "IN_PROGRESS" | "FINALIZED",
+) {
   await testDb()
     .collection("participants")
     .doc(`${QUIZ_ID}_${studentId}`)
@@ -53,10 +73,20 @@ async function seedParticipant(studentId: string, finalStatus: "SUBMITTED" | "IN
       finalTotal: finalStatus === "FINALIZED" ? 100 : 0,
       runsUsedByProblem: {},
       submissions:
-        finalStatus === "IN_PROGRESS" ? {} : { [PROBLEM_ID]: { code: "int main(){}", submittedAt: Timestamp.now() } },
+        finalStatus === "IN_PROGRESS"
+          ? {}
+          : { [PROBLEM_ID]: { code: "int main(){}", submittedAt: Timestamp.now() } },
       runResults:
         finalStatus === "FINALIZED"
-          ? { [PROBLEM_ID]: { status: "AC", score: 100, maxScore: 100, compileErrorMessage: null, tcResults: [] } }
+          ? {
+              [PROBLEM_ID]: {
+                status: "AC",
+                score: 100,
+                maxScore: 100,
+                compileErrorMessage: null,
+                tcResults: [],
+              },
+            }
           : {},
       gradePushedAt: null,
     });
@@ -90,11 +120,21 @@ describe("일괄 채점: 제출완료/미제출/이미확정 참가자가 섞인
         score: 100,
         maxScore: 100,
         compileErrorMessage: null,
-        tcResultsFull: [{ result: "✅PASS", earned: 100, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" }],
+        tcResultsFull: [
+          {
+            result: "✅PASS",
+            earned: 100,
+            isPublic: false,
+            input: "1",
+            expected: "1",
+            actual: "1",
+            memo: "",
+          },
+        ],
       }),
     } as Response);
 
-    const response = await batchGrade.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await batchGrade.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.processed).toBe(1);
     expect(response.skipped).toBe(1);

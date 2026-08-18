@@ -6,8 +6,8 @@ import { getParticipantOverviewData } from "../services/participantOverview";
 
 export const getParticipantOverview = createCallable(
   getParticipantOverviewSchema,
-  async ({ data, authEmail }) => {
-    requireTeacher(authEmail);
+  async ({ data, isTeacher }) => {
+    requireTeacher(isTeacher);
     const db = getFirestore();
     const participants = await getParticipantOverviewData(db, data.quizId);
     return { participants };

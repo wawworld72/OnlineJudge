@@ -13,8 +13,8 @@ import type { Participant, Problem, Quiz } from "../models/types";
  * `runResults` map을 순회해 행으로 펼친다(data-model.md — 서브컬렉션이 아니라 map으로
  * 통합한 구조를 그대로 반영).
  */
-export const archiveQuiz = createCallable(archiveQuizSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const archiveQuiz = createCallable(archiveQuizSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const db = getFirestore();
   const quizRef = db.collection("quizzes").doc(data.quizId);
   const quiz = (await quizRef.get()).data() as Quiz;
@@ -22,7 +22,10 @@ export const archiveQuiz = createCallable(archiveQuizSchema, async ({ data, auth
   const problemsSnap = await quizRef.collection("problems").where("deletedAt", "==", null).get();
   const problems = problemsSnap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as Problem) }));
 
-  const participantsSnap = await db.collection("participants").where("quizId", "==", data.quizId).get();
+  const participantsSnap = await db
+    .collection("participants")
+    .where("quizId", "==", data.quizId)
+    .get();
   const participants = participantsSnap.docs.map((doc) => doc.data() as Participant);
 
   const overviewTab: ArchiveTab = {
@@ -83,12 +86,20 @@ export const archiveQuiz = createCallable(archiveQuizSchema, async ({ data, auth
   let created;
   try {
     created = await retryOnce(() =>
-      createArchiveSpreadsheet(quiz.title, [overviewTab, participantsTab, resultsTab, submissionsTab]),
+      createArchiveSpreadsheet(quiz.title, [
+        overviewTab,
+        participantsTab,
+        resultsTab,
+        submissionsTab,
+      ]),
     );
   } catch (cause) {
     throw systemError("archiveQuiz", cause);
   }
 
-  await quizRef.update({ archivedAt: FieldValue.serverTimestamp(), archiveSpreadsheetUrl: created.url });
+  await quizRef.update({
+    archivedAt: FieldValue.serverTimestamp(),
+    archiveSpreadsheetUrl: created.url,
+  });
   return { spreadsheetUrl: created.url };
 });

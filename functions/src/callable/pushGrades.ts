@@ -5,7 +5,12 @@ import { pushGradesSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
 import { domainError, systemError } from "../shared/errors";
 import { processInChunks } from "../shared/chunkedConcurrency";
-import { listCourseStudents, listStudentSubmissions, patchGrade } from "../services/classroomClient";
+import { getClassroomTeacherEmail } from "../config";
+import {
+  listCourseStudents,
+  listStudentSubmissions,
+  patchGrade,
+} from "../services/classroomClient";
 import type { Participant, Quiz, Student } from "../models/types";
 
 const CONCURRENCY = 10;
@@ -21,8 +26,8 @@ const CONCURRENCY = 10;
  */
 export const pushGrades = createCallable(
   pushGradesSchema,
-  async ({ data, authEmail }) => {
-    requireTeacher(authEmail);
+  async ({ data, isTeacher }) => {
+    requireTeacher(isTeacher);
     const db = getFirestore();
     const quizRef = db.collection("quizzes").doc(data.quizId);
     const quiz = (await quizRef.get()).data() as Quiz;
@@ -45,10 +50,11 @@ export const pushGrades = createCallable(
       );
     }
 
+    const classroomTeacherEmail = getClassroomTeacherEmail();
     let classroomStudents, submissions;
     try {
-      classroomStudents = await listCourseStudents(courseId, authEmail);
-      submissions = await listStudentSubmissions(courseId, courseWorkId, authEmail);
+      classroomStudents = await listCourseStudents(courseId, classroomTeacherEmail);
+      submissions = await listStudentSubmissions(courseId, courseWorkId, classroomTeacherEmail);
     } catch (cause) {
       throw systemError("pushGrades.listCourseStudentsOrSubmissions", cause);
     }
@@ -60,34 +66,49 @@ export const pushGrades = createCallable(
       participant: doc.data() as Participant,
     }));
     const studentSnaps = await db.getAll(
-      ...participants.map(({ participant }) => db.collection("students").doc(participant.studentId)),
+      ...participants.map(({ participant }) =>
+        db.collection("students").doc(participant.studentId),
+      ),
     );
     const studentByStudentId = new Map(
       studentSnaps.map((snap) => [snap.id, snap.data() as Student | undefined]),
     );
 
-    const outcomes = await processInChunks(participants, CONCURRENCY, async ({ ref, participant }) => {
-      const student = studentByStudentId.get(participant.studentId);
-      const userId = student?.email ? userIdByEmail.get(student.email) : undefined;
-      const submissionId = userId ? submissionIdByUserId.get(userId) : undefined;
+    const outcomes = await processInChunks(
+      participants,
+      CONCURRENCY,
+      async ({ ref, participant }) => {
+        const student = studentByStudentId.get(participant.studentId);
+        const userId = student?.email ? userIdByEmail.get(student.email) : undefined;
+        const submissionId = userId ? submissionIdByUserId.get(userId) : undefined;
 
-      if (!submissionId) {
-        logger.warn("pushGrades: 학번-이메일-Classroom 사용자-제출물 연결 끊김", {
-          quizId: data.quizId,
-          studentId: participant.studentId,
-        });
-        return { ok: false as const, studentId: participant.studentId };
-      }
+        if (!submissionId) {
+          logger.warn("pushGrades: 학번-이메일-Classroom 사용자-제출물 연결 끊김", {
+            quizId: data.quizId,
+            studentId: participant.studentId,
+          });
+          return { ok: false as const, studentId: participant.studentId };
+        }
 
-      try {
-        await patchGrade(courseId, courseWorkId, submissionId, participant.finalTotal, authEmail);
-        await ref.update({ gradePushedAt: FieldValue.serverTimestamp() });
-        return { ok: true as const, studentId: participant.studentId };
-      } catch (cause) {
-        logger.error("pushGrades: Classroom 성적 반영 실패", { studentId: participant.studentId, cause });
-        return { ok: false as const, studentId: participant.studentId };
-      }
-    });
+        try {
+          await patchGrade(
+            courseId,
+            courseWorkId,
+            submissionId,
+            participant.finalTotal,
+            classroomTeacherEmail,
+          );
+          await ref.update({ gradePushedAt: FieldValue.serverTimestamp() });
+          return { ok: true as const, studentId: participant.studentId };
+        } catch (cause) {
+          logger.error("pushGrades: Classroom 성적 반영 실패", {
+            studentId: participant.studentId,
+            cause,
+          });
+          return { ok: false as const, studentId: participant.studentId };
+        }
+      },
+    );
 
     const failed = outcomes.filter((o) => !o.ok);
     return {

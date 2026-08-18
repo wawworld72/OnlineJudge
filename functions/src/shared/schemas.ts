@@ -5,6 +5,10 @@ import { z } from "zod";
  * Firestore에 쓰는 값의 실제 타입 강제는 이 Zod 스키마가 런타임에 책임진다.
  */
 
+export const teacherLoginSchema = z.object({
+  accessCode: z.string().min(1),
+});
+
 export const testCaseInputSchema = z.object({
   tcId: z.string().min(1).nullish(),
   tcNo: z.number().int().nonnegative(),

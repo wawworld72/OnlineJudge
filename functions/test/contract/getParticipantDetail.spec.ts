@@ -1,9 +1,8 @@
 import { beforeEach, afterAll, describe, expect, it } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb } from "../testEnv";
 import { getParticipantDetail } from "../../src/callable/getParticipantDetail";
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const QUIZ_ID = "quiz-1";
 const STUDENT_ID = "20240001";
 
@@ -36,7 +35,7 @@ describe("getParticipantDetail", () => {
       });
 
     const response = await getParticipantDetail.run(
-      makeRequest({ quizId: QUIZ_ID, studentId: STUDENT_ID }, TEACHER_EMAIL),
+      makeTeacherRequest({ quizId: QUIZ_ID, studentId: STUDENT_ID }),
     );
 
     expect(response.submissions.p1.code).toBe("int main(){}");
@@ -45,9 +44,7 @@ describe("getParticipantDetail", () => {
 
   it("입장한 적 없는 학생을 조회하면 NOT_ENTERED로 거부한다", async () => {
     await expect(
-      getParticipantDetail.run(
-        makeRequest({ quizId: QUIZ_ID, studentId: "never-entered" }, TEACHER_EMAIL),
-      ),
+      getParticipantDetail.run(makeTeacherRequest({ quizId: QUIZ_ID, studentId: "never-entered" })),
     ).rejects.toMatchObject({ details: { code: "NOT_ENTERED" } });
   });
 });

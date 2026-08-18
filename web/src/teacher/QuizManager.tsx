@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { getAuth, signOut } from "firebase/auth";
+import { firebaseApp } from "../shared/firebaseApp";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
 import {
   getQuizForEdit,
@@ -103,6 +105,9 @@ export function QuizManager() {
         <div className="card">
           <h1>퀴즈 관리</h1>
           <button onClick={openForCreate}>새 퀴즈 만들기</button>
+          <button className="secondary" onClick={() => signOut(getAuth(firebaseApp))}>
+            로그아웃
+          </button>
         </div>
 
         <div className="card">

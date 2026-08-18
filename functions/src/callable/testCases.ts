@@ -19,7 +19,11 @@ async function applyTestCaseDelta(
   applyDelta: (items: TestCase[]) => TestCase[],
 ): Promise<{ items: TestCase[]; pointsTotal: number }> {
   const db = getFirestore();
-  const secretsRef = db.collection("quizzes").doc(quizId).collection("problemSecrets").doc(problemId);
+  const secretsRef = db
+    .collection("quizzes")
+    .doc(quizId)
+    .collection("problemSecrets")
+    .doc(problemId);
   const problemRef = db.collection("quizzes").doc(quizId).collection("problems").doc(problemId);
 
   return db.runTransaction(async (tx: Transaction) => {
@@ -35,8 +39,8 @@ async function applyTestCaseDelta(
   });
 }
 
-export const upsertTestCase = createCallable(upsertTestCaseSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const upsertTestCase = createCallable(upsertTestCaseSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const tcId = data.testCase.tcId ?? randomUUID();
   const newTestCase: TestCase = { ...data.testCase, tcId };
 
@@ -49,8 +53,8 @@ export const upsertTestCase = createCallable(upsertTestCaseSchema, async ({ data
   return { tcId, pointsTotal: result.pointsTotal, testCaseCount: result.items.length };
 });
 
-export const deleteTestCase = createCallable(deleteTestCaseSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const deleteTestCase = createCallable(deleteTestCaseSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const result = await applyTestCaseDelta(data.quizId, data.problemId, (items) =>
     items.filter((item) => item.tcId !== data.tcId),
   );

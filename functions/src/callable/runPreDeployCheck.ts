@@ -6,8 +6,8 @@ import { computePreDeployCheck } from "../services/preDeployCheck";
 
 export const runPreDeployCheck = createCallable(
   runPreDeployCheckSchema,
-  async ({ data, authEmail }) => {
-    requireTeacher(authEmail);
+  async ({ data, isTeacher }) => {
+    requireTeacher(isTeacher);
     return computePreDeployCheck(getFirestore(), data.quizId);
   },
 );

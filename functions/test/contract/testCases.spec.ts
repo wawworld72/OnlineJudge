@@ -1,9 +1,8 @@
 import { beforeEach, afterAll, describe, expect, it } from "vitest";
 import { FieldValue } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb } from "../testEnv";
 import { upsertTestCase, deleteTestCase } from "../../src/callable/testCases";
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const QUIZ_ID = "quiz-1";
 const PROBLEM_ID = "p1";
 
@@ -37,18 +36,27 @@ describe("upsertTestCase / deleteTestCase", () => {
 
   it("테스트케이스를 추가하면 problemSecrets.items와 problems.pointsTotal이 같은 트랜잭션으로 갱신된다", async () => {
     await upsertTestCase.run(
-      makeRequest(
-        {
-          quizId: QUIZ_ID,
-          problemId: PROBLEM_ID,
-          testCase: { tcNo: 1, input: "1", expected: "1", points: 60, isPublic: true, description: "" },
+      makeTeacherRequest({
+        quizId: QUIZ_ID,
+        problemId: PROBLEM_ID,
+        testCase: {
+          tcNo: 1,
+          input: "1",
+          expected: "1",
+          points: 60,
+          isPublic: true,
+          description: "",
         },
-        TEACHER_EMAIL,
-      ),
+      }),
     );
 
     const secrets = (
-      await testDb().collection("quizzes").doc(QUIZ_ID).collection("problemSecrets").doc(PROBLEM_ID).get()
+      await testDb()
+        .collection("quizzes")
+        .doc(QUIZ_ID)
+        .collection("problemSecrets")
+        .doc(PROBLEM_ID)
+        .get()
     ).data()!;
     expect(secrets.items).toHaveLength(1);
 
@@ -61,37 +69,43 @@ describe("upsertTestCase / deleteTestCase", () => {
 
   it("tcId를 지정하면 기존 테스트케이스를 치환한다", async () => {
     const created = await upsertTestCase.run(
-      makeRequest(
-        {
-          quizId: QUIZ_ID,
-          problemId: PROBLEM_ID,
-          testCase: { tcNo: 1, input: "1", expected: "1", points: 60, isPublic: true, description: "" },
+      makeTeacherRequest({
+        quizId: QUIZ_ID,
+        problemId: PROBLEM_ID,
+        testCase: {
+          tcNo: 1,
+          input: "1",
+          expected: "1",
+          points: 60,
+          isPublic: true,
+          description: "",
         },
-        TEACHER_EMAIL,
-      ),
+      }),
     );
 
     await upsertTestCase.run(
-      makeRequest(
-        {
-          quizId: QUIZ_ID,
-          problemId: PROBLEM_ID,
-          testCase: {
-            tcId: created.tcId,
-            tcNo: 1,
-            input: "1",
-            expected: "1",
-            points: 90,
-            isPublic: true,
-            description: "수정됨",
-          },
+      makeTeacherRequest({
+        quizId: QUIZ_ID,
+        problemId: PROBLEM_ID,
+        testCase: {
+          tcId: created.tcId,
+          tcNo: 1,
+          input: "1",
+          expected: "1",
+          points: 90,
+          isPublic: true,
+          description: "수정됨",
         },
-        TEACHER_EMAIL,
-      ),
+      }),
     );
 
     const secrets = (
-      await testDb().collection("quizzes").doc(QUIZ_ID).collection("problemSecrets").doc(PROBLEM_ID).get()
+      await testDb()
+        .collection("quizzes")
+        .doc(QUIZ_ID)
+        .collection("problemSecrets")
+        .doc(PROBLEM_ID)
+        .get()
     ).data()!;
     expect(secrets.items).toHaveLength(1);
     expect(secrets.items[0].points).toBe(90);
@@ -99,32 +113,45 @@ describe("upsertTestCase / deleteTestCase", () => {
 
   it("deleteTestCase는 해당 항목만 제거하고 배점 합을 다시 계산한다", async () => {
     const first = await upsertTestCase.run(
-      makeRequest(
-        {
-          quizId: QUIZ_ID,
-          problemId: PROBLEM_ID,
-          testCase: { tcNo: 1, input: "1", expected: "1", points: 60, isPublic: true, description: "" },
+      makeTeacherRequest({
+        quizId: QUIZ_ID,
+        problemId: PROBLEM_ID,
+        testCase: {
+          tcNo: 1,
+          input: "1",
+          expected: "1",
+          points: 60,
+          isPublic: true,
+          description: "",
         },
-        TEACHER_EMAIL,
-      ),
+      }),
     );
     await upsertTestCase.run(
-      makeRequest(
-        {
-          quizId: QUIZ_ID,
-          problemId: PROBLEM_ID,
-          testCase: { tcNo: 2, input: "2", expected: "2", points: 40, isPublic: false, description: "" },
+      makeTeacherRequest({
+        quizId: QUIZ_ID,
+        problemId: PROBLEM_ID,
+        testCase: {
+          tcNo: 2,
+          input: "2",
+          expected: "2",
+          points: 40,
+          isPublic: false,
+          description: "",
         },
-        TEACHER_EMAIL,
-      ),
+      }),
     );
 
     await deleteTestCase.run(
-      makeRequest({ quizId: QUIZ_ID, problemId: PROBLEM_ID, tcId: first.tcId }, TEACHER_EMAIL),
+      makeTeacherRequest({ quizId: QUIZ_ID, problemId: PROBLEM_ID, tcId: first.tcId }),
     );
 
     const secrets = (
-      await testDb().collection("quizzes").doc(QUIZ_ID).collection("problemSecrets").doc(PROBLEM_ID).get()
+      await testDb()
+        .collection("quizzes")
+        .doc(QUIZ_ID)
+        .collection("problemSecrets")
+        .doc(PROBLEM_ID)
+        .get()
     ).data()!;
     expect(secrets.items).toHaveLength(1);
 
@@ -137,29 +164,42 @@ describe("upsertTestCase / deleteTestCase", () => {
   it("같은 문항의 서로 다른 테스트케이스를 동시에 추가해도 두 수정 모두 최종 배점에 반영된다", async () => {
     await Promise.all([
       upsertTestCase.run(
-        makeRequest(
-          {
-            quizId: QUIZ_ID,
-            problemId: PROBLEM_ID,
-            testCase: { tcNo: 1, input: "1", expected: "1", points: 30, isPublic: true, description: "" },
+        makeTeacherRequest({
+          quizId: QUIZ_ID,
+          problemId: PROBLEM_ID,
+          testCase: {
+            tcNo: 1,
+            input: "1",
+            expected: "1",
+            points: 30,
+            isPublic: true,
+            description: "",
           },
-          TEACHER_EMAIL,
-        ),
+        }),
       ),
       upsertTestCase.run(
-        makeRequest(
-          {
-            quizId: QUIZ_ID,
-            problemId: PROBLEM_ID,
-            testCase: { tcNo: 2, input: "2", expected: "2", points: 70, isPublic: false, description: "" },
+        makeTeacherRequest({
+          quizId: QUIZ_ID,
+          problemId: PROBLEM_ID,
+          testCase: {
+            tcNo: 2,
+            input: "2",
+            expected: "2",
+            points: 70,
+            isPublic: false,
+            description: "",
           },
-          TEACHER_EMAIL,
-        ),
+        }),
       ),
     ]);
 
     const secrets = (
-      await testDb().collection("quizzes").doc(QUIZ_ID).collection("problemSecrets").doc(PROBLEM_ID).get()
+      await testDb()
+        .collection("quizzes")
+        .doc(QUIZ_ID)
+        .collection("problemSecrets")
+        .doc(PROBLEM_ID)
+        .get()
     ).data()!;
     expect(secrets.items).toHaveLength(2);
 

@@ -1,11 +1,10 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb, ts } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb, ts } from "../testEnv";
 import { getParticipantOverview } from "../../src/callable/getParticipantOverview";
 import type { OverviewItem } from "../../src/services/participantOverview";
 import { getParticipantDetail } from "../../src/callable/getParticipantDetail";
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const QUIZ_ID = "quiz-1";
 const COURSE_ID = "course-1";
 
@@ -37,10 +36,21 @@ async function seedParticipant(
       finalSubmittedAt: finalStatus === "IN_PROGRESS" ? null : Timestamp.now(),
       finalTotal: finalStatus === "FINALIZED" ? 100 : 0,
       runsUsedByProblem: {},
-      submissions: finalStatus === "IN_PROGRESS" ? {} : { p1: { code: "int main(){}", submittedAt: Timestamp.now() } },
+      submissions:
+        finalStatus === "IN_PROGRESS"
+          ? {}
+          : { p1: { code: "int main(){}", submittedAt: Timestamp.now() } },
       runResults:
         finalStatus === "FINALIZED"
-          ? { p1: { status: "AC", score: 100, maxScore: 100, compileErrorMessage: null, tcResults: [] } }
+          ? {
+              p1: {
+                status: "AC",
+                score: 100,
+                maxScore: 100,
+                compileErrorMessage: null,
+                tcResults: [],
+              },
+            }
           : {},
       gradePushedAt: null,
     });
@@ -49,21 +59,24 @@ async function seedParticipant(
 describe("교사의 참가자 현황 조회 (현황 조회 → 상세 열람)", () => {
   beforeEach(async () => {
     await clearFirestore();
-    await testDb().collection("quizzes").doc(QUIZ_ID).set({
-      title: "중간고사",
-      description: "",
-      startAt: ts(-60_000),
-      endAt: ts(60_000),
-      accessCode: "ABC123",
-      status: "OPEN",
-      maxRunsPerProblem: 5,
-      courseId: COURSE_ID,
-      courseWorkId: null,
-      courseWorkLink: null,
-      archivedAt: null,
-      archiveSpreadsheetUrl: null,
-      deletedAt: null,
-    });
+    await testDb()
+      .collection("quizzes")
+      .doc(QUIZ_ID)
+      .set({
+        title: "중간고사",
+        description: "",
+        startAt: ts(-60_000),
+        endAt: ts(60_000),
+        accessCode: "ABC123",
+        status: "OPEN",
+        maxRunsPerProblem: 5,
+        courseId: COURSE_ID,
+        courseWorkId: null,
+        courseWorkLink: null,
+        archivedAt: null,
+        archiveSpreadsheetUrl: null,
+        deletedAt: null,
+      });
   });
 
   afterAll(async () => {
@@ -79,7 +92,7 @@ describe("교사의 참가자 현황 조회 (현황 조회 → 상세 열람)", 
     await seedParticipant("submitted-id", "SUBMITTED");
     await seedParticipant("finalized-id", "FINALIZED");
 
-    const overview = await getParticipantOverview.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const overview = await getParticipantOverview.run(makeTeacherRequest({ quizId: QUIZ_ID }));
     const participants = overview.participants as OverviewItem[];
     expect(participants).toHaveLength(4);
     const statuses = Object.fromEntries(participants.map((p) => [p.studentId, p.status]));
@@ -91,7 +104,7 @@ describe("교사의 참가자 현황 조회 (현황 조회 → 상세 열람)", 
     });
 
     const detail = await getParticipantDetail.run(
-      makeRequest({ quizId: QUIZ_ID, studentId: "finalized-id" }, TEACHER_EMAIL),
+      makeTeacherRequest({ quizId: QUIZ_ID, studentId: "finalized-id" }),
     );
     expect(detail.runResults.p1.score).toBe(100);
   });

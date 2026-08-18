@@ -9,8 +9,8 @@ import type { Participant } from "../models/types";
 
 export const getParticipantDetail = createCallable(
   getParticipantDetailSchema,
-  async ({ data, authEmail }) => {
-    requireTeacher(authEmail);
+  async ({ data, isTeacher }) => {
+    requireTeacher(isTeacher);
     const db = getFirestore();
     const participantId = computeParticipantId(data.quizId, normalizeStudentId(data.studentId));
     const snap = await db.collection("participants").doc(participantId).get();

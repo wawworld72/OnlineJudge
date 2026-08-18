@@ -1,9 +1,8 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { clearFirestore, makeRequest, teardownTestApp, testDb, ts } from "../testEnv";
+import { clearFirestore, makeTeacherRequest, teardownTestApp, testDb, ts } from "../testEnv";
 import { batchGrade } from "../../src/callable/batchGrade";
 
-const TEACHER_EMAIL = "teacher@hoseo.edu";
 const QUIZ_ID = "quiz-1";
 const P1 = "p1";
 const P2 = "p2";
@@ -18,22 +17,28 @@ function mockGraderResponse(body: unknown, ok = true) {
 
 async function seedQuizWithTwoProblems(courseId: string | null = null) {
   const db = testDb();
-  await db.collection("quizzes").doc(QUIZ_ID).set({
-    title: "중간고사",
-    description: "",
-    startAt: ts(-60_000),
-    endAt: ts(-1_000),
-    accessCode: "ABC123",
-    status: "CLOSED",
-    maxRunsPerProblem: 5,
-    courseId,
-    courseWorkId: null,
-    courseWorkLink: null,
-    archivedAt: null,
-    archiveSpreadsheetUrl: null,
-    deletedAt: null,
-  });
-  for (const [problemId, points] of [[P1, 60], [P2, 40]] as const) {
+  await db
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .set({
+      title: "중간고사",
+      description: "",
+      startAt: ts(-60_000),
+      endAt: ts(-1_000),
+      accessCode: "ABC123",
+      status: "CLOSED",
+      maxRunsPerProblem: 5,
+      courseId,
+      courseWorkId: null,
+      courseWorkLink: null,
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+    });
+  for (const [problemId, points] of [
+    [P1, 60],
+    [P2, 40],
+  ] as const) {
     await db.collection("quizzes").doc(QUIZ_ID).collection("problems").doc(problemId).set({
       order: 0,
       title: problemId,
@@ -44,19 +49,29 @@ async function seedQuizWithTwoProblems(courseId: string | null = null) {
       updatedAt: FieldValue.serverTimestamp(),
       deletedAt: null,
     });
-    await db.collection("quizzes").doc(QUIZ_ID).collection("problemSecrets").doc(problemId).set({
-      items: [
-        { tcId: "tc1", tcNo: 1, input: "1", expected: "1", points, isPublic: true, description: "" },
-      ],
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+    await db
+      .collection("quizzes")
+      .doc(QUIZ_ID)
+      .collection("problemSecrets")
+      .doc(problemId)
+      .set({
+        items: [
+          {
+            tcId: "tc1",
+            tcNo: 1,
+            input: "1",
+            expected: "1",
+            points,
+            isPublic: true,
+            description: "",
+          },
+        ],
+        updatedAt: FieldValue.serverTimestamp(),
+      });
   }
 }
 
-async function seedParticipant(
-  studentId: string,
-  overrides: Record<string, unknown> = {},
-) {
+async function seedParticipant(studentId: string, overrides: Record<string, unknown> = {}) {
   await testDb()
     .collection("participants")
     .doc(`${QUIZ_ID}_${studentId}`)
@@ -97,10 +112,20 @@ describe("batchGrade", () => {
       score: 60,
       maxScore: 60,
       compileErrorMessage: null,
-      tcResultsFull: [{ result: "✅PASS", earned: 1, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" }],
+      tcResultsFull: [
+        {
+          result: "✅PASS",
+          earned: 1,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "1",
+          memo: "",
+        },
+      ],
     });
 
-    const response = await batchGrade.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await batchGrade.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.processed).toBe(1);
     expect(response.failed).toBe(0);
@@ -125,9 +150,16 @@ describe("batchGrade", () => {
         [P2]: { status: "AC", score: 40, maxScore: 40, compileErrorMessage: null, tcResults: [] },
       },
     });
-    mockGraderResponse({ ok: true, status: "JUDGED", score: 0, maxScore: 60, compileErrorMessage: null, tcResultsFull: [] });
+    mockGraderResponse({
+      ok: true,
+      status: "JUDGED",
+      score: 0,
+      maxScore: 60,
+      compileErrorMessage: null,
+      tcResultsFull: [],
+    });
 
-    const response = await batchGrade.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await batchGrade.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.processed).toBe(0);
     expect(response.skipped).toBe(1);
@@ -143,7 +175,7 @@ describe("batchGrade", () => {
     await seedParticipant("20240001");
     mockGraderResponse({ ok: false, error: "internal error" });
 
-    const response = await batchGrade.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await batchGrade.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.processed).toBe(0);
     expect(response.failed).toBe(1);
@@ -164,10 +196,20 @@ describe("batchGrade", () => {
       score: 60,
       maxScore: 60,
       compileErrorMessage: null,
-      tcResultsFull: [{ result: "✅PASS", earned: 1, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" }],
+      tcResultsFull: [
+        {
+          result: "✅PASS",
+          earned: 1,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "1",
+          memo: "",
+        },
+      ],
     });
 
-    const response = await batchGrade.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await batchGrade.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.classroomGradesPending).toBe(true);
   });
@@ -181,10 +223,20 @@ describe("batchGrade", () => {
       score: 60,
       maxScore: 60,
       compileErrorMessage: null,
-      tcResultsFull: [{ result: "✅PASS", earned: 1, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" }],
+      tcResultsFull: [
+        {
+          result: "✅PASS",
+          earned: 1,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "1",
+          memo: "",
+        },
+      ],
     });
 
-    const response = await batchGrade.run(makeRequest({ quizId: QUIZ_ID }, TEACHER_EMAIL));
+    const response = await batchGrade.run(makeTeacherRequest({ quizId: QUIZ_ID }));
 
     expect(response.classroomGradesPending).toBe(false);
   });

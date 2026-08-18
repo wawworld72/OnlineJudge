@@ -5,8 +5,8 @@ import { requireTeacher } from "../shared/authorization";
 import { normalizeClassroomCourseId } from "../shared/classroomCourseId";
 import type { Quiz } from "../models/types";
 
-export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const db = getFirestore();
 
   const fields = {

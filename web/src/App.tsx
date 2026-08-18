@@ -6,48 +6,38 @@ import { Login } from "./shared/Login";
 import { QuizList } from "./student/QuizList";
 import { QuizEntry } from "./student/QuizEntry";
 import { QuizManager } from "./teacher/QuizManager";
+import { TeacherLogin } from "./teacher/TeacherLogin";
 import "./student/student.css";
 
 const auth = getAuth(firebaseApp);
 
-const TEACHER_EMAILS = (import.meta.env.VITE_TEACHER_EMAILS ?? "")
-  .split(",")
-  .map((email: string) => email.trim())
-  .filter(Boolean);
-
-type Role = "STUDENT" | "TEACHER";
-
-function resolveRole(email: string): Role {
-  return TEACHER_EMAILS.includes(email) ? "TEACHER" : "STUDENT";
-}
-
 export function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [isTeacher, setIsTeacher] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (nextUser) => {
+    return onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser);
+      // 교사 여부는 이메일 허용목록이 아니라 teacherLogin이 부여한 커스텀 클레임으로만
+      // 판별한다(/teacher, functions/src/callable/teacherLogin.ts) — 학생 Google
+      // 계정에는 이 클레임이 없다.
+      const claims = nextUser ? (await nextUser.getIdTokenResult()).claims : null;
+      setIsTeacher(claims?.teacher === true);
       setLoading(false);
     });
   }, []);
 
   if (loading) return null;
-  if (!user || !user.email) return <Login />;
 
-  const role = resolveRole(user.email);
+  const studentGate = !user || !user.email ? <Login /> : undefined;
 
   return (
     <BrowserRouter>
       <Routes>
-        {role === "STUDENT" ? (
-          <>
-            <Route path="/" element={<QuizList />} />
-            <Route path="/quiz/:quizId" element={<QuizEntry />} />
-          </>
-        ) : (
-          <Route path="/*" element={<QuizManager />} />
-        )}
+        <Route path="/teacher" element={isTeacher ? <QuizManager /> : <TeacherLogin />} />
+        <Route path="/" element={studentGate ?? <QuizList />} />
+        <Route path="/quiz/:quizId" element={studentGate ?? <QuizEntry />} />
       </Routes>
     </BrowserRouter>
   );

@@ -3,6 +3,7 @@ import { createCallable } from "../shared/callableFactory";
 import { syncRosterSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
 import { systemError } from "../shared/errors";
+import { getClassroomTeacherEmail } from "../config";
 import { listCourseStudents } from "../services/classroomClient";
 import { normalizeStudentId } from "../shared/identity";
 import type { Student } from "../models/types";
@@ -24,13 +25,13 @@ const INVALID_STUDENT_ID_PATTERN = /\//;
  * `registerStudentEmail`(한 번 등록하면 불변)과는 다른 권한 경로이므로 이미 이메일이 있는
  * 학번도 최신 값으로 덮어쓸 수 있다.
  */
-export const syncRoster = createCallable(syncRosterSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const syncRoster = createCallable(syncRosterSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const db = getFirestore();
 
   let classroomStudents;
   try {
-    classroomStudents = await listCourseStudents(data.courseId, authEmail);
+    classroomStudents = await listCourseStudents(data.courseId, getClassroomTeacherEmail());
   } catch (cause) {
     throw systemError("syncRoster.listCourseStudents", cause);
   }

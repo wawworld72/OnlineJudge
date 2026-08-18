@@ -10,8 +10,8 @@ import type { Problem, ProblemSecrets, Quiz } from "../models/types";
  * 문항별 테스트케이스(`problemSecrets.items`, 교사에게는 정답을 그대로 보여줘야 함)를 한
  * 번에 반환한다 — research.md §18.
  */
-export const getQuizForEdit = createCallable(getQuizForEditSchema, async ({ data, authEmail }) => {
-  requireTeacher(authEmail);
+export const getQuizForEdit = createCallable(getQuizForEditSchema, async ({ data, isTeacher }) => {
+  requireTeacher(isTeacher);
   const db = getFirestore();
   const quizRef = db.collection("quizzes").doc(data.quizId);
   const quizSnap = await quizRef.get();

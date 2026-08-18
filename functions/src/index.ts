@@ -4,6 +4,7 @@ if (getApps().length === 0) {
   initializeApp();
 }
 
+export { teacherLogin } from "./callable/teacherLogin";
 export { enterQuiz } from "./callable/enterQuiz";
 export { registerStudentEmail } from "./callable/registerStudentEmail";
 export { practiceRun } from "./callable/practiceRun";
@@ -20,7 +21,10 @@ export { batchGrade } from "./callable/batchGrade";
 export { getParticipantOverview } from "./callable/getParticipantOverview";
 export { getParticipantDetail } from "./callable/getParticipantDetail";
 export { syncRoster } from "./callable/syncRoster";
-export { deployClassroomAssignment, resetClassroomDeployment } from "./callable/classroomAssignment";
+export {
+  deployClassroomAssignment,
+  resetClassroomDeployment,
+} from "./callable/classroomAssignment";
 export { pushGrades } from "./callable/pushGrades";
 export { archiveQuiz } from "./callable/archiveQuiz";
 export { deleteQuizData } from "./callable/deleteQuizData";
