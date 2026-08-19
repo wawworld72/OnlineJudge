@@ -18,7 +18,10 @@ export const listQuizzes = createCallable(listQuizzesSchema, async ({ isTeacher 
     const quiz = doc.data() as Quiz;
     return {
       quizId: doc.id,
-      subjectName: quiz.subjectName,
+      // subjectName이 생기기 전에 만들어진 퀴즈는 이 필드가 문서에 아예 없어 undefined다
+      // — 그대로 내려보내면 Callable 응답 직렬화 과정에서 null로 바뀌어 클라이언트의
+      // localeCompare 정렬이 깨진다("null is not an object"). 항상 문자열로 채운다.
+      subjectName: quiz.subjectName ?? "",
       title: quiz.title,
       status: quiz.status,
       startAt: quiz.startAt.toMillis(),

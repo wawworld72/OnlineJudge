@@ -40,8 +40,8 @@ const TABS: Array<{ key: TabKey; label: string }> = [
 function sortQuizzes(quizzes: QuizListItem[]): QuizListItem[] {
   return [...quizzes].sort(
     (a, b) =>
-      a.subjectName.localeCompare(b.subjectName) ||
-      a.title.localeCompare(b.title) ||
+      (a.subjectName ?? "").localeCompare(b.subjectName ?? "") ||
+      (a.title ?? "").localeCompare(b.title ?? "") ||
       a.startAt - b.startAt,
   );
 }

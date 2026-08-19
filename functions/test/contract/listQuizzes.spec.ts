@@ -51,6 +51,33 @@ describe("listQuizzes", () => {
     expect(quizIds.sort()).toEqual(["draft-quiz", "open-quiz"]);
   });
 
+  it("subjectName 필드가 아예 없는(기능 도입 전) 퀴즈도 빈 문자열로 채워 반환한다", async () => {
+    const db = testDb();
+    // subjectName을 의도적으로 뺐다 — 이 필드가 생기기 전에 만들어진 실제 운영 데이터를
+    // 흉내낸다. undefined로 내려가면 클라이언트에서 null로 도착해 정렬(localeCompare)이
+    // 깨진다(실제 장애).
+    await db.collection("quizzes").doc("legacy-quiz").set({
+      title: "예전 퀴즈",
+      description: "",
+      startAt: Timestamp.fromMillis(Date.now()),
+      endAt: Timestamp.fromMillis(Date.now() + 60_000),
+      accessCode: "ABC123",
+      status: "OPEN",
+      maxRunsPerProblem: 5,
+      courseId: null,
+      courseWorkId: null,
+      courseWorkLink: null,
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+    });
+
+    const response = await listQuizzes.run(makeTeacherRequest({}));
+
+    const legacy = response.quizzes.find((q: { quizId: string }) => q.quizId === "legacy-quiz");
+    expect(legacy.subjectName).toBe("");
+  });
+
   it("교사가 아닌 계정은 거부한다", async () => {
     await expect(listQuizzes.run(makeRequest({}, "student1@hoseo.edu"))).rejects.toMatchObject({
       code: "permission-denied",
