@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getAuth, signOut } from "firebase/auth";
 import { firebaseApp } from "../shared/firebaseApp";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
+import { getErrorCode } from "../shared/functionsClient";
 import {
   getQuizForEdit,
   listQuizzes,
@@ -62,18 +63,34 @@ function toFormFields(quiz?: QuizDetail): UpsertQuizInput {
 /** 교사 퀴즈 목록/생성/수정/상태전환 화면(FR-003, FR-008). */
 export function QuizManager() {
   const [quizzes, setQuizzes] = useState<QuizListItem[] | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
   const [selected, setSelected] = useState<QuizDetail | null>(null);
   const [form, setForm] = useState<UpsertQuizInput>(toFormFields());
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("problems");
 
   async function refreshList() {
-    const response = await listQuizzes();
-    setQuizzes(sortQuizzes(response.quizzes));
+    setListError(null);
+    try {
+      const response = await listQuizzes();
+      setQuizzes(sortQuizzes(response.quizzes));
+    } catch (cause) {
+      console.error("listQuizzes 실패", cause);
+      const code = getErrorCode(cause);
+      const message = cause instanceof Error ? cause.message : String(cause);
+      setListError(code ? `${message} (${code})` : message);
+    }
   }
 
   useEffect(() => {
-    listQuizzes().then((response) => setQuizzes(sortQuizzes(response.quizzes)));
+    listQuizzes()
+      .then((response) => setQuizzes(sortQuizzes(response.quizzes)))
+      .catch((cause: unknown) => {
+        console.error("listQuizzes 실패", cause);
+        const code = getErrorCode(cause);
+        const message = cause instanceof Error ? cause.message : String(cause);
+        setListError(code ? `${message} (${code})` : message);
+      });
   }, []);
 
   async function openForCreate() {
@@ -120,7 +137,16 @@ export function QuizManager() {
         </div>
 
         <div className="card">
-          {quizzes === null ? (
+          {listError ? (
+            <div>
+              <p role="alert" className="error">
+                목록을 불러오지 못했습니다: {listError}
+              </p>
+              <button className="secondary" onClick={refreshList}>
+                다시 시도
+              </button>
+            </div>
+          ) : quizzes === null ? (
             <p className="muted">불러오는 중...</p>
           ) : quizzes.length === 0 ? (
             <p className="muted">아직 만든 퀴즈가 없습니다.</p>
