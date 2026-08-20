@@ -12,6 +12,7 @@ process.env.TEACHER_ACCESS_CODE ??= "test-teacher-access-code";
 process.env.CLASSROOM_TEACHER_EMAIL ??= "teacher@hoseo.edu";
 process.env.APP_BASE_URL ??= "https://demo-c-quiz-judge-system.web.app";
 process.env.SHEET_EXPORT_API_TOKEN ??= "test-sheet-export-token";
+process.env.SHEET_SYNC_API_TOKEN ??= "test-sheet-sync-token";
 
 let db: Firestore | null = null;
 

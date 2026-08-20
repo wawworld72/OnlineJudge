@@ -29,3 +29,4 @@ export { pushGrades } from "./callable/pushGrades";
 export { archiveQuiz } from "./callable/archiveQuiz";
 export { deleteQuizData } from "./callable/deleteQuizData";
 export { exportGradesToSheet } from "./http/exportGradesToSheet";
+export { upsertQuizFromSheet } from "./http/upsertQuizFromSheet";

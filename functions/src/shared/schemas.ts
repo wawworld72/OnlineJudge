@@ -71,6 +71,70 @@ export const upsertQuizSchema = z.object({
   courseId: z.string().min(1).nullable(),
 });
 
+/**
+ * Google Apps Script(스프레드시트 기반 퀴즈 생성/갱신, `upsertQuizFromSheet`)용 스키마.
+ * `upsertQuizSchema`(항상 전체 필수, 웹 UI 전용)와는 별개다 — 생성은 전체 필수, 갱신은
+ * 보낸 필드만 바뀌는 부분(PATCH) 갱신이어야 해서 모든 필드를 optional로 두고, 생성인지
+ * (quizId/quizUrl이 둘 다 없음) 판별해 그때만 필수 필드를 강제하는 규칙을 아래
+ * `superRefine`으로 추가한다. `problems`/`testCases`는 내부 Firestore ID(`problemId`/
+ * `tcId`)를 모르는 GAS가 그래도 부분 갱신할 수 있도록 `title`/`tcNo`로 매칭한다
+ * (services/quizSheetSync.ts) — "신규 항목인데 필수 필드가 빠졌다" 같은 규칙은 기존
+ * 항목 조회가 필요해 스키마만으로는 표현할 수 없어 그 서비스 레이어가 책임진다.
+ */
+export const sheetTestCaseSchema = z.object({
+  tcNo: z.number().int().nonnegative(),
+  input: z.string().optional(),
+  expected: z.string().optional(),
+  points: z.number().nonnegative().optional(),
+  isPublic: z.boolean().optional(),
+  description: z.string().optional(),
+});
+
+export const sheetProblemSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  initialCode: z.string().optional(),
+  maxRuns: z.number().int().positive().nullable().optional(),
+  order: z.number().int().nonnegative().optional(),
+  testCases: z.array(sheetTestCaseSchema).optional(),
+});
+
+export const sheetUpsertQuizSchema = z
+  .object({
+    quizUrl: z.string().min(1).optional(),
+    quizId: z.string().min(1).optional(),
+    subjectName: z.string().min(1).optional(),
+    title: z.string().min(1).optional(),
+    description: z.string().optional(),
+    startAt: z.union([z.number(), z.string().min(1)]).optional(),
+    endAt: z.union([z.number(), z.string().min(1)]).optional(),
+    accessCode: z.string().min(1).optional(),
+    maxRunsPerProblem: z.number().int().positive().optional(),
+    courseId: z.string().min(1).nullable().optional(),
+    problems: z.array(sheetProblemSchema).optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.quizId || val.quizUrl) return; // 갱신 — 부분 갱신이므로 전부 optional 그대로.
+    const requiredForCreate = [
+      "subjectName",
+      "title",
+      "description",
+      "startAt",
+      "endAt",
+      "accessCode",
+      "maxRunsPerProblem",
+    ] as const;
+    for (const field of requiredForCreate) {
+      if (val[field] === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: [field],
+          message: "신규 퀴즈 생성 시 필수 항목입니다.",
+        });
+      }
+    }
+  });
+
 export const upsertProblemSchema = z.object({
   quizId: z.string().min(1),
   problemId: z.string().min(1).nullish(),

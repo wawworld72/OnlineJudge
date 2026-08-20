@@ -13,7 +13,7 @@ import type { ProblemSecrets, TestCase } from "../models/types";
  * 두 탭에서 동시에 편집해도(서로 다른 테스트케이스 수정) Firestore의 트랜잭션 자동 재시도로
  * 두 수정 모두 최종 합계에 반영된다(lost-update 없음).
  */
-async function applyTestCaseDelta(
+export async function applyTestCaseDelta(
   quizId: string,
   problemId: string,
   applyDelta: (items: TestCase[]) => TestCase[],

@@ -41,6 +41,16 @@ export function getSheetExportApiToken(): string {
   return requireEnv("SHEET_EXPORT_API_TOKEN");
 }
 
+/**
+ * Google Apps Script(스프레드시트 기반으로 퀴즈를 생성/갱신하는 스크립트)가 쓰는 별도의
+ * 정적 토큰 — `upsertQuizFromSheet`(onRequest)에 쓴다. `SHEET_EXPORT_API_TOKEN`은 성적을
+ * "읽기"만 하는 권한이고 이 토큰은 퀴즈·문항·테스트케이스(정답 포함)를 "쓰는" 권한이라,
+ * 최소 권한 원칙상 절대 같은 값을 재사용하지 않는다.
+ */
+export function getSheetSyncApiToken(): string {
+  return requireEnv("SHEET_SYNC_API_TOKEN");
+}
+
 export function getAllowedEmailDomain(): string {
   return process.env.ALLOWED_EMAIL_DOMAIN ?? "hoseo.edu";
 }

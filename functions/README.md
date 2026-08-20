@@ -16,6 +16,7 @@ Set these via `firebase functions:secrets:set` (for the two secrets) or
 | `TEACHER_ACCESS_CODE` | Shared access code checked by `teacherLogin` (`/teacher`); on match the caller's anonymous Firebase account gets custom claim `teacher: true`, which `requireTeacher` then checks. Never exposed to the web build. |
 | `CLASSROOM_TEACHER_EMAIL` | Real Workspace teacher email impersonated (domain-wide delegation) for all Google Classroom API calls — independent of who is logged into `/teacher`, since that login is no longer a Google account |
 | `SHEET_EXPORT_API_TOKEN` | Static bearer token checked by `exportGradesToSheet` (Google Apps Script pulls grades via this, since it can't do Firebase Auth/App Check) |
+| `SHEET_SYNC_API_TOKEN` | Static bearer token checked by `upsertQuizFromSheet` (Google Apps Script creates/updates quizzes — including problems and test cases — via this). Separate from `SHEET_EXPORT_API_TOKEN` since this one grants write access. |
 
 ## `accessLogs.expiresAt` TTL policy (research.md §8)
 
