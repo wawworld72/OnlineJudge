@@ -1,0 +1,113 @@
+import type { Firestore } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
+import { systemError } from "../shared/errors";
+import { getClassroomTeacherEmail } from "../config";
+import { listCourseStudents } from "./classroomClient";
+import { normalizeStudentId } from "../shared/identity";
+import type { Student } from "../models/types";
+
+// Firestore 문서ID로 쓸 수 없는 값만 걸러낸다("/" 포함, 빈 문자열) — 숫자인지 아닌지는
+// 더 이상 따지지 않는다(아래 주석 참고).
+const INVALID_STUDENT_ID_PATTERN = /\//;
+
+export interface SyncRosterResult {
+  newStudents: number;
+  updatedEmails: number;
+  newRosterEntries: number;
+  updatedRosterEntries: number;
+  removedRosterEntries: number;
+  skipped: number;
+}
+
+/**
+ * `syncRoster`(교사가 직접 실행)와 `setQuizStatus`(OPEN 전환 시 자동 실행)가 공유하는
+ * 핵심 로직. FR-026~027. Classroom 계정 이메일의 로컬파트(`@` 앞부분)를 학번(고유
+ * 식별자)으로 쓴다 — 숫자여야 한다는 제약은 없다. 학생이 우리 앱에 입장할 때 "학번"란에
+ * 입력하는 값과 여기서 저장하는 값은 `normalizeStudentId`(trim + 소문자화)를 거쳐야만
+ * 항상 같은 문서ID로 수렴한다 — 영문 계정명은 대소문자를 다르게 입력하기 쉬워서, 정규화
+ * 없이 대소문자까지 정확히 일치하길 요구하면 정당한 학생도 IDENTITY_MISMATCH로
+ * 튕겨나간다(숫자 학번은 대소문자가 없어 이 문제가 드러나지 않았다). `students`(학생명부)는
+ * Classroom이 이미 알고 있는 이메일로 갱신할 수 있는 신뢰된 경로다 — 학생이 직접 호출하는
+ * `registerStudentEmail`(한 번 등록하면 불변)과는 다른 권한 경로이므로 이미 이메일이 있는
+ * 학번도 최신 값으로 덮어쓸 수 있다.
+ */
+export async function syncCourseRoster(db: Firestore, courseId: string): Promise<SyncRosterResult> {
+  let classroomStudents;
+  try {
+    classroomStudents = await listCourseStudents(courseId, getClassroomTeacherEmail());
+  } catch (cause) {
+    throw systemError("syncCourseRoster.listCourseStudents", cause);
+  }
+
+  let newStudents = 0;
+  let updatedEmails = 0;
+  let newRosterEntries = 0;
+  let updatedRosterEntries = 0;
+  let skipped = 0;
+
+  const seenStudentIds = new Set<string>();
+
+  for (const classroomStudent of classroomStudents) {
+    const studentId = normalizeStudentId(classroomStudent.email.split("@")[0] ?? "");
+    if (!studentId || INVALID_STUDENT_ID_PATTERN.test(studentId)) {
+      skipped += 1;
+      continue;
+    }
+    seenStudentIds.add(studentId);
+
+    const studentRef = db.collection("students").doc(studentId);
+    const studentSnap = await studentRef.get();
+    if (!studentSnap.exists) {
+      await studentRef.set({
+        name: classroomStudent.name,
+        email: classroomStudent.email,
+        status: "ACTIVE",
+      } satisfies Student);
+      newStudents += 1;
+    } else {
+      const student = studentSnap.data() as Student;
+      if (student.email !== classroomStudent.email) {
+        await studentRef.update({ email: classroomStudent.email });
+        updatedEmails += 1;
+      }
+    }
+
+    const rosterRef = db.collection("rosters").doc(`${courseId}_${studentId}`);
+    const rosterSnap = await rosterRef.get();
+    const rosterFields = {
+      courseId,
+      studentId,
+      name: classroomStudent.name,
+      email: classroomStudent.email,
+      syncedAt: FieldValue.serverTimestamp(),
+    };
+    if (!rosterSnap.exists) {
+      await rosterRef.set(rosterFields);
+      newRosterEntries += 1;
+    } else {
+      await rosterRef.update(rosterFields);
+      updatedRosterEntries += 1;
+    }
+  }
+
+  // Classroom에서 제외된(더는 API가 돌려주지 않는) 학생의 명부 항목은 지운다 — 지우지
+  // 않으면 교사가 "문제 학생을 Classroom에서 뺐다"고 여겨도 그 학생이 예전 명부 항목으로
+  // 계속 입장할 수 있다(enterQuiz가 courseId 있는 퀴즈는 이 명부만으로 신원을 확인하므로,
+  // 이게 유일한 접근 차단 수단이다). `students`(전역 학생 문서)는 다른 강의에서도 쓰일 수
+  // 있으므로 건드리지 않고, 이 강의(courseId)의 `rosters` 항목만 지운다.
+  const existingRosterSnap = await db.collection("rosters").where("courseId", "==", courseId).get();
+  const staleRosterDocs = existingRosterSnap.docs.filter(
+    (doc) => !seenStudentIds.has((doc.data() as { studentId: string }).studentId),
+  );
+  await Promise.all(staleRosterDocs.map((doc) => doc.ref.delete()));
+  const removedRosterEntries = staleRosterDocs.length;
+
+  return {
+    newStudents,
+    updatedEmails,
+    newRosterEntries,
+    updatedRosterEntries,
+    removedRosterEntries,
+    skipped,
+  };
+}
