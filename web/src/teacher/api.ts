@@ -201,6 +201,7 @@ export interface SyncRosterResponse {
   updatedEmails: number;
   newRosterEntries: number;
   updatedRosterEntries: number;
+  removedRosterEntries: number;
   skipped: number;
 }
 

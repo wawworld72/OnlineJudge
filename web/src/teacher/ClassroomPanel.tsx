@@ -59,8 +59,8 @@ export function ClassroomPanel({ quizId, courseId, courseWorkId, onChanged }: Cl
         {syncResult && (
           <p>
             신규 {syncResult.newStudents} / 이메일 갱신 {syncResult.updatedEmails} / 신규 명부{" "}
-            {syncResult.newRosterEntries} / 명부 갱신 {syncResult.updatedRosterEntries} / 건너뜀{" "}
-            {syncResult.skipped}
+            {syncResult.newRosterEntries} / 명부 갱신 {syncResult.updatedRosterEntries} / 명부 제외{" "}
+            {syncResult.removedRosterEntries} / 건너뜀 {syncResult.skipped}
           </p>
         )}
       </section>

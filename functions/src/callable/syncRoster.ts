@@ -42,12 +42,15 @@ export const syncRoster = createCallable(syncRosterSchema, async ({ data, isTeac
   let updatedRosterEntries = 0;
   let skipped = 0;
 
+  const seenStudentIds = new Set<string>();
+
   for (const classroomStudent of classroomStudents) {
     const studentId = normalizeStudentId(classroomStudent.email.split("@")[0] ?? "");
     if (!studentId || INVALID_STUDENT_ID_PATTERN.test(studentId)) {
       skipped += 1;
       continue;
     }
+    seenStudentIds.add(studentId);
 
     const studentRef = db.collection("students").doc(studentId);
     const studentSnap = await studentRef.get();
@@ -84,5 +87,27 @@ export const syncRoster = createCallable(syncRosterSchema, async ({ data, isTeac
     }
   }
 
-  return { newStudents, updatedEmails, newRosterEntries, updatedRosterEntries, skipped };
+  // Classroom에서 제외된(더는 API가 돌려주지 않는) 학생의 명부 항목은 지운다 — 지우지
+  // 않으면 교사가 "문제 학생을 Classroom에서 뺐다"고 여겨도 그 학생이 예전 명부 항목으로
+  // 계속 입장할 수 있다(enterQuiz가 courseId 있는 퀴즈는 이 명부만으로 신원을 확인하므로,
+  // 이게 유일한 접근 차단 수단이다). `students`(전역 학생 문서)는 다른 강의에서도 쓰일 수
+  // 있으므로 건드리지 않고, 이 강의(courseId)의 `rosters` 항목만 지운다.
+  const existingRosterSnap = await db
+    .collection("rosters")
+    .where("courseId", "==", data.courseId)
+    .get();
+  const staleRosterDocs = existingRosterSnap.docs.filter(
+    (doc) => !seenStudentIds.has((doc.data() as { studentId: string }).studentId),
+  );
+  await Promise.all(staleRosterDocs.map((doc) => doc.ref.delete()));
+  const removedRosterEntries = staleRosterDocs.length;
+
+  return {
+    newStudents,
+    updatedEmails,
+    newRosterEntries,
+    updatedRosterEntries,
+    removedRosterEntries,
+    skipped,
+  };
 });
