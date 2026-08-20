@@ -336,10 +336,24 @@ describe("upsertQuizFromSheet", () => {
   });
 
   describe("Classroom 자동 배포", () => {
-    it("courseId+문항/TC/명부까지 갖췄으면 이번 호출 안에서 배포까지 끝난다", async () => {
-      vi.mocked(listCourseStudents).mockResolvedValue([
-        { userId: "u1", email: "20240001@hoseo.edu", name: "홍길동" },
-      ]);
+    // 명부(rosters)는 courseId(Classroom 강의) 단위로 저장되므로, 자동배포 시도는
+    // 여기서 다시 동기화하지 않고 이미 있는 명부만 본다 — 그래서 아래 테스트들은
+    // listCourseStudents(동기화 API 호출)를 모킹하는 대신 명부를 직접 심어둔다.
+    async function seedRoster(courseId: string, studentId: string) {
+      await testDb()
+        .collection("rosters")
+        .doc(`${courseId}_${studentId}`)
+        .set({
+          courseId,
+          studentId,
+          name: "홍길동",
+          email: `${studentId}@hoseo.edu`,
+          syncedAt: ts(0),
+        });
+    }
+
+    it("courseId+문항/TC/명부까지 갖췄으면 이번 호출 안에서 배포까지 끝나고, 동기화는 다시 시도하지 않는다", async () => {
+      await seedRoster("course-1", "20240001");
       vi.mocked(createCourseWork).mockResolvedValue({
         courseWorkId: "cw-1",
         alternateLink: "https://classroom.example/cw-1",
@@ -361,6 +375,7 @@ describe("upsertQuizFromSheet", () => {
       expect(body.ok).toBe(true);
       expect(body.courseWorkLink).toBe("https://classroom.example/cw-1");
       expect(body.classroomDeployPending).toBe(false);
+      expect(listCourseStudents).not.toHaveBeenCalled();
       const quiz = (await testDb().collection("quizzes").doc(body.quizId).get()).data()!;
       expect(quiz.courseWorkId).toBe("cw-1");
     });
@@ -373,10 +388,27 @@ describe("upsertQuizFromSheet", () => {
       expect(createCourseWork).not.toHaveBeenCalled();
     });
 
+    it("명부가 아직 없으면(동기화 전) 배포를 건너뛴다", async () => {
+      const body = await call({
+        ...CREATE_BASE,
+        courseId: "course-1",
+        problems: [
+          {
+            title: "레벨업",
+            description: "설명",
+            initialCode: "",
+            testCases: [{ tcNo: 1, input: "1", expected: "1", points: 100, isPublic: true }],
+          },
+        ],
+      });
+      expect(body.ok).toBe(true);
+      expect(body.courseWorkLink).toBeNull();
+      expect(body.classroomDeployPending).toBe(true);
+      expect(createCourseWork).not.toHaveBeenCalled();
+    });
+
     it("이미 배포된 퀴즈는 재배포하지 않고 기존 courseWorkLink를 그대로 반환한다", async () => {
-      vi.mocked(listCourseStudents).mockResolvedValue([
-        { userId: "u1", email: "20240001@hoseo.edu", name: "홍길동" },
-      ]);
+      await seedRoster("course-1", "20240001");
       vi.mocked(createCourseWork).mockResolvedValue({
         courseWorkId: "cw-1",
         alternateLink: "https://classroom.example/cw-1",
@@ -402,9 +434,7 @@ describe("upsertQuizFromSheet", () => {
     });
 
     it("Classroom API가 실패해도 퀴즈 생성/갱신 응답은 성공하고 courseWorkLink만 null이다", async () => {
-      vi.mocked(listCourseStudents).mockResolvedValue([
-        { userId: "u1", email: "20240001@hoseo.edu", name: "홍길동" },
-      ]);
+      await seedRoster("course-1", "20240001");
       vi.mocked(createCourseWork).mockRejectedValue(new Error("Classroom API 오류"));
 
       const body = await call({

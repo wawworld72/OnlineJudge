@@ -52,7 +52,15 @@ async function seedDeployableProblem() {
     .doc("p1")
     .set({
       items: [
-        { tcId: "tc1", tcNo: 1, input: "1", expected: "1", points: 100, isPublic: true, description: "" },
+        {
+          tcId: "tc1",
+          tcNo: 1,
+          input: "1",
+          expected: "1",
+          points: 100,
+          isPublic: true,
+          description: "",
+        },
       ],
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -98,33 +106,21 @@ describe("setQuizStatus", () => {
   });
 
   describe("Classroom 연동 퀴즈(courseId 있음)의 OPEN 전환", () => {
-    it("OPEN 전환 시 명부를 자동으로 동기화해 새로 추가된 학생도 즉시 반영한다", async () => {
+    // 명부(rosters)는 퀴즈가 아니라 courseId(Classroom 강의) 단위로 저장되므로, OPEN
+    // 전환은 여기서 다시 동기화를 시도하지 않는다 — 동기화는 "Classroom 연동" 탭에서
+    // 교사가 강의당 한 번만 직접 실행한다(같은 강의를 쓰는 다른 퀴즈에도 그대로 적용됨).
+
+    it("한 번도 동기화하지 않았으면 OPEN 전환을 차단하고, 자동으로 동기화를 시도하지도 않는다", async () => {
       await seedQuiz({ courseId: "course-1" });
       await seedDeployableProblem();
-      vi.mocked(listCourseStudents).mockResolvedValue([
-        { userId: "u1", email: "20240001@hoseo.edu", name: "홍길동" },
-      ]);
-
-      const response = await setQuizStatus.run(
-        makeTeacherRequest({ quizId: QUIZ_ID, status: "OPEN" }),
-      );
-
-      expect(response.status).toBe("OPEN");
-      const roster = await testDb().collection("rosters").doc("course-1_20240001").get();
-      expect(roster.exists).toBe(true);
-    });
-
-    it("동기화한 적 없고 자동 동기화도 실패하면 차단한다(대체 입장 경로가 없으므로)", async () => {
-      await seedQuiz({ courseId: "course-1" });
-      await seedDeployableProblem();
-      vi.mocked(listCourseStudents).mockRejectedValue(new Error("Classroom API 오류"));
 
       await expect(
         setQuizStatus.run(makeTeacherRequest({ quizId: QUIZ_ID, status: "OPEN" })),
       ).rejects.toMatchObject({ details: { code: "BLOCKED_BY_PREDEPLOY_CHECK" } });
+      expect(listCourseStudents).not.toHaveBeenCalled();
     });
 
-    it("이미 동기화된 명부가 있으면 자동 동기화가 실패해도 그 명부로 OPEN을 허용한다", async () => {
+    it("이미 동기화된 명부가 있으면 재동기화 시도 없이 그대로 OPEN이 허용된다", async () => {
       await seedQuiz({ courseId: "course-1" });
       await seedDeployableProblem();
       await testDb().collection("rosters").doc("course-1_20240001").set({
@@ -134,15 +130,13 @@ describe("setQuizStatus", () => {
         email: "20240001@hoseo.edu",
         syncedAt: FieldValue.serverTimestamp(),
       });
-      // OPEN 전환 시도할 때 Classroom API가 일시적으로 실패해도, 이전에 동기화된
-      // 명부가 이미 있으므로 수업 시작 자체를 막지는 않는다.
-      vi.mocked(listCourseStudents).mockRejectedValue(new Error("Classroom API 오류"));
 
       const response = await setQuizStatus.run(
         makeTeacherRequest({ quizId: QUIZ_ID, status: "OPEN" }),
       );
 
       expect(response.status).toBe("OPEN");
+      expect(listCourseStudents).not.toHaveBeenCalled();
     });
   });
 });

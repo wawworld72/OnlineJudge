@@ -12,7 +12,6 @@ import { parseFlexibleTimestamp } from "../shared/flexibleTimestamp";
 import { isAfter } from "../shared/timeAuthority";
 import { applyTestCaseDelta } from "../callable/testCases";
 import { computePreDeployCheck } from "./preDeployCheck";
-import { syncCourseRoster } from "./rosterSync";
 import { createCourseWork } from "./classroomClient";
 import { getAppBaseUrl, getClassroomTeacherEmail } from "../config";
 import type { Problem, ProblemSecrets, Quiz, TestCase } from "../models/types";
@@ -285,9 +284,13 @@ function applyTestCaseOverlay(
 
 /**
  * `courseId`가 있고 아직 배포되지 않은 퀴즈를 최선노력으로 Classroom에 배포한다 —
- * `setQuizStatus`의 OPEN 자동동기화와 같은 원칙: 이 시도가 실패해도(명부 미동기화,
- * 아직 문항이 없음, Classroom API 오류 등) 퀴즈 생성/갱신 자체는 그대로 성공 처리한다.
- * 이미 배포된 퀴즈는 건드리지 않는다(FR-029 — 재배포는 resetClassroomDeployment 이후에만).
+ * 이 시도가 실패해도(아직 문항이 없음, 명부 미동기화, Classroom API 오류 등) 퀴즈
+ * 생성/갱신 자체는 그대로 성공 처리한다. 이미 배포된 퀴즈는 건드리지 않는다(FR-029 —
+ * 재배포는 resetClassroomDeployment 이후에만). 명부(rosters)는 courseId(Classroom
+ * 강의) 단위로 저장되므로 여기서 매번 다시 동기화하지 않는다 — 같은 강의를 쓰는
+ * 퀴즈가 여러 개라도 "Classroom 연동" 탭에서 강의당 한 번만 동기화하면 전부 그
+ * 명부를 그대로 쓴다. 명부가 아예 없으면 아래 computePreDeployCheck의 BLOCK이
+ * 배포를 막아준다(courseWorkLink는 null, classroomDeployPending: true).
  */
 async function attemptClassroomDeploy(
   db: Firestore,
@@ -300,12 +303,6 @@ async function attemptClassroomDeploy(
   }
   if (quiz.courseWorkId) {
     return { courseWorkLink: quiz.courseWorkLink, classroomDeployPending: false };
-  }
-
-  try {
-    await syncCourseRoster(db, quiz.courseId);
-  } catch (cause) {
-    logger.warn("quizSheetSync: Classroom 자동배포 전 명부 동기화 실패", { quizId, cause });
   }
 
   if (isAfter(quiz.endAt)) {
