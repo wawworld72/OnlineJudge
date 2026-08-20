@@ -16,8 +16,12 @@ import { SheetSyncError, syncQuizFromSheet } from "../services/quizSheetSync";
  * 부분 반영) — 문항/테스트케이스는 `title`/`tcNo`로 매칭한다(services/quizSheetSync.ts).
  * `courseId`가 있고 아직 Classroom에 배포되지 않았다면 이 요청 안에서 배포까지
  * 최선노력으로 시도해, 응답에 그 퀴즈의 Classroom 과제 URL도 함께 담아 보낸다.
+ *
+ * `timeoutSeconds`를 `pushGrades`/`batchGrade`와 같은 값으로 올려둔다 — 스프레드시트가
+ * 한 요청에 문항/테스트케이스를 여러 개 실어 보낼 수 있어, 그 함수들과 같은 이유
+ * (기본 60초로는 N개 항목을 순회하는 처리 중간에 타임아웃날 수 있음)가 적용된다.
  */
-export const upsertQuizFromSheet = onRequest(async (req, res) => {
+export const upsertQuizFromSheet = onRequest({ timeoutSeconds: 540 }, async (req, res) => {
   const authHeader = req.get("Authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : "";
   if (!token || token !== getSheetSyncApiToken()) {

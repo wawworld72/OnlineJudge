@@ -96,7 +96,9 @@ export const sheetProblemSchema = z.object({
   initialCode: z.string().optional(),
   maxRuns: z.number().int().positive().nullable().optional(),
   order: z.number().int().nonnegative().optional(),
-  testCases: z.array(sheetTestCaseSchema).optional(),
+  // 정상적인 퀴즈보다 훨씬 넉넉한 상한 — 실수로 비정상적으로 큰 요청이 들어오는 것만
+  // 막는 저비용 방어선이다(정상 사용은 절대 안 걸림).
+  testCases: z.array(sheetTestCaseSchema).max(200).optional(),
 });
 
 export const sheetUpsertQuizSchema = z
@@ -111,7 +113,7 @@ export const sheetUpsertQuizSchema = z
     accessCode: z.string().min(1).optional(),
     maxRunsPerProblem: z.number().int().positive().optional(),
     courseId: z.string().min(1).nullable().optional(),
-    problems: z.array(sheetProblemSchema).optional(),
+    problems: z.array(sheetProblemSchema).max(50).optional(),
   })
   .superRefine((val, ctx) => {
     if (val.quizId || val.quizUrl) return; // 갱신 — 부분 갱신이므로 전부 optional 그대로.

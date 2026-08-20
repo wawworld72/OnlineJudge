@@ -10,6 +10,7 @@ import type {
 import { normalizeClassroomCourseId } from "../shared/classroomCourseId";
 import { parseFlexibleTimestamp } from "../shared/flexibleTimestamp";
 import { isAfter } from "../shared/timeAuthority";
+import { processInChunks } from "../shared/chunkedConcurrency";
 import { applyTestCaseDelta } from "../callable/testCases";
 import { computePreDeployCheck } from "./preDeployCheck";
 import { createCourseWork } from "./classroomClient";
@@ -63,6 +64,10 @@ interface ResolvedProblem {
   mode: "created" | "updated";
   problemId?: string;
   order: number;
+  /** mode==="updated"일 때만 있음 — 매칭 시점에 이미 읽어둔 기존 값. TC 변경이 없는
+   *  요청은 이 값을 그대로 응답에 써서 문항을 다시 읽지 않아도 되게 한다. */
+  existingPointsTotal?: number;
+  existingTestCaseCount?: number;
   resolvedTestCases: ResolvedTestCase[];
 }
 
@@ -93,7 +98,15 @@ function resolveTestCases(
   });
 }
 
-/** 퀴즈 안에서 title로 문항을 매칭하고, 각 문항 안에서 tcNo로 test case를 매칭한다(읽기 전용). */
+/**
+ * 퀴즈 안에서 title로 문항을 매칭하고, 각 문항 안에서 tcNo로 test case를 매칭한다
+ * (읽기 전용). 3단계로 나눈다:
+ *   1) 매칭·모드·order 확정 — 동기적으로, 요청 순서 그대로(자동 order 배정이 순서에
+ *      의존하므로 이 단계는 순서를 지켜야 한다). Firestore 호출 없음.
+ *   2) 매칭된 문항들의 problemSecrets를 `db.getAll()`로 한 번에 배치 조회(문항마다
+ *      순차 `.get()`을 하지 않는다).
+ *   3) test case 매칭 마무리 — 동기적.
+ */
 async function resolveProblems(
   db: Firestore,
   quizId: string | null,
@@ -113,8 +126,15 @@ async function resolveProblems(
   let autoOrder =
     existingProblems.length > 0 ? Math.max(...existingProblems.map((p) => p.order)) + 1 : 0;
 
-  const resolved: ResolvedProblem[] = [];
-  for (const reqProblem of requestProblems) {
+  interface PendingProblem {
+    reqProblem: SheetProblemInput;
+    mode: "created" | "updated";
+    problemId?: string;
+    order: number;
+    existingPointsTotal?: number;
+  }
+
+  const pending: PendingProblem[] = requestProblems.map((reqProblem) => {
     const matches = existingProblems.filter((p) => p.title === reqProblem.title);
     if (matches.length > 1) {
       throw new SheetSyncError(
@@ -122,41 +142,49 @@ async function resolveProblems(
       );
     }
 
-    let mode: "created" | "updated";
-    let problemId: string | undefined;
-    let existingItems: TestCase[] = [];
-
     if (matches.length === 1) {
-      mode = "updated";
-      problemId = matches[0]!.id;
-      const secretsSnap = await db
-        .collection("quizzes")
-        .doc(quizId!)
-        .collection("problemSecrets")
-        .doc(problemId)
-        .get();
-      existingItems = (secretsSnap.data() as ProblemSecrets | undefined)?.items ?? [];
-    } else {
-      mode = "created";
-      if (reqProblem.description === undefined || reqProblem.initialCode === undefined) {
-        throw new SheetSyncError(
-          `신규 문항 "${reqProblem.title}"을 추가하려면 description, initialCode를 포함해야 합니다.`,
-        );
-      }
+      return {
+        reqProblem,
+        mode: "updated",
+        problemId: matches[0]!.id,
+        order: reqProblem.order ?? matches[0]!.order,
+        existingPointsTotal: matches[0]!.pointsTotal,
+      };
     }
 
+    if (reqProblem.description === undefined || reqProblem.initialCode === undefined) {
+      throw new SheetSyncError(
+        `신규 문항 "${reqProblem.title}"을 추가하려면 description, initialCode를 포함해야 합니다.`,
+      );
+    }
     const order = reqProblem.order ?? autoOrder;
-    if (mode === "created" && reqProblem.order === undefined) autoOrder += 1;
+    if (reqProblem.order === undefined) autoOrder += 1;
+    return { reqProblem, mode: "created", order };
+  });
 
-    resolved.push({
-      reqProblem,
-      mode,
-      problemId,
-      order,
-      resolvedTestCases: resolveTestCases(existingItems, reqProblem.testCases ?? []),
-    });
-  }
-  return resolved;
+  const matchedRefs = pending
+    .filter((p) => p.mode === "updated")
+    .map((p) =>
+      db.collection("quizzes").doc(quizId!).collection("problemSecrets").doc(p.problemId!),
+    );
+  const secretsSnaps = matchedRefs.length > 0 ? await db.getAll(...matchedRefs) : [];
+  const itemsByProblemId = new Map<string, TestCase[]>();
+  secretsSnaps.forEach((snap) => {
+    itemsByProblemId.set(snap.id, (snap.data() as ProblemSecrets | undefined)?.items ?? []);
+  });
+
+  return pending.map((p) => {
+    const existingItems = p.problemId ? (itemsByProblemId.get(p.problemId) ?? []) : [];
+    return {
+      reqProblem: p.reqProblem,
+      mode: p.mode,
+      problemId: p.problemId,
+      order: p.order,
+      existingPointsTotal: p.existingPointsTotal,
+      existingTestCaseCount: existingItems.length,
+      resolvedTestCases: resolveTestCases(existingItems, p.reqProblem.testCases ?? []),
+    };
+  });
 }
 
 function buildQuizPatch(input: SheetInput): Partial<Record<keyof Quiz, unknown>> {
@@ -183,6 +211,9 @@ async function writeProblem(
   const problemsRef = db.collection("quizzes").doc(quizId).collection("problems");
 
   let problemId: string;
+  let pointsTotal: number;
+  let testCaseCount: number;
+
   if (mode === "updated") {
     problemId = resolvedProblem.problemId!;
     const metadata: Partial<Problem> = {};
@@ -194,10 +225,18 @@ async function writeProblem(
       await problemsRef.doc(problemId).update(metadata);
     }
 
+    // TC 변경이 있으면 applyTestCaseDelta가 돌려주는 최신 값을 그대로 쓰고, 없으면
+    // 매칭 단계(resolveProblems)에서 이미 읽어둔 기존 값을 그대로 쓴다 — 어느 쪽이든
+    // 문항을 다시 읽지 않는다.
     if (resolvedTestCases.length > 0) {
-      await applyTestCaseDelta(quizId, problemId, (items) =>
+      const result = await applyTestCaseDelta(quizId, problemId, (items) =>
         applyTestCaseOverlay(items, resolvedTestCases),
       );
+      pointsTotal = result.pointsTotal;
+      testCaseCount = result.items.length;
+    } else {
+      pointsTotal = resolvedProblem.existingPointsTotal!;
+      testCaseCount = resolvedProblem.existingTestCaseCount!;
     }
   } else {
     const problemRef = problemsRef.doc();
@@ -211,7 +250,8 @@ async function writeProblem(
       isPublic: rt.reqTc.isPublic ?? false,
       description: rt.reqTc.description ?? "",
     }));
-    const pointsTotal = items.reduce((sum, item) => sum + item.points, 0);
+    pointsTotal = items.reduce((sum, item) => sum + item.points, 0);
+    testCaseCount = items.length;
 
     const batch = db.batch();
     batch.set(problemRef, {
@@ -231,17 +271,7 @@ async function writeProblem(
     await batch.commit();
   }
 
-  const problemSnap = await problemsRef.doc(problemId).get();
-  const problem = problemSnap.data() as Problem;
-  const secretsSnap = await db
-    .collection("quizzes")
-    .doc(quizId)
-    .collection("problemSecrets")
-    .doc(problemId)
-    .get();
-  const testCaseCount = ((secretsSnap.data() as ProblemSecrets | undefined)?.items ?? []).length;
-
-  return { problemId, title: problem.title, pointsTotal: problem.pointsTotal, testCaseCount, mode };
+  return { problemId, title: reqProblem.title, pointsTotal, testCaseCount, mode };
 }
 
 /** 기존 items에 이번 요청의 모든 TC 변경(매칭된 것은 부분 갱신, 새 것은 추가)을 한 번에 접는다. */
@@ -376,15 +406,18 @@ export async function syncQuizFromSheet(
   // Phase 2: 쓰기.
   let quizId: string;
   let mode: "created" | "updated";
+  let status: Quiz["status"];
   if (isUpdate) {
     quizId = targetQuizId!;
     mode = "updated";
+    status = existingQuiz!.status; // 이 요청은 status를 절대 바꾸지 않으므로 기존 값 그대로.
     const patch = buildQuizPatch(input);
     if (Object.keys(patch).length > 0) {
       await db.collection("quizzes").doc(quizId).update(patch);
     }
   } else {
     mode = "created";
+    status = "DRAFT";
     const newQuiz: Quiz = {
       subjectName: input.subjectName!,
       title: input.title!,
@@ -405,20 +438,19 @@ export async function syncQuizFromSheet(
     quizId = quizRef.id;
   }
 
-  const problemResults: SheetSyncProblemResult[] = [];
-  for (const resolvedProblem of resolvedProblems) {
-    problemResults.push(await writeProblem(db, quizId, resolvedProblem));
-  }
+  // 문항들은 서로 독립적인 문서(problems/{id}, problemSecrets/{id})만 건드리므로
+  // pushGrades/batchGrade와 같은 방식(processInChunks, 동시성 10)으로 병렬 처리한다.
+  const problemResults = await processInChunks(resolvedProblems, 10, (resolvedProblem) =>
+    writeProblem(db, quizId, resolvedProblem),
+  );
 
   const { courseWorkLink, classroomDeployPending } = await attemptClassroomDeploy(db, quizId);
-
-  const finalQuiz = (await db.collection("quizzes").doc(quizId).get()).data() as Quiz;
 
   return {
     mode,
     quizId,
     quizUrl: `${getAppBaseUrl()}/quiz/${quizId}`,
-    status: finalQuiz.status,
+    status,
     courseWorkLink,
     classroomDeployPending,
     problems: problemResults,

@@ -335,6 +335,53 @@ describe("upsertQuizFromSheet", () => {
     expect(quiz.startAt.toMillis()).toBeLessThan(quiz.endAt.toMillis());
   });
 
+  it("신규 문항 여러 개를 한 요청에 보내면 병렬 처리 후에도 order가 요청 순서대로 배정된다", async () => {
+    const body = await call({
+      ...CREATE_BASE,
+      problems: [
+        { title: "1번", description: "", initialCode: "" },
+        { title: "2번", description: "", initialCode: "" },
+        { title: "3번", description: "", initialCode: "" },
+      ],
+    });
+    expect(body.ok).toBe(true);
+    const problemsSnap = await testDb()
+      .collection("quizzes")
+      .doc(body.quizId)
+      .collection("problems")
+      .orderBy("order")
+      .get();
+    expect(problemsSnap.docs.map((d) => d.data().title)).toEqual(["1번", "2번", "3번"]);
+    expect(problemsSnap.docs.map((d) => d.data().order)).toEqual([0, 1, 2]);
+  });
+
+  it("problems가 너무 많으면(50개 초과) malformed 오류로 거부한다", async () => {
+    const problems = Array.from({ length: 51 }, (_, i) => ({
+      title: `문항${i}`,
+      description: "",
+      initialCode: "",
+    }));
+    const body = await call({ ...CREATE_BASE, problems });
+    expect(body.ok).toBe(false);
+    expect(body.error).toContain("problems");
+  });
+
+  it("testCases가 너무 많으면(200개 초과) malformed 오류로 거부한다", async () => {
+    const testCases = Array.from({ length: 201 }, (_, i) => ({
+      tcNo: i + 1,
+      input: "1",
+      expected: "1",
+      points: 1,
+      isPublic: true,
+    }));
+    const body = await call({
+      ...CREATE_BASE,
+      problems: [{ title: "레벨업", description: "", initialCode: "", testCases }],
+    });
+    expect(body.ok).toBe(false);
+    expect(body.error).toContain("testCases");
+  });
+
   describe("Classroom 자동 배포", () => {
     // 명부(rosters)는 courseId(Classroom 강의) 단위로 저장되므로, 자동배포 시도는
     // 여기서 다시 동기화하지 않고 이미 있는 명부만 본다 — 그래서 아래 테스트들은
