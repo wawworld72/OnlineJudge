@@ -61,6 +61,15 @@ async function seedDeployableQuiz() {
       ],
       updatedAt: FieldValue.serverTimestamp(),
     });
+  // 배포 전 점검이 courseId가 있는 퀴즈는 수강생 명단 동기화를 BLOCK으로 요구한다
+  // (enterQuiz가 명부로만 신원을 확인하므로).
+  await db.collection("rosters").doc("course-1_20240001").set({
+    courseId: "course-1",
+    studentId: "20240001",
+    name: "홍길동",
+    email: "20240001@hoseo.edu",
+    syncedAt: FieldValue.serverTimestamp(),
+  });
 }
 
 describe("deployClassroomAssignment / resetClassroomDeployment", () => {

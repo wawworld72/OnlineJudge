@@ -38,8 +38,10 @@ export interface EnterQuizResponse {
 export function enterQuiz(input: {
   quizId: string;
   accessCode: string;
-  studentId: string;
-  name: string;
+  // Classroom 연동 퀴즈는 로그인 이메일로 명부에서 신원을 바로 찾으므로 보내지 않는다
+  // (QuizEntry.tsx, functions/src/callable/enterQuiz.ts).
+  studentId?: string;
+  name?: string;
 }) {
   return callFunction<typeof input, EnterQuizResponse>("enterQuiz", input);
 }

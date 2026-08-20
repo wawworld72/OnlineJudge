@@ -1,7 +1,7 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { enterQuizSchema } from "../shared/schemas";
-import { normalizeStudentId, verifyStudentIdentity } from "../shared/identity";
+import { normalizeStudentId, resolveClassroomIdentity, verifyStudentIdentity } from "../shared/identity";
 import { computeParticipantId } from "../shared/participantId";
 import { isWithin } from "../shared/timeAuthority";
 import { domainError } from "../shared/errors";
@@ -26,13 +26,24 @@ export const enterQuiz = createCallable(
       throw domainError("INVALID_ACCESS_CODE", "출입코드가 일치하지 않습니다.");
     }
 
-    const studentId = normalizeStudentId(data.studentId);
-
-    await verifyStudentIdentity(db, {
-      studentId,
-      name: data.name,
-      authEmail,
-    });
+    // Classroom 연동 퀴즈는 "Classroom에 등록된 학생은 이미 검증됐다"는 전제로, 학번/이름을
+    // 직접 입력받지 않고 로그인 이메일로 그 강의 명부에서 신원을 바로 찾는다(문제가 있는
+    // 학생은 교사가 Classroom에서 직접 제외). 비연동 퀴즈는 기존처럼 학번/이름/이메일
+    // 3중 대조를 그대로 요구한다.
+    let studentId: string;
+    let studentName: string;
+    if (quiz.courseId) {
+      const identity = await resolveClassroomIdentity(db, { courseId: quiz.courseId, authEmail });
+      studentId = identity.studentId;
+      studentName = identity.name;
+    } else {
+      if (!data.studentId || !data.name) {
+        throw domainError("INVALID_REQUEST", "학번과 이름을 입력해주세요.");
+      }
+      studentId = normalizeStudentId(data.studentId);
+      studentName = data.name;
+      await verifyStudentIdentity(db, { studentId, name: studentName, authEmail });
+    }
 
     const participantId = computeParticipantId(data.quizId, studentId);
     const participantRef = db.collection("participants").doc(participantId);
@@ -113,7 +124,7 @@ export const enterQuiz = createCallable(
       endAt: quiz.endAt.toMillis(),
       quizTitle: quiz.title,
       studentId,
-      studentName: data.name,
+      studentName,
       studentEmail: authEmail,
     };
 

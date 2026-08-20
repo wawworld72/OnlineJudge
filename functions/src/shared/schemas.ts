@@ -22,8 +22,10 @@ export const testCaseInputSchema = z.object({
 export const enterQuizSchema = z.object({
   quizId: z.string().min(1),
   accessCode: z.string().min(1),
-  studentId: z.string().min(1),
-  name: z.string().min(1),
+  // Classroom 연동 퀴즈는 로그인 이메일로 명부(rosters)에서 신원을 바로 찾으므로
+  // 클라이언트가 이 둘을 보내지 않는다(enterQuiz.ts) — 비연동 퀴즈만 여전히 요구한다.
+  studentId: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
 });
 
 export const registerStudentEmailSchema = z.object({

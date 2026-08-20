@@ -4,6 +4,7 @@ import { logger } from "firebase-functions/v2";
 export type DomainErrorCode =
   | "INVALID_ACCESS_CODE"
   | "IDENTITY_MISMATCH"
+  | "NOT_IN_CLASSROOM_ROSTER"
   | "QUIZ_NOT_OPEN"
   | "QUIZ_NOT_ACTIVE"
   | "QUIZ_CLOSED"

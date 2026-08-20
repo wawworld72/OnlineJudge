@@ -229,6 +229,75 @@ describe("enterQuiz", () => {
     });
   });
 
+  describe("Classroom 연동 퀴즈(courseId 있음)", () => {
+    const COURSE_ID = "course-1";
+    const CLASSROOM_QUIZ_ID = "quiz-classroom";
+
+    async function seedClassroomQuiz() {
+      await testDb().collection("quizzes").doc(CLASSROOM_QUIZ_ID).set({
+        title: "중간고사",
+        description: "",
+        startAt: ts(-60_000),
+        endAt: ts(60_000),
+        accessCode: "ABC123",
+        status: "OPEN",
+        maxRunsPerProblem: 5,
+        courseId: COURSE_ID,
+        courseWorkId: null,
+        courseWorkLink: null,
+        archivedAt: null,
+        archiveSpreadsheetUrl: null,
+        deletedAt: null,
+      });
+    }
+
+    it("학번/이름 없이 로그인 이메일만으로 명부에서 신원을 찾아 입장한다", async () => {
+      await seedClassroomQuiz();
+      await testDb().collection("rosters").doc(`${COURSE_ID}_20240002`).set({
+        courseId: COURSE_ID,
+        studentId: "20240002",
+        name: "김철수",
+        email: "student2@hoseo.edu",
+        syncedAt: ts(0),
+      });
+
+      const response = await enterQuiz.run(
+        makeRequest({ quizId: CLASSROOM_QUIZ_ID, accessCode: "ABC123" }, "student2@hoseo.edu"),
+      );
+
+      expect(response.participantStatus).toBe("IN_PROGRESS");
+      expect(response.studentId).toBe("20240002");
+      expect(response.studentName).toBe("김철수");
+    });
+
+    it("이 강의 명부에서 로그인 이메일을 찾을 수 없으면 NOT_IN_CLASSROOM_ROSTER로 거부한다", async () => {
+      await seedClassroomQuiz();
+
+      await expect(
+        enterQuiz.run(
+          makeRequest({ quizId: CLASSROOM_QUIZ_ID, accessCode: "ABC123" }, "unknown@hoseo.edu"),
+        ),
+      ).rejects.toMatchObject({ details: { code: "NOT_IN_CLASSROOM_ROSTER" } });
+    });
+
+    it("다른 강의 명부에만 있는 이메일로는 입장할 수 없다", async () => {
+      await seedClassroomQuiz();
+      await testDb().collection("rosters").doc("other-course_20240003").set({
+        courseId: "other-course",
+        studentId: "20240003",
+        name: "이영희",
+        email: "student3@hoseo.edu",
+        syncedAt: ts(0),
+      });
+
+      await expect(
+        enterQuiz.run(
+          makeRequest({ quizId: CLASSROOM_QUIZ_ID, accessCode: "ABC123" }, "student3@hoseo.edu"),
+        ),
+      ).rejects.toMatchObject({ details: { code: "NOT_IN_CLASSROOM_ROSTER" } });
+    });
+  });
+
   it("이미 입장한 참가자가 다시 호출해도 기존 문서를 덮어쓰지 않는다(멱등성)", async () => {
     const request = makeRequest(
       { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },

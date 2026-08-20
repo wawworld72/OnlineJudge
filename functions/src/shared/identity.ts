@@ -1,5 +1,5 @@
 import type { Firestore } from "firebase-admin/firestore";
-import type { Student } from "../models/types";
+import type { Roster, Student } from "../models/types";
 import { domainError } from "./errors";
 
 interface IdentityInput {
@@ -63,6 +63,34 @@ export async function verifyStudentIdentity(
   }
 
   return { studentId, student };
+}
+
+/**
+ * Classroom 연동 퀴즈(quiz.courseId)의 입장 방식. "Classroom에 등록되어 있다면 이미
+ * 검증된 학생"이라는 전제 하에, 학번·이름을 직접 입력받지 않고 로그인 이메일로 그
+ * 강의의 명부(rosters, `syncRoster`가 채움)에서 바로 신원을 찾는다 — 문제가 있는
+ * 학생은 교사가 Classroom에서 직접 제외하는 것으로 대응한다(자체 등록/3중대조 불필요).
+ * 명부에 없으면(동기화 전이거나 그 강의 수강생이 아님) 자체 등록으로 우회하지 않고
+ * 그대로 거부한다 — 그게 이 방식의 신뢰 기반이기 때문이다.
+ */
+export async function resolveClassroomIdentity(
+  db: Firestore,
+  { courseId, authEmail }: { courseId: string; authEmail: string },
+): Promise<{ studentId: string; name: string }> {
+  const snap = await db
+    .collection("rosters")
+    .where("courseId", "==", courseId)
+    .where("email", "==", authEmail)
+    .limit(1)
+    .get();
+  if (snap.empty) {
+    throw domainError(
+      "NOT_IN_CLASSROOM_ROSTER",
+      "이 강의의 수강생 명부에서 로그인 계정을 찾을 수 없습니다. 아직 명부 동기화 전이거나 수강 정보가 다를 수 있으니 담당 교사에게 문의해주세요.",
+    );
+  }
+  const roster = snap.docs[0]!.data() as Roster;
+  return { studentId: roster.studentId, name: roster.name };
 }
 
 /**
