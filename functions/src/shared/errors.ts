@@ -6,6 +6,8 @@ export type DomainErrorCode =
   | "IDENTITY_MISMATCH"
   | "NOT_IN_CLASSROOM_ROSTER"
   | "QUIZ_NOT_OPEN"
+  | "QUIZ_NOT_STARTED"
+  | "QUIZ_ENDED"
   | "QUIZ_NOT_ACTIVE"
   | "QUIZ_CLOSED"
   | "NEEDS_EMAIL_REGISTRATION"
@@ -34,9 +36,7 @@ export function domainError(code: DomainErrorCode, message: string): HttpsError 
  */
 export function systemError(logContext: string, cause: unknown): HttpsError {
   logger.error(logContext, cause);
-  return new HttpsError(
-    "internal",
-    "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-    { code: "SYSTEM_ERROR" },
-  );
+  return new HttpsError("internal", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", {
+    code: "SYSTEM_ERROR",
+  });
 }

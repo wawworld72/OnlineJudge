@@ -14,6 +14,7 @@
 ## 학생용
 
 ### `enterQuiz`
+
 - **Request**: `{ quizId: string, accessCode: string, studentId: string, name: string }`
 - **처리**: FR-009~FR-011 순서로 검증(출입코드 → 퀴즈 상태/시간 → 학번·이름·이메일 3중 대조).
   이메일 미등록 학번이면 `NEEDS_EMAIL_REGISTRATION` 오류로 응답해 5.3절 플로우로 분기. 검증을
@@ -21,14 +22,19 @@
   (`finalStatus: 'IN_PROGRESS'`, `runsUsedByProblem/submissions/runResults: {}` — research.md
   §10, data-model.md). 이미 존재하면 그대로 조회만 한다.
 - **Response**: `{ participantStatus, problems: [{problemId, title, description, initialCode, maxRuns, remainingRuns, pointsTotal}], endAt, existingSubmission?, gradedResult? }`
-- **오류 코드**: `INVALID_ACCESS_CODE`, `IDENTITY_MISMATCH`, `QUIZ_NOT_OPEN`, `NEEDS_EMAIL_REGISTRATION`
+- **오류 코드**: `INVALID_ACCESS_CODE`, `IDENTITY_MISMATCH`, `QUIZ_NOT_OPEN`(존재하지 않음/DRAFT·CLOSED
+  상태), `QUIZ_NOT_STARTED`(상태는 OPEN이지만 아직 시작 시각 전), `QUIZ_ENDED`(상태는 OPEN이지만
+  종료 시각 지남), `NEEDS_EMAIL_REGISTRATION` — 시간 관련 두 코드는 출입코드/학번과 무관한
+  사유임을 클라이언트가 구분해 보여줄 수 있도록 `QUIZ_NOT_OPEN`과 분리했다.
 
 ### `registerStudentEmail`
+
 - **Request**: `{ studentId: string, name: string }` (이메일은 `context.auth`에서)
 - **처리**: FR-011~FR-012. 이미 등록된 학번, 이미 다른 학번에 연결된 이메일은 거부.
 - **Response**: `{ ok: true }` → 이후 클라이언트가 `enterQuiz`를 재호출.
 
 ### `practiceRun`
+
 - **Request**: `{ quizId: string, problemId: string, code: string }`
 - **처리**: FR-013~FR-016. `(quizId, problemId, code, 문항 updatedAt)` 캐시 키로 먼저 조회 →
   캐시 히트 시 Grader 미호출(횟수 차감도 없음) → 캐시 미스면 `runTransaction`으로
@@ -41,6 +47,7 @@
 - **오류 코드**: `NO_RUNS_LEFT`, `QUIZ_NOT_ACTIVE`
 
 ### `finalSubmit`
+
 - **Request**: `{ quizId: string, submissions: [{problemId: string, code: string}] }`
 - **처리**: FR-017~FR-019. 이미 SUBMITTED/FINALIZED면 기존 결과 반환(FR-018). 퀴즈에 실제로
   속한 problemId만 채택. 서버 시각으로 종료 여부 재검증(헌법 VII). 문항별 코드를
@@ -51,12 +58,14 @@
 - **오류 코드**: `QUIZ_CLOSED`
 
 ### `getMyResult`
+
 - **Request**: `{ quizId: string }`
 - **Response**: `{ participantStatus, finalTotal?, maxTotal?, perProblem?: [{problemId, status, score, maxScore, tcResults}] }` (FINALIZED 이전엔 점수 없이 상태만)
 
 ## 교사용 — 준비
 
 ### `listQuizzes`
+
 - **Request**: `{}`
 - **처리**: firestore.rules는 `status == 'OPEN'`인 퀴즈만 클라이언트 직접 read를 허용하므로,
   교사가 자신의 `DRAFT`/`CLOSED` 퀴즈까지 포함한 목록을 보려면 이 함수가 필요하다
@@ -64,6 +73,7 @@
 - **Response**: `{ quizzes: [{quizId, title, status, startAt, endAt}] }`
 
 ### `getQuizForEdit`
+
 - **Request**: `{ quizId: string }`
 - **처리**: QuizManager(퀴즈 필드 편집)와 ProblemEditor(문항·테스트케이스 편집)가 필요로
   하는 모든 데이터를 한 번에 반환한다. 문항별 `problemSecrets.items`(정답 포함)도 그대로
@@ -71,6 +81,7 @@
 - **Response**: `{ quizId, title, description, startAt, endAt, accessCode, status, maxRunsPerProblem, courseId, problems: [{problemId, order, title, description, initialCode, maxRuns, pointsTotal, testCases: TestCase[]}] }`
 
 ### `upsertQuiz`, `upsertProblem`, `deleteProblem`
+
 - CRUD 계열. FR-003~FR-004. Request/Response는 data-model.md의 대응 문서 필드와 동일한 모양.
   `upsertProblem`은 문항 메타데이터(제목·설명·초기코드·maxRuns)만 다룬다 — 신규 생성 시에만
   `pointsTotal: 0`으로 초기화하고, 이후 메타데이터 수정 시에는 `pointsTotal`/`updatedAt`을
@@ -80,6 +91,7 @@
   `problemSecrets`가 고아로 남기 때문).
 
 ### `upsertTestCase`
+
 - **Request**: `{ quizId: string, problemId: string, testCase: { tcId?: string, tcNo: number, input: string, expected: string, points: number, isPublic: boolean, description: string } }`
   — `tcId`가 없으면 새 테스트케이스 추가, 있으면 해당 테스트케이스만 치환. **클라이언트는
   `items` 전체 배열이나 `pointsTotal`을 절대 보내지 않는다** — 항상 테스트케이스 1개 단위의
@@ -98,6 +110,7 @@
   커밋된 수정이 누락되는 lost-update가 발생하지 않는다).
 
 ### `deleteTestCase`
+
 - **Request**: `{ quizId: string, problemId: string, tcId: string }`
 - **처리**: `upsertTestCase`와 동일한 트랜잭션 구조로, 재조회한 최신 `items` 배열에서 해당
   `tcId`만 제거한 뒤 배점 합을 다시 계산해 `problemSecrets`/`problems` 양쪽을 함께 쓴다.
@@ -108,6 +121,7 @@
 갱신해야 하는 이유" 참고).
 
 ### `runPreDeployCheck`
+
 - **Request**: `{ quizId: string }`
 - **처리**: FR-007. 데이터 변경 없이 판정만 수행. 분반(`courseId`)이 연동된 퀴즈는
   `items`에 `classroomRosterSync`(수강생 명단 동기화 여부)와 `classroomDeployment`
@@ -117,12 +131,14 @@
 - **Response**: `{ items: [{key, level: 'PASS'|'WARN'|'BLOCK', message}], blockingCount }`
 
 ### `setQuizStatus`
+
 - **Request**: `{ quizId: string, status: 'DRAFT'|'OPEN'|'CLOSED' }`
 - **처리**: FR-008. `OPEN`으로 전환 시 최근 `runPreDeployCheck` 결과에 차단 항목이 있으면 거부.
 
 ## 교사용 — 채점/현황
 
 ### `batchGrade`
+
 - **Request**: `{ quizId: string }`
 - **처리**: FR-020~FR-023, research.md §15(동시성 상한·타임아웃). `participants`에서
   `quizId == X && finalStatus == 'SUBMITTED'`로 조회(등호 필터만 조합이라 복합 인덱스 불필요,
@@ -134,6 +150,7 @@
 - **Response**: `{ processed, skipped, failed, failedParticipantIds: string[], classroomGradesPending: boolean }`
 
 ### `getParticipantOverview`
+
 - **Request**: `{ quizId: string }`
 - **처리**: `participants`에서 `quizId == X`, `finalSubmittedAt` 정렬 조회 — 이 조합은 복합
   인덱스가 필요하다(data-model.md "필요한 복합 인덱스" 참고). `quizzes.courseId`가 있으면
@@ -143,6 +160,7 @@
 - **Response**: `{ participants: [{studentId, name, status: 'NOT_ENTERED'|'IN_PROGRESS'|'SUBMITTED'|'FINALIZED', submittedAt?, finalTotal?}] }` (FR-025)
 
 ### `getParticipantDetail`
+
 - **Request**: `{ quizId: string, studentId: string }`
 - **처리**: 참가자 문서 1건을 읽어 `submissions`/`runResults` map 필드를 그대로 반환한다(구
   설계의 서브컬렉션 다중 조회 대신 단일 문서 읽기).
@@ -151,6 +169,7 @@
 ## 교사용 — Classroom (필수, User Story 5)
 
 ### `syncRoster`
+
 - **Request**: `{ courseId: string }`
 - **처리**: Classroom 계정 이메일의 로컬파트(`@` 앞)를 학번으로 간주해 `students`/`rosters`를
   갱신한다. 숫자로만 된 학번 형식이 아닌 계정은 건너뛰고 `skipped`에 집계한다(FR-027).
@@ -160,14 +179,17 @@
 - **Response**: `{ newStudents, updatedEmails, newRosterEntries, updatedRosterEntries, skipped }` (FR-026~027)
 
 ### `deployClassroomAssignment`
+
 - **Request**: `{ quizId: string }`
 - **처리**: FR-028~029. 이미 `courseWorkId`가 있으면 `ALREADY_DEPLOYED` 오류.
 - **Response**: `{ courseWorkId, courseWorkLink }`
 
 ### `resetClassroomDeployment`
+
 - **Request**: `{ quizId: string }` — 명시적 초기화(재배포 전 필수, FR-029)
 
 ### `pushGrades`
+
 - **Request**: `{ quizId: string }`
 - **처리**: FR-030~031. `FINALIZED` 참가자만 대상, 없으면 `NO_FINALIZED_PARTICIPANTS` 오류.
   성공한 참가자의 `participants.gradePushedAt`을 서버 시각으로 기록한다(research.md §19 —
@@ -177,11 +199,13 @@
 ## 교사용 — 아카이브/삭제 (User Story 6)
 
 ### `archiveQuiz`
+
 - **Request**: `{ quizId: string }`
 - **처리**: FR-037~038. Grader/Classroom과 마찬가지로 실패 시 1회 재시도(헌법 VI).
 - **Response**: `{ spreadsheetUrl, createdAt }`
 
 ### `deleteQuizData`
+
 - **Request**: `{ quizId: string, confirmWithoutArchive?: boolean }`
 - **처리**: FR-039~040. `archivedAt`이 없고 `confirmWithoutArchive`가 true가 아니면
   `NOT_ARCHIVED_YET` 오류로 응답(클라이언트가 경고 후 재호출 시 `confirmWithoutArchive: true`).

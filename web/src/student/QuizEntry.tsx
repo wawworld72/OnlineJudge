@@ -12,8 +12,19 @@ import { QuizTaking } from "./QuizTaking";
 interface QuizInfo {
   title: string;
   description: string;
+  startAt: number;
   endAt: number;
   courseId: string | null;
+}
+
+function formatDateTime(ms: number): string {
+  return new Date(ms).toLocaleString("ko-KR", {
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 /**
@@ -52,6 +63,7 @@ export function QuizEntry() {
         setQuizInfo({
           title: data.title,
           description: data.description,
+          startAt: (data.startAt as Timestamp).toMillis(),
           endAt: (data.endAt as Timestamp).toMillis(),
           courseId: data.courseId ?? null,
         });
@@ -86,7 +98,29 @@ export function QuizEntry() {
         return;
       }
       if (code === "NOT_IN_CLASSROOM_ROSTER") {
-        setError("이 강의 수강생 명부에서 로그인 계정을 찾을 수 없습니다. 담당 교사에게 문의해주세요.");
+        setError(
+          "이 강의 수강생 명부에서 로그인 계정을 찾을 수 없습니다. 담당 교사에게 문의해주세요.",
+        );
+        return;
+      }
+      if (code === "QUIZ_NOT_STARTED") {
+        setError(
+          quizInfo
+            ? `아직 시작 시각이 되지 않았습니다. (시작: ${formatDateTime(quizInfo.startAt)})`
+            : "아직 시작 시각이 되지 않았습니다.",
+        );
+        return;
+      }
+      if (code === "QUIZ_ENDED") {
+        setError(
+          quizInfo
+            ? `종료 시각이 지나 더 이상 응시할 수 없습니다. (종료: ${formatDateTime(quizInfo.endAt)})`
+            : "종료 시각이 지나 더 이상 응시할 수 없습니다.",
+        );
+        return;
+      }
+      if (code === "QUIZ_NOT_OPEN") {
+        setError("아직 공개되지 않았거나 종료된 퀴즈입니다. 담당 교사에게 문의해주세요.");
         return;
       }
       setError("출입코드 또는 학번·이름을 확인해주세요.");

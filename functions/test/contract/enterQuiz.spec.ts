@@ -9,21 +9,24 @@ const STUDENT_EMAIL = "student1@hoseo.edu";
 
 async function seedOpenQuiz() {
   const db = testDb();
-  await db.collection("quizzes").doc(QUIZ_ID).set({
-    title: "중간고사",
-    description: "",
-    startAt: ts(-60_000),
-    endAt: ts(60_000),
-    accessCode: "ABC123",
-    status: "OPEN",
-    maxRunsPerProblem: 5,
-    courseId: null,
-    courseWorkId: null,
-    courseWorkLink: null,
-    archivedAt: null,
-    archiveSpreadsheetUrl: null,
-    deletedAt: null,
-  });
+  await db
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .set({
+      title: "중간고사",
+      description: "",
+      startAt: ts(-60_000),
+      endAt: ts(60_000),
+      accessCode: "ABC123",
+      status: "OPEN",
+      maxRunsPerProblem: 5,
+      courseId: null,
+      courseWorkId: null,
+      courseWorkLink: null,
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+    });
   await db.collection("students").doc(STUDENT_ID).set({
     name: "홍길동",
     email: STUDENT_EMAIL,
@@ -112,6 +115,40 @@ describe("enterQuiz", () => {
     expect(participant.runResults).toEqual({});
   });
 
+  it("OPEN 상태여도 시작 시각 전이면 QUIZ_NOT_STARTED로 거부한다", async () => {
+    const db = testDb();
+    await db
+      .collection("quizzes")
+      .doc(QUIZ_ID)
+      .update({ startAt: ts(60_000), endAt: ts(120_000) });
+
+    await expect(
+      enterQuiz.run(
+        makeRequest(
+          { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },
+          STUDENT_EMAIL,
+        ),
+      ),
+    ).rejects.toMatchObject({ details: { code: "QUIZ_NOT_STARTED" } });
+  });
+
+  it("OPEN 상태여도 종료 시각이 지났으면 QUIZ_ENDED로 거부한다", async () => {
+    const db = testDb();
+    await db
+      .collection("quizzes")
+      .doc(QUIZ_ID)
+      .update({ startAt: ts(-120_000), endAt: ts(-60_000) });
+
+    await expect(
+      enterQuiz.run(
+        makeRequest(
+          { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },
+          STUDENT_EMAIL,
+        ),
+      ),
+    ).rejects.toMatchObject({ details: { code: "QUIZ_ENDED" } });
+  });
+
   it("영문 계정명 학번은 대소문자가 달라도 정규화되어 입장에 성공한다", async () => {
     const db = testDb();
     await db.collection("students").doc("gihyun.hong").set({
@@ -138,21 +175,24 @@ describe("enterQuiz", () => {
 
     async function seedClosedQuiz() {
       const db = testDb();
-      await db.collection("quizzes").doc(CLOSED_QUIZ_ID).set({
-        title: "지난 중간고사",
-        description: "",
-        startAt: ts(-120_000),
-        endAt: ts(-60_000),
-        accessCode: "ABC123",
-        status: "CLOSED",
-        maxRunsPerProblem: 5,
-        courseId: null,
-        courseWorkId: null,
-        courseWorkLink: null,
-        archivedAt: null,
-        archiveSpreadsheetUrl: null,
-        deletedAt: null,
-      });
+      await db
+        .collection("quizzes")
+        .doc(CLOSED_QUIZ_ID)
+        .set({
+          title: "지난 중간고사",
+          description: "",
+          startAt: ts(-120_000),
+          endAt: ts(-60_000),
+          accessCode: "ABC123",
+          status: "CLOSED",
+          maxRunsPerProblem: 5,
+          courseId: null,
+          courseWorkId: null,
+          courseWorkLink: null,
+          archivedAt: null,
+          archiveSpreadsheetUrl: null,
+          deletedAt: null,
+        });
     }
 
     it("이미 채점 완료된 참가자는 퀴즈 종료 후에도 재입장(복기)할 수 있다", async () => {
@@ -234,32 +274,38 @@ describe("enterQuiz", () => {
     const CLASSROOM_QUIZ_ID = "quiz-classroom";
 
     async function seedClassroomQuiz() {
-      await testDb().collection("quizzes").doc(CLASSROOM_QUIZ_ID).set({
-        title: "중간고사",
-        description: "",
-        startAt: ts(-60_000),
-        endAt: ts(60_000),
-        accessCode: "ABC123",
-        status: "OPEN",
-        maxRunsPerProblem: 5,
-        courseId: COURSE_ID,
-        courseWorkId: null,
-        courseWorkLink: null,
-        archivedAt: null,
-        archiveSpreadsheetUrl: null,
-        deletedAt: null,
-      });
+      await testDb()
+        .collection("quizzes")
+        .doc(CLASSROOM_QUIZ_ID)
+        .set({
+          title: "중간고사",
+          description: "",
+          startAt: ts(-60_000),
+          endAt: ts(60_000),
+          accessCode: "ABC123",
+          status: "OPEN",
+          maxRunsPerProblem: 5,
+          courseId: COURSE_ID,
+          courseWorkId: null,
+          courseWorkLink: null,
+          archivedAt: null,
+          archiveSpreadsheetUrl: null,
+          deletedAt: null,
+        });
     }
 
     it("학번/이름 없이 로그인 이메일만으로 명부에서 신원을 찾아 입장한다", async () => {
       await seedClassroomQuiz();
-      await testDb().collection("rosters").doc(`${COURSE_ID}_20240002`).set({
-        courseId: COURSE_ID,
-        studentId: "20240002",
-        name: "김철수",
-        email: "student2@hoseo.edu",
-        syncedAt: ts(0),
-      });
+      await testDb()
+        .collection("rosters")
+        .doc(`${COURSE_ID}_20240002`)
+        .set({
+          courseId: COURSE_ID,
+          studentId: "20240002",
+          name: "김철수",
+          email: "student2@hoseo.edu",
+          syncedAt: ts(0),
+        });
 
       const response = await enterQuiz.run(
         makeRequest({ quizId: CLASSROOM_QUIZ_ID, accessCode: "ABC123" }, "student2@hoseo.edu"),
@@ -282,13 +328,16 @@ describe("enterQuiz", () => {
 
     it("다른 강의 명부에만 있는 이메일로는 입장할 수 없다", async () => {
       await seedClassroomQuiz();
-      await testDb().collection("rosters").doc("other-course_20240003").set({
-        courseId: "other-course",
-        studentId: "20240003",
-        name: "이영희",
-        email: "student3@hoseo.edu",
-        syncedAt: ts(0),
-      });
+      await testDb()
+        .collection("rosters")
+        .doc("other-course_20240003")
+        .set({
+          courseId: "other-course",
+          studentId: "20240003",
+          name: "이영희",
+          email: "student3@hoseo.edu",
+          syncedAt: ts(0),
+        });
 
       await expect(
         enterQuiz.run(

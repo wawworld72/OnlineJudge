@@ -1,9 +1,13 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { enterQuizSchema } from "../shared/schemas";
-import { normalizeStudentId, resolveClassroomIdentity, verifyStudentIdentity } from "../shared/identity";
+import {
+  normalizeStudentId,
+  resolveClassroomIdentity,
+  verifyStudentIdentity,
+} from "../shared/identity";
 import { computeParticipantId } from "../shared/participantId";
-import { isWithin } from "../shared/timeAuthority";
+import { isAfter, isBefore } from "../shared/timeAuthority";
 import { domainError } from "../shared/errors";
 import type { Participant, Problem, Quiz } from "../models/types";
 
@@ -54,9 +58,20 @@ export const enterQuiz = createCallable(
     // 학생이 자기 결과를 다시 확인할 수 있어야 한다(FR-024). 아직 IN_PROGRESS이거나
     // 최초 응시라면 지금도 응시 가능한 시간인지를 그대로 확인한다.
     const isReviewOnly =
-      participantSnap.exists && (participantSnap.data() as Participant).finalStatus !== "IN_PROGRESS";
-    if (!isReviewOnly && (quiz.status !== "OPEN" || !isWithin(quiz.startAt, quiz.endAt))) {
-      throw domainError("QUIZ_NOT_OPEN", "지금은 응시할 수 없는 퀴즈입니다.");
+      participantSnap.exists &&
+      (participantSnap.data() as Participant).finalStatus !== "IN_PROGRESS";
+    if (!isReviewOnly) {
+      if (quiz.status !== "OPEN") {
+        throw domainError("QUIZ_NOT_OPEN", "지금은 응시할 수 없는 퀴즈입니다.");
+      }
+      // 출입코드/학번과 무관한, 시간 문제라는 걸 클라이언트가 구분해 보여줄 수 있도록
+      // 상태(DRAFT/CLOSED)와 시간 범위 이탈(너무 이르거나 늦음)을 서로 다른 코드로 던진다.
+      if (isBefore(quiz.startAt)) {
+        throw domainError("QUIZ_NOT_STARTED", "아직 시작 시각이 되지 않았습니다.");
+      }
+      if (isAfter(quiz.endAt)) {
+        throw domainError("QUIZ_ENDED", "종료 시각이 지나 더 이상 응시할 수 없습니다.");
+      }
     }
 
     let participant: Participant;
