@@ -47,7 +47,7 @@ export interface SheetSyncResult {
 }
 
 /** `${getAppBaseUrl()}/quiz/{quizId}` 형태의 URL에서 마지막 경로 조각(quizId)만 뽑는다. */
-function extractQuizIdFromUrl(url: string): string | null {
+export function extractQuizIdFromUrl(url: string): string | null {
   const withoutQuery = url.split("?")[0] ?? "";
   const segments = withoutQuery.split("/").filter(Boolean);
   return segments[segments.length - 1] ?? null;

@@ -8,7 +8,7 @@ import {
   type GradeSummaryRow,
 } from "../services/gradeExport";
 
-const STATUS_LABEL: Record<GradeSummaryRow["status"], string> = {
+export const STATUS_LABEL: Record<GradeSummaryRow["status"], string> = {
   NOT_ENTERED: "미입장",
   IN_PROGRESS: "응시중",
   SUBMITTED: "제출완료",
