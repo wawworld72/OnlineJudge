@@ -6,14 +6,14 @@ import { extractQuizIdFromUrl } from "./quizSheetSync";
 
 const HEADER = [
   "제출시각",
-  "이름",
   "학번",
+  "이름",
+  "주제",
   "과목명",
-  "퀴즈명",
   "상태",
-  "총점",
   "문항별 점수",
   "문항별 테스트케이스 점수",
+  "총점",
 ];
 
 /**
@@ -78,14 +78,14 @@ export async function getQuizResultRows(
 
     return [
       item.submittedAt ? new Date(item.submittedAt).toISOString() : "",
-      item.name,
       item.studentId,
-      quiz.subjectName,
+      item.name,
       quiz.title,
+      quiz.subjectName,
       STATUS_LABEL[item.status],
-      item.finalTotal !== undefined ? String(item.finalTotal) : "",
       perProblemScores,
       perTestCaseScores,
+      item.finalTotal !== undefined ? String(item.finalTotal) : "",
     ];
   });
 

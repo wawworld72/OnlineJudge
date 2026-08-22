@@ -154,14 +154,14 @@ describe("exportQuizResultToSheet", () => {
     expect(body.ok).toBe(true);
     expect(body.rows[0]).toEqual([
       "제출시각",
-      "이름",
       "학번",
+      "이름",
+      "주제",
       "과목명",
-      "퀴즈명",
       "상태",
-      "총점",
       "문항별 점수",
       "문항별 테스트케이스 점수",
+      "총점",
     ]);
     expect(body.rows).toHaveLength(2);
     const row = body.rows[1];
@@ -169,12 +169,12 @@ describe("exportQuizResultToSheet", () => {
     // (getParticipantOverviewData의 기존 동작 그대로).
     expect(row[1]).toBe("20240001");
     expect(row[2]).toBe("20240001");
-    expect(row[3]).toBe(SUBJECT);
-    expect(row[4]).toBe("중간고사");
+    expect(row[3]).toBe("중간고사");
+    expect(row[4]).toBe(SUBJECT);
     expect(row[5]).toBe("채점완료");
-    expect(row[6]).toBe("15");
-    expect(row[7]).toBe("5,10"); // p1(order 0) 점수, p2(order 1) 점수 — order 순서
-    expect(row[8]).toBe("5,0,10"); // p1의 TC 2개(5,0), p2의 TC 1개(10) — order 순서로 이어붙임
+    expect(row[6]).toBe("5,10"); // p1(order 0) 점수, p2(order 1) 점수 — order 순서
+    expect(row[7]).toBe("5,0,10"); // p1의 TC 2개(5,0), p2의 TC 1개(10) — order 순서로 이어붙임
+    expect(row[8]).toBe("15");
   });
 
   it("SUBMITTED(아직 미채점) 참가자는 총점/문항별 점수/TC 점수가 모두 빈 문자열이다", async () => {
@@ -192,9 +192,9 @@ describe("exportQuizResultToSheet", () => {
     const body = res.json.mock.calls[0]![0];
     const row = body.rows[1];
     expect(row[5]).toBe("제출완료");
-    expect(row[6]).toBe("");
-    expect(row[7]).toBe("");
-    expect(row[8]).toBe("");
+    expect(row[6]).toBe(""); // 문항별 점수
+    expect(row[7]).toBe(""); // 문항별 테스트케이스 점수
+    expect(row[8]).toBe(""); // 총점
   });
 
   it("Classroom 연동 퀴즈의 미입장 수강생은 상태만 채우고 나머지 칸은 빈 문자열이다", async () => {
@@ -212,13 +212,13 @@ describe("exportQuizResultToSheet", () => {
     await exportQuizResultToSheet(makeReq({ token: TOKEN, quizId: QUIZ_ID }), res as never);
 
     const body = res.json.mock.calls[0]![0];
-    const row = body.rows.find((r: string[]) => r[2] === "20240003")!;
-    expect(row[1]).toBe("박영희");
+    const row = body.rows.find((r: string[]) => r[1] === "20240003")!;
+    expect(row[2]).toBe("박영희");
     expect(row[5]).toBe("미입장");
-    expect(row[0]).toBe("");
-    expect(row[6]).toBe("");
-    expect(row[7]).toBe("");
-    expect(row[8]).toBe("");
+    expect(row[0]).toBe(""); // 제출시각
+    expect(row[6]).toBe(""); // 문항별 점수
+    expect(row[7]).toBe(""); // 문항별 테스트케이스 점수
+    expect(row[8]).toBe(""); // 총점
   });
 
   it("quizUrl로 호출해도 quizId와 동일하게 동작한다", async () => {
@@ -239,6 +239,6 @@ describe("exportQuizResultToSheet", () => {
     const body = res.json.mock.calls[0]![0];
     expect(body.ok).toBe(true);
     expect(body.rows).toHaveLength(2);
-    expect(body.rows[1][2]).toBe("20240001");
+    expect(body.rows[1][1]).toBe("20240001");
   });
 });
