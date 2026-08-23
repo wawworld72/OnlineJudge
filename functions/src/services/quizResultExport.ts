@@ -6,7 +6,7 @@ import { extractQuizIdFromUrl } from "./quizSheetSync";
 
 const HEADER = [
   "제출시각",
-  "이메일",
+  "이메일 주소",
   "이름",
   "학번",
   "주제",

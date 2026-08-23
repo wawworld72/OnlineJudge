@@ -159,7 +159,7 @@ describe("exportQuizResultToSheet", () => {
     expect(body.ok).toBe(true);
     expect(body.rows[0]).toEqual([
       "제출시각",
-      "이메일",
+      "이메일 주소",
       "이름",
       "학번",
       "주제",
