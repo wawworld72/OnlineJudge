@@ -6,8 +6,9 @@ import { extractQuizIdFromUrl } from "./quizSheetSync";
 
 const HEADER = [
   "제출시각",
-  "학번",
+  "이메일",
   "이름",
+  "학번",
   "주제",
   "과목명",
   "상태",
@@ -78,8 +79,9 @@ export async function getQuizResultRows(
 
     return [
       item.submittedAt ? new Date(item.submittedAt).toISOString() : "",
-      item.studentId,
+      item.email ?? "",
       item.name,
+      item.studentId,
       quiz.title,
       quiz.subjectName,
       STATUS_LABEL[item.status],

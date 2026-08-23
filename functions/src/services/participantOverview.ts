@@ -1,9 +1,10 @@
 import type { Firestore } from "firebase-admin/firestore";
-import type { Participant, Quiz, Roster } from "../models/types";
+import type { Participant, Quiz, Roster, Student } from "../models/types";
 
 export interface OverviewItem {
   studentId: string;
   name: string;
+  email: string | null;
   status: "NOT_ENTERED" | "IN_PROGRESS" | "SUBMITTED" | "FINALIZED";
   submittedAt?: number;
   finalTotal?: number;
@@ -38,18 +39,28 @@ export async function getParticipantOverviewData(
     participantsSnap.docs.map((doc) => [doc.data().studentId as string, doc.data() as Participant]),
   );
 
-  function toItem(studentId: string, name: string): OverviewItem {
+  function toItem(studentId: string, name: string, email: string | null): OverviewItem {
     const participant = participantByStudentId.get(studentId);
-    if (!participant) return { studentId, name, status: "NOT_ENTERED" };
-    const item: OverviewItem = { studentId, name, status: participant.finalStatus };
+    if (!participant) return { studentId, name, email, status: "NOT_ENTERED" };
+    const item: OverviewItem = { studentId, name, email, status: participant.finalStatus };
     if (participant.finalSubmittedAt) item.submittedAt = participant.finalSubmittedAt.toMillis();
     if (participant.finalStatus === "FINALIZED") item.finalTotal = participant.finalTotal;
     return item;
   }
 
   if (!quiz.courseId) {
-    return participantsSnap.docs.map((doc) =>
-      toItem(doc.data().studentId as string, doc.data().studentId as string),
+    if (participantsSnap.empty) return [];
+    // 비연동 퀴즈는 명부가 없어 이메일도 이름과 마찬가지로 students 컬렉션에서 직접
+    // 가져와야 한다 — 참가자 수만큼 db.getAll()로 한 번에 배치 조회한다.
+    const studentIds = participantsSnap.docs.map((doc) => doc.data().studentId as string);
+    const studentSnaps = await db.getAll(
+      ...studentIds.map((studentId) => db.collection("students").doc(studentId)),
+    );
+    const emailByStudentId = new Map(
+      studentSnaps.map((snap) => [snap.id, (snap.data() as Student | undefined)?.email ?? null]),
+    );
+    return studentIds.map((studentId) =>
+      toItem(studentId, studentId, emailByStudentId.get(studentId) ?? null),
     );
   }
 
@@ -61,11 +72,15 @@ export async function getParticipantOverviewData(
     .map((doc) => doc.data() as Participant)
     .map((participant) => {
       const roster = rosterEntries.find((r) => r.studentId === participant.studentId);
-      return toItem(participant.studentId, roster?.name ?? participant.studentId);
+      return toItem(
+        participant.studentId,
+        roster?.name ?? participant.studentId,
+        roster?.email ?? null,
+      );
     });
   const notEntered = rosterEntries
     .filter((roster) => !enteredStudentIds.has(roster.studentId))
-    .map((roster) => toItem(roster.studentId, roster.name));
+    .map((roster) => toItem(roster.studentId, roster.name, roster.email));
 
   return [...enteredInOrder, ...notEntered];
 }
