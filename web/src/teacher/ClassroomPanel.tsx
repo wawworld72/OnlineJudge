@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
 import {
+  addTestRosterEntry,
   deployClassroomAssignment,
   pushGrades,
   resetClassroomDeployment,
@@ -23,10 +24,24 @@ interface ClassroomPanelProps {
 export function ClassroomPanel({ quizId, courseId, courseWorkId, onChanged }: ClassroomPanelProps) {
   const [syncResult, setSyncResult] = useState<SyncRosterResponse | null>(null);
   const [pushResult, setPushResult] = useState<PushGradesResponse | null>(null);
+  const [testStudentId, setTestStudentId] = useState("");
+  const [testName, setTestName] = useState("");
+  const [testEmail, setTestEmail] = useState("");
+  const [testAdded, setTestAdded] = useState(false);
 
   async function runSyncRoster() {
     const response = await syncRoster({ courseId });
     setSyncResult(response);
+  }
+
+  async function runAddTestRosterEntry() {
+    await addTestRosterEntry({
+      courseId,
+      studentId: testStudentId,
+      name: testName,
+      email: testEmail,
+    });
+    setTestAdded(true);
   }
 
   async function runDeploy() {
@@ -63,6 +78,34 @@ export function ClassroomPanel({ quizId, courseId, courseWorkId, onChanged }: Cl
             {syncResult.removedRosterEntries} / 건너뜀 {syncResult.skipped}
           </p>
         )}
+      </section>
+
+      <section>
+        <h4>테스트용 수강생 추가(임시)</h4>
+        <p className="field-hint">
+          실제 Classroom 계정 없이 학생 화면(입장·문제 실행·제출)을 테스트하고 싶을 때, 본인이
+          로그인할 이메일을 이 강의 명부에 임시로 추가합니다. 다음에 "수강생 동기화"를 실제로
+          실행하면 이 항목은 자동으로 정리됩니다(영구 데이터 아님).
+        </p>
+        <label>
+          학번(임의)
+          <input value={testStudentId} onChange={(e) => setTestStudentId(e.target.value)} />
+        </label>
+        <label>
+          이름
+          <input value={testName} onChange={(e) => setTestName(e.target.value)} />
+        </label>
+        <label>
+          로그인할 이메일
+          <input value={testEmail} onChange={(e) => setTestEmail(e.target.value)} />
+        </label>
+        <DelayedActionButton
+          label="테스트용 수강생 추가"
+          pendingLabel="추가 중..."
+          delayedLabel="추가에 시간이 걸리고 있습니다..."
+          onAction={runAddTestRosterEntry}
+        />
+        {testAdded && <p>추가됨 — 다음 실제 수강생 동기화 시 자동으로 정리됩니다.</p>}
       </section>
 
       <section>

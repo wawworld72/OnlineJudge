@@ -190,6 +190,17 @@ export const syncRosterSchema = z.object({
   courseId: z.string().min(1),
 });
 
+/**
+ * 실제 Classroom 계정 없이 Classroom 연동 퀴즈의 학생 화면을 테스트할 수 있도록,
+ * 명부(rosters)에 항목 하나를 수동으로 추가하는 `addTestRosterEntry`용 스키마.
+ */
+export const addTestRosterEntrySchema = z.object({
+  courseId: z.string().min(1),
+  studentId: z.string().min(1),
+  name: z.string().min(1),
+  email: z.string().min(1),
+});
+
 export const deployClassroomAssignmentSchema = z.object({
   quizId: z.string().min(1),
 });

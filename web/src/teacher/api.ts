@@ -76,10 +76,7 @@ export interface UpsertQuizInput {
 }
 
 export function upsertQuiz(input: UpsertQuizInput) {
-  return callFunction<UpsertQuizInput, { quizId: string; status: QuizStatus }>(
-    "upsertQuiz",
-    input,
-  );
+  return callFunction<UpsertQuizInput, { quizId: string; status: QuizStatus }>("upsertQuiz", input);
 }
 
 export interface UpsertProblemInput {
@@ -118,10 +115,10 @@ export interface UpsertTestCaseInput {
 }
 
 export function upsertTestCase(input: UpsertTestCaseInput) {
-  return callFunction<UpsertTestCaseInput, { tcId: string; pointsTotal: number; testCaseCount: number }>(
-    "upsertTestCase",
-    input,
-  );
+  return callFunction<
+    UpsertTestCaseInput,
+    { tcId: string; pointsTotal: number; testCaseCount: number }
+  >("upsertTestCase", input);
 }
 
 export function deleteTestCase(input: { quizId: string; problemId: string; tcId: string }) {
@@ -207,6 +204,15 @@ export interface SyncRosterResponse {
 
 export function syncRoster(input: { courseId: string }) {
   return callFunction<typeof input, SyncRosterResponse>("syncRoster", input);
+}
+
+export function addTestRosterEntry(input: {
+  courseId: string;
+  studentId: string;
+  name: string;
+  email: string;
+}) {
+  return callFunction<typeof input, { ok: true }>("addTestRosterEntry", input);
 }
 
 export function deployClassroomAssignment(input: { quizId: string }) {
