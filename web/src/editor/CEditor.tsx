@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { EditorView, basicSetup } from "codemirror";
+import { keymap } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { cpp } from "@codemirror/lang-cpp";
+import { indentWithTab } from "@codemirror/commands";
 
 interface CEditorProps {
   value: string;
@@ -26,6 +28,7 @@ export function CEditor({ value, onChange, readOnly = false }: CEditorProps) {
       extensions: [
         basicSetup,
         cpp(),
+        keymap.of([indentWithTab]),
         EditorView.editable.of(!readOnly),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {

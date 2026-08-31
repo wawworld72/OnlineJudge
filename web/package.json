@@ -12,7 +12,9 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.0.0",
     "@codemirror/lang-cpp": "^6.0.2",
+    "@codemirror/view": "^6.0.0",
     "codemirror": "^6.0.1",
     "dompurify": "^3.4.13",
     "firebase": "^11.0.0",
