@@ -96,4 +96,43 @@ describe("getParticipantOverview", () => {
     expect(response.participants).toHaveLength(1);
     expect(response.participants[0]!.status).toBe("IN_PROGRESS");
   });
+
+  it("테스트용 수강생 항목(isTestEntry)은 참가자 현황에서 완전히 제외된다", async () => {
+    await seedQuiz("course-1");
+    await testDb().collection("rosters").doc("course-1_20240001").set({
+      courseId: "course-1",
+      studentId: "20240001",
+      name: "홍길동",
+      email: "hong@hoseo.edu",
+      syncedAt: FieldValue.serverTimestamp(),
+      isTestEntry: false,
+    });
+    await testDb().collection("rosters").doc("course-1_test001").set({
+      courseId: "course-1",
+      studentId: "test001",
+      name: "테스트학생",
+      email: "tester@hoseo.edu",
+      syncedAt: FieldValue.serverTimestamp(),
+      isTestEntry: true,
+    });
+    await seedParticipant("20240001", "IN_PROGRESS");
+    await testDb().collection("participants").doc(`${QUIZ_ID}_test001`).set({
+      quizId: QUIZ_ID,
+      studentId: "test001",
+      enteredAt: FieldValue.serverTimestamp(),
+      finalStatus: "IN_PROGRESS",
+      finalSubmittedAt: null,
+      finalTotal: 0,
+      runsUsedByProblem: {},
+      submissions: {},
+      runResults: {},
+      gradePushedAt: null,
+      isTestEntry: true,
+    });
+
+    const response = await getParticipantOverview.run(makeTeacherRequest({ quizId: QUIZ_ID }));
+
+    const participants = response.participants as OverviewItem[];
+    expect(participants.map((p) => p.studentId)).toEqual(["20240001"]);
+  });
 });

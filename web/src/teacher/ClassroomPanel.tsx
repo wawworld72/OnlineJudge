@@ -84,11 +84,14 @@ export function ClassroomPanel({ quizId, courseId, courseWorkId, onChanged }: Cl
         <h4>테스트용 수강생 추가(임시)</h4>
         <p className="field-hint">
           실제 Classroom 계정 없이 학생 화면(입장·문제 실행·제출)을 테스트하고 싶을 때, 본인이
-          로그인할 이메일을 이 강의 명부에 임시로 추가합니다. 다음에 "수강생 동기화"를 실제로
-          실행하면 이 항목은 자동으로 정리됩니다(영구 데이터 아님).
+          로그인할 이메일을 이 강의 명부에 임시로 추가합니다. 이 항목은 퀴즈 상태(DRAFT/OPEN/
+          CLOSED)나 시작·종료 시각과 무관하게 언제든 입장·실행·제출까지 가능하고, 그 결과는 참가자
+          현황·성적 반영·시트 내보내기에서 자동으로 제외됩니다. 다음에 "수강생 동기화"를 실제로
+          실행하면 명부 항목은 자동으로 정리됩니다 — 단, 학번은 실제 학생과 겹치지 않을 만한 값(예:
+          "test-teacher")을 입력해주세요.
         </p>
         <label>
-          학번(임의)
+          학번(실제 학생과 겹치지 않는 임의 값)
           <input value={testStudentId} onChange={(e) => setTestStudentId(e.target.value)} />
         </label>
         <label>

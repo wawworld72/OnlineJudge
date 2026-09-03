@@ -35,8 +35,13 @@ export async function getParticipantOverviewData(
     .orderBy("finalSubmittedAt")
     .get();
 
+  // 교사의 "테스트용 수강생 추가" 항목(isTestEntry)은 실제 학생 현황에서 항상 제외한다.
+  const participantDocs = participantsSnap.docs.filter(
+    (doc) => !(doc.data() as Participant).isTestEntry,
+  );
+
   const participantByStudentId = new Map(
-    participantsSnap.docs.map((doc) => [doc.data().studentId as string, doc.data() as Participant]),
+    participantDocs.map((doc) => [doc.data().studentId as string, doc.data() as Participant]),
   );
 
   function toItem(studentId: string, name: string, email: string | null): OverviewItem {
@@ -49,10 +54,10 @@ export async function getParticipantOverviewData(
   }
 
   if (!quiz.courseId) {
-    if (participantsSnap.empty) return [];
+    if (participantDocs.length === 0) return [];
     // 비연동 퀴즈는 명부가 없어 이메일도 이름과 마찬가지로 students 컬렉션에서 직접
     // 가져와야 한다 — 참가자 수만큼 db.getAll()로 한 번에 배치 조회한다.
-    const studentIds = participantsSnap.docs.map((doc) => doc.data().studentId as string);
+    const studentIds = participantDocs.map((doc) => doc.data().studentId as string);
     const studentSnaps = await db.getAll(
       ...studentIds.map((studentId) => db.collection("students").doc(studentId)),
     );
@@ -65,10 +70,12 @@ export async function getParticipantOverviewData(
   }
 
   const rosterSnap = await db.collection("rosters").where("courseId", "==", quiz.courseId).get();
-  const rosterEntries = rosterSnap.docs.map((doc) => doc.data() as Roster);
+  const rosterEntries = rosterSnap.docs
+    .map((doc) => doc.data() as Roster)
+    .filter((roster) => !roster.isTestEntry);
 
   const enteredStudentIds = new Set(participantByStudentId.keys());
-  const enteredInOrder = participantsSnap.docs
+  const enteredInOrder = participantDocs
     .map((doc) => doc.data() as Participant)
     .map((participant) => {
       const roster = rosterEntries.find((r) => r.studentId === participant.studentId);

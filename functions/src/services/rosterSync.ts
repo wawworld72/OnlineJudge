@@ -80,6 +80,7 @@ export async function syncCourseRoster(db: Firestore, courseId: string): Promise
       name: classroomStudent.name,
       email: classroomStudent.email,
       syncedAt: FieldValue.serverTimestamp(),
+      isTestEntry: false,
     };
     if (!rosterSnap.exists) {
       await rosterRef.set(rosterFields);

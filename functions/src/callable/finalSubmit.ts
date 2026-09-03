@@ -39,7 +39,7 @@ export const finalSubmit = createCallable(finalSubmitSchema, async ({ data, auth
       return participant;
     }
 
-    if (quiz.status === "CLOSED" || isAfter(quiz.endAt)) {
+    if (!participant.isTestEntry && (quiz.status === "CLOSED" || isAfter(quiz.endAt))) {
       throw domainError("QUIZ_CLOSED", "제출 마감된 퀴즈입니다.");
     }
 

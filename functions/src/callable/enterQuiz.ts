@@ -36,10 +36,12 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
   // 3중 대조를 그대로 요구한다.
   let studentId: string;
   let studentName: string;
+  let isTestEntry = false;
   if (quiz.courseId) {
     const identity = await resolveClassroomIdentity(db, { courseId: quiz.courseId, authEmail });
     studentId = identity.studentId;
     studentName = identity.name;
+    isTestEntry = identity.isTestEntry;
   } else {
     if (!data.studentId || !data.name) {
       throw domainError("INVALID_REQUEST", "학번과 이름을 입력해주세요.");
@@ -59,7 +61,9 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
   // 최초 응시라면 지금도 응시 가능한 시간인지를 그대로 확인한다.
   const isReviewOnly =
     participantSnap.exists && (participantSnap.data() as Participant).finalStatus !== "IN_PROGRESS";
-  if (!isReviewOnly) {
+  // 교사가 "테스트용 수강생 추가"로 만든 항목(isTestEntry)은 퀴즈 상태·시간 게이트를
+  // 전부 우회한다 — 아무 때나 학생 화면(입장→실행→제출)을 미리 볼 수 있어야 하므로.
+  if (!isReviewOnly && !isTestEntry) {
     if (quiz.status !== "OPEN") {
       throw domainError("QUIZ_NOT_OPEN", "지금은 응시할 수 없는 퀴즈입니다.");
     }
@@ -88,6 +92,7 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
       submissions: {},
       runResults: {},
       gradePushedAt: null,
+      isTestEntry,
     };
     try {
       // `.create()`는 문서가 이미 있으면 실패한다 — 동시에 두 요청이 함께 "없음"을 보고

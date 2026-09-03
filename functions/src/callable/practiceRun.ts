@@ -22,10 +22,24 @@ export const practiceRun = createCallable(practiceRunSchema, async ({ data, auth
   const db = getFirestore();
   const studentId = await resolveStudentIdByEmail(db, authEmail);
 
+  // 참가자를 먼저 조회한다 — `isTestEntry`(교사의 "테스트용 수강생 추가" 항목) 여부를
+  // 알아야 아래 퀴즈 상태/시간 게이트를 적용할지 판단할 수 있다.
+  const participantRef = db
+    .collection("participants")
+    .doc(computeParticipantId(data.quizId, studentId));
+  const participantSnap = await participantRef.get();
+  if (!participantSnap.exists) {
+    throw domainError("QUIZ_NOT_ACTIVE", "먼저 퀴즈에 입장해주세요.");
+  }
+  const participant = participantSnap.data() as Participant;
+
   const quizRef = db.collection("quizzes").doc(data.quizId);
   const quizSnap = await quizRef.get();
   const quiz = quizSnap.exists ? (quizSnap.data() as Quiz) : null;
-  if (!quiz || quiz.status !== "OPEN" || !isWithin(quiz.startAt, quiz.endAt)) {
+  if (
+    !quiz ||
+    (!participant.isTestEntry && (quiz.status !== "OPEN" || !isWithin(quiz.startAt, quiz.endAt)))
+  ) {
     throw domainError("QUIZ_NOT_ACTIVE", "지금은 연습 실행을 할 수 없는 퀴즈입니다.");
   }
 
@@ -35,15 +49,6 @@ export const practiceRun = createCallable(practiceRunSchema, async ({ data, auth
   if (!problem || problem.deletedAt !== null) {
     throw domainError("QUIZ_NOT_ACTIVE", "존재하지 않는 문항입니다.");
   }
-
-  const participantRef = db
-    .collection("participants")
-    .doc(computeParticipantId(data.quizId, studentId));
-  const participantSnap = await participantRef.get();
-  if (!participantSnap.exists) {
-    throw domainError("QUIZ_NOT_ACTIVE", "먼저 퀴즈에 입장해주세요.");
-  }
-  const participant = participantSnap.data() as Participant;
 
   const maxRuns = problem.maxRuns ?? quiz.maxRunsPerProblem;
   const cacheKey = makeCacheKey(

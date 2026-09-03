@@ -214,6 +214,41 @@ describe("batchGrade", () => {
     expect(response.classroomGradesPending).toBe(true);
   });
 
+  it("테스트용 수강생 참가자(isTestEntry)는 일괄 채점 대상·집계에서 제외된다", async () => {
+    await seedQuizWithTwoProblems();
+    await seedParticipant("20240001");
+    await seedParticipant("test001", { isTestEntry: true });
+    mockGraderResponse({
+      ok: true,
+      status: "JUDGED",
+      score: 60,
+      maxScore: 60,
+      compileErrorMessage: null,
+      tcResultsFull: [
+        {
+          result: "✅PASS",
+          earned: 1,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "1",
+          memo: "",
+        },
+      ],
+    });
+
+    const response = await batchGrade.run(makeTeacherRequest({ quizId: QUIZ_ID }));
+
+    expect(response.processed).toBe(1);
+    expect(response.skipped).toBe(0);
+    expect(response.failed).toBe(0);
+
+    const testParticipant = (
+      await testDb().collection("participants").doc(`${QUIZ_ID}_test001`).get()
+    ).data()!;
+    expect(testParticipant.finalStatus).toBe("SUBMITTED");
+  });
+
   it("분반이 연동되지 않으면 classroomGradesPending은 항상 false다", async () => {
     await seedQuizWithTwoProblems(null);
     await seedParticipant("20240001");

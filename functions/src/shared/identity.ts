@@ -52,10 +52,7 @@ export async function verifyStudentIdentity(
   }
 
   if (student.email === null) {
-    throw domainError(
-      "NEEDS_EMAIL_REGISTRATION",
-      "최초 입장입니다. 이메일 등록이 필요합니다.",
-    );
+    throw domainError("NEEDS_EMAIL_REGISTRATION", "최초 입장입니다. 이메일 등록이 필요합니다.");
   }
 
   if (student.email !== authEmail) {
@@ -76,7 +73,7 @@ export async function verifyStudentIdentity(
 export async function resolveClassroomIdentity(
   db: Firestore,
   { courseId, authEmail }: { courseId: string; authEmail: string },
-): Promise<{ studentId: string; name: string }> {
+): Promise<{ studentId: string; name: string; isTestEntry: boolean }> {
   const snap = await db
     .collection("rosters")
     .where("courseId", "==", courseId)
@@ -90,7 +87,11 @@ export async function resolveClassroomIdentity(
     );
   }
   const roster = snap.docs[0]!.data() as Roster;
-  return { studentId: roster.studentId, name: roster.name };
+  return {
+    studentId: roster.studentId,
+    name: roster.name,
+    isTestEntry: roster.isTestEntry ?? false,
+  };
 }
 
 /**

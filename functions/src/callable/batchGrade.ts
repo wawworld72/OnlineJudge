@@ -41,10 +41,13 @@ export const batchGrade = createCallable(
       .collection("participants")
       .where("quizId", "==", data.quizId)
       .get();
-    const allParticipants = participantsSnap.docs.map((doc) => ({
-      ref: doc.ref,
-      participant: doc.data() as Participant,
-    }));
+    const allParticipants = participantsSnap.docs
+      .map((doc) => ({
+        ref: doc.ref,
+        participant: doc.data() as Participant,
+      }))
+      // 교사의 "테스트용 수강생 추가" 항목은 일괄 채점 대상·집계에서 제외한다.
+      .filter(({ participant }) => !participant.isTestEntry);
 
     const toProcess = allParticipants.filter((p) => p.participant.finalStatus === "SUBMITTED");
     const skipped = allParticipants.filter((p) => p.participant.finalStatus === "FINALIZED").length;

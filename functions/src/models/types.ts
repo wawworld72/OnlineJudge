@@ -14,6 +14,8 @@ export interface Roster {
   name: string;
   email: string;
   syncedAt: Timestamp;
+  /** `addTestRosterEntry`가 만든 항목이면 true. 실제 `syncCourseRoster`가 채운 항목은 false. */
+  isTestEntry: boolean;
 }
 
 export type QuizStatus = "DRAFT" | "OPEN" | "CLOSED";
@@ -116,6 +118,13 @@ export interface Participant {
    * data-model.md에 이 필드가 없어 발견된 누락).
    */
   gradePushedAt: Timestamp | null;
+  /**
+   * `enterQuiz`가 `addTestRosterEntry`로 만든 테스트 로스터 항목으로 입장시킨
+   * 참가자면 true. 퀴즈 상태·시작/종료 시각 게이트(`enterQuiz`/`practiceRun`/
+   * `finalSubmit`)를 우회하고, 참가자 현황·성적 반영·시트 내보내기에서는 자동으로
+   * 제외된다(`participantOverview.ts`/`batchGrade.ts`).
+   */
+  isTestEntry: boolean;
 }
 
 export interface AccessLog {
