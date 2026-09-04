@@ -46,6 +46,17 @@ function sortQuizzes(quizzes: QuizListItem[]): QuizListItem[] {
   );
 }
 
+/**
+ * `<input type="datetime-local">`은 값을 항상 "로컬 시각"으로 해석·표시한다.
+ * `toISOString()`은 항상 UTC라서 그대로 슬라이스하면 목록 화면(`toLocaleString()`,
+ * 로컬 기준)과 다른 시각으로 보인다 — 시간대 오프셋만큼 어긋나는 버그. 로컬 기준
+ * 벽시계 값을 UTC ISO 형식으로 얻기 위해 오프셋을 먼저 상쇄한다.
+ */
+function toDatetimeLocalValue(ms: number): string {
+  const offsetMs = new Date(ms).getTimezoneOffset() * 60_000;
+  return new Date(ms - offsetMs).toISOString().slice(0, 16);
+}
+
 function toFormFields(quiz?: QuizDetail): UpsertQuizInput {
   return {
     quizId: quiz?.quizId,
@@ -216,7 +227,8 @@ export function QuizManager() {
             onChange={(e) => setForm({ ...form, subjectName: e.target.value })}
           />
           <p className="field-hint">
-            같은 과목명을 쓰는 퀴즈들은 Apps Script 연동에서 한꺼번에 묶어 조회됩니다(예: "컴퓨터프로그래밍심화(01분반)").
+            같은 과목명을 쓰는 퀴즈들은 Apps Script 연동에서 한꺼번에 묶어 조회됩니다(예:
+            "컴퓨터프로그래밍심화(01분반)").
           </p>
         </label>
         <label>
@@ -249,7 +261,7 @@ export function QuizManager() {
           시작 시각
           <input
             type="datetime-local"
-            value={new Date(form.startAt).toISOString().slice(0, 16)}
+            value={toDatetimeLocalValue(form.startAt)}
             onChange={(e) => setForm({ ...form, startAt: new Date(e.target.value).getTime() })}
           />
         </label>
@@ -257,7 +269,7 @@ export function QuizManager() {
           종료 시각
           <input
             type="datetime-local"
-            value={new Date(form.endAt).toISOString().slice(0, 16)}
+            value={toDatetimeLocalValue(form.endAt)}
             onChange={(e) => setForm({ ...form, endAt: new Date(e.target.value).getTime() })}
           />
         </label>
