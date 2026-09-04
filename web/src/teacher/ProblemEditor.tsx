@@ -56,7 +56,12 @@ export function ProblemEditor({ quizId, problems, onChanged }: ProblemEditorProp
       <h3>문항</h3>
       {problems.length === 0 && <p className="muted">아직 등록된 문항이 없습니다.</p>}
       {problems.map((problem) => (
-        <ProblemPanel key={problem.problemId} quizId={quizId} problem={problem} onChanged={onChanged} />
+        <ProblemPanel
+          key={problem.problemId}
+          quizId={quizId}
+          problem={problem}
+          onChanged={onChanged}
+        />
       ))}
 
       <div className="problem-panel">
@@ -108,6 +113,7 @@ function ProblemPanel({
   const [title, setTitle] = useState(problem.title);
   const [description, setDescription] = useState(problem.description);
   const [initialCode, setInitialCode] = useState(problem.initialCode);
+  const [maxRuns, setMaxRuns] = useState<string | number>(problem.maxRuns ?? "");
   const [newTestCase, setNewTestCase] = useState(EMPTY_TEST_CASE);
 
   async function saveMetadata() {
@@ -118,7 +124,7 @@ function ProblemPanel({
       title,
       description,
       initialCode,
-      maxRuns: problem.maxRuns,
+      maxRuns: maxRuns === "" ? null : Number(maxRuns),
     });
     setEditing(false);
     onChanged();
@@ -150,6 +156,10 @@ function ProblemPanel({
           <input value={title} onChange={(e) => setTitle(e.target.value)} />
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
           <textarea value={initialCode} onChange={(e) => setInitialCode(e.target.value)} />
+          <label>
+            문항별 최대 실행 횟수 (비우면 퀴즈 기본값 사용)
+            <input value={maxRuns} onChange={(e) => setMaxRuns(e.target.value)} />
+          </label>
           <button onClick={saveMetadata}>저장</button>
           <button className="secondary" onClick={() => setEditing(false)}>
             취소
@@ -169,7 +179,9 @@ function ProblemPanel({
       />
 
       <h5>테스트케이스</h5>
-      {problem.testCases.length === 0 && <p className="muted">아직 등록된 테스트케이스가 없습니다.</p>}
+      {problem.testCases.length === 0 && (
+        <p className="muted">아직 등록된 테스트케이스가 없습니다.</p>
+      )}
       <ul className="tc-list">
         {problem.testCases.map((tc) => (
           <TestCaseRow
@@ -248,7 +260,10 @@ function TestCaseRow({
       <li style={{ flexDirection: "column", alignItems: "stretch" }}>
         <label>
           입력값
-          <textarea value={draft.input} onChange={(e) => setDraft({ ...draft, input: e.target.value })} />
+          <textarea
+            value={draft.input}
+            onChange={(e) => setDraft({ ...draft, input: e.target.value })}
+          />
         </label>
         <label>
           기대 출력값
