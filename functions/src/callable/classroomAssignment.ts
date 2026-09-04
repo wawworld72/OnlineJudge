@@ -55,6 +55,7 @@ export const deployClassroomAssignment = createCallable(
         quiz.title,
         quiz.description,
         maxPoints,
+        quiz.startAt.toDate(),
         quiz.endAt.toDate(),
         joinUrl,
         getClassroomTeacherEmail(),

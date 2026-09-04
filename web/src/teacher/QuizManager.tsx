@@ -342,6 +342,7 @@ export function QuizManager() {
                   quizId={selected.quizId}
                   courseId={selected.courseId}
                   courseWorkId={selected.courseWorkId}
+                  startAt={selected.startAt}
                   onChanged={() => openForEdit(selected.quizId)}
                 />
               ) : (

@@ -13,6 +13,12 @@ process.env.CLASSROOM_TEACHER_EMAIL ??= "teacher@hoseo.edu";
 process.env.APP_BASE_URL ??= "https://demo-c-quiz-judge-system.web.app";
 process.env.SHEET_EXPORT_API_TOKEN ??= "test-sheet-export-token";
 process.env.SHEET_SYNC_API_TOKEN ??= "test-sheet-sync-token";
+process.env.CLASSROOM_SERVICE_ACCOUNT_KEY_B64 ??= Buffer.from(
+  JSON.stringify({
+    client_email: "test-service-account@example.com",
+    private_key: "test-private-key",
+  }),
+).toString("base64");
 
 let db: Firestore | null = null;
 

@@ -361,6 +361,7 @@ async function attemptClassroomDeploy(
       quiz.title,
       quiz.description,
       maxPoints,
+      quiz.startAt.toDate(),
       quiz.endAt.toDate(),
       joinUrl,
       getClassroomTeacherEmail(),

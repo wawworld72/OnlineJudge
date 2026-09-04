@@ -61,7 +61,9 @@ export async function listCourseStudents(
         } else if (s.userId) {
           // classroom.profile.emails 범위가 없으면 profile.emailAddress가 통째로 비어
           // 온다 — 학생 이름/ID를 로그에 남기지 않고 건수만 남긴다(개인정보 보호).
-          logger.warn("classroomClient.listCourseStudents: student missing emailAddress", { courseId });
+          logger.warn("classroomClient.listCourseStudents: student missing emailAddress", {
+            courseId,
+          });
         }
       }
       pageToken = res.data.nextPageToken ?? undefined;
@@ -75,26 +77,40 @@ export interface CreateCourseWorkResult {
   alternateLink: string;
 }
 
+/**
+ * `startAt`이 아직 미래면 즉시 게시하지 않고 Classroom 자체 예약 게시 기능을 쓴다 —
+ * `state: "DRAFT"` + `scheduledTime`으로 만들면 Classroom이 그 시각에 자동으로
+ * `PUBLISHED`로 전환해 학생에게 보여준다(우리 쪽에서 별도 폴링/재호출 불필요). 이미
+ * 시작 시각이 지난 퀴즈를 뒤늦게 배포하는 경우는 지금까지처럼 즉시 게시한다.
+ */
 export async function createCourseWork(
   courseId: string,
   title: string,
   description: string,
   maxPoints: number,
+  startAt: Date,
   dueAt: Date,
   joinUrl: string,
   impersonateEmail: string,
 ): Promise<CreateCourseWorkResult> {
   return retryOnce(async () => {
     const api = await classroom(impersonateEmail);
+    const isFutureStart = startAt.getTime() > Date.now();
     const res = await api.courses.courseWork.create({
       courseId,
       requestBody: {
         title,
         description,
         workType: "ASSIGNMENT",
-        state: "PUBLISHED",
+        ...(isFutureStart
+          ? { state: "DRAFT", scheduledTime: startAt.toISOString() }
+          : { state: "PUBLISHED" }),
         maxPoints,
-        dueDate: { year: dueAt.getUTCFullYear(), month: dueAt.getUTCMonth() + 1, day: dueAt.getUTCDate() },
+        dueDate: {
+          year: dueAt.getUTCFullYear(),
+          month: dueAt.getUTCMonth() + 1,
+          day: dueAt.getUTCDate(),
+        },
         dueTime: { hours: dueAt.getUTCHours(), minutes: dueAt.getUTCMinutes() },
         materials: [{ link: { url: joinUrl } }],
       },
@@ -141,6 +157,10 @@ export async function patchGrade(
       updateMask: "assignedGrade,draftGrade",
       requestBody: { assignedGrade: grade, draftGrade: grade },
     });
-    await api.courses.courseWork.studentSubmissions.return({ courseId, courseWorkId, id: submissionId });
+    await api.courses.courseWork.studentSubmissions.return({
+      courseId,
+      courseWorkId,
+      id: submissionId,
+    });
   });
 }

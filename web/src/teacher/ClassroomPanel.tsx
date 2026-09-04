@@ -14,6 +14,7 @@ interface ClassroomPanelProps {
   quizId: string;
   courseId: string;
   courseWorkId: string | null;
+  startAt: number;
   onChanged: () => void;
 }
 
@@ -21,7 +22,14 @@ interface ClassroomPanelProps {
  * Classroom 연동 패널(FR-026~031, User Story 5 — 필수 기능). 수강생 동기화/과제 배포/
  * 성적 반영을 각각 실행하고 결과를 요약해 보여준다.
  */
-export function ClassroomPanel({ quizId, courseId, courseWorkId, onChanged }: ClassroomPanelProps) {
+export function ClassroomPanel({
+  quizId,
+  courseId,
+  courseWorkId,
+  startAt,
+  onChanged,
+}: ClassroomPanelProps) {
+  const [now] = useState(() => Date.now());
   const [syncResult, setSyncResult] = useState<SyncRosterResponse | null>(null);
   const [pushResult, setPushResult] = useState<PushGradesResponse | null>(null);
   const [testStudentId, setTestStudentId] = useState("");
@@ -115,7 +123,11 @@ export function ClassroomPanel({ quizId, courseId, courseWorkId, onChanged }: Cl
         <h4>과제 배포</h4>
         {courseWorkId ? (
           <>
-            <p>배포됨 (courseWorkId: {courseWorkId})</p>
+            <p>
+              {startAt > now
+                ? `예약됨 (courseWorkId: ${courseWorkId}) — ${new Date(startAt).toLocaleString()}에 자동으로 게시됩니다.`
+                : `배포됨 (courseWorkId: ${courseWorkId})`}
+            </p>
             <DelayedActionButton
               label="배포 초기화"
               pendingLabel="초기화 중..."
