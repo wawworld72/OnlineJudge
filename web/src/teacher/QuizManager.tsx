@@ -15,7 +15,6 @@ import {
   upsertQuiz,
   type QuizDetail,
   type QuizListItem,
-  type QuizStatus,
   type UpsertQuizInput,
 } from "./api";
 import { ProblemEditor } from "./ProblemEditor";
@@ -25,12 +24,6 @@ import { ParticipantStatus } from "./ParticipantStatus";
 import { ClassroomPanel } from "./ClassroomPanel";
 import { ArchiveDelete } from "./ArchiveDelete";
 import "./teacher.css";
-
-const NEXT_STATUS: Record<QuizStatus, QuizStatus | null> = {
-  DRAFT: "OPEN",
-  OPEN: "CLOSED",
-  CLOSED: null,
-};
 
 type TabKey = "problems" | "deploy" | "participants" | "classroom" | "archive";
 
@@ -169,16 +162,6 @@ export function QuizManager() {
     } finally {
       setPendingAction(null);
     }
-  }
-
-  async function advanceStatus() {
-    if (!selected) return;
-    const next = NEXT_STATUS[selected.status];
-    if (!next) return;
-    await setQuizStatus({ quizId: selected.quizId, status: next });
-    const quiz = await getQuizForEdit({ quizId: selected.quizId });
-    setSelected(quiz);
-    await refreshList();
   }
 
   /** "시작시각" 열 — 아직 "시작"을 누르기 전(DRAFT)에는 의미 없는 값(생성 시점
@@ -457,15 +440,6 @@ export function QuizManager() {
           delayedLabel="저장에 시간이 걸리고 있습니다..."
           onAction={saveQuiz}
         />
-
-        {selected && NEXT_STATUS[selected.status] && (
-          <DelayedActionButton
-            label={`${NEXT_STATUS[selected.status]}로 전환`}
-            pendingLabel="전환 중..."
-            delayedLabel="전환에 시간이 걸리고 있습니다..."
-            onAction={advanceStatus}
-          />
-        )}
       </div>
 
       {selected && (
