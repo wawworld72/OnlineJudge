@@ -7,6 +7,13 @@ import { isAfter } from "../shared/timeAuthority";
 import { domainError } from "../shared/errors";
 import type { Participant, Quiz, Submission } from "../models/types";
 
+/** 마감 직전까지 작성 중이던 코드를 잃지 않도록, 마감 이후에도 최종 제출만 5분간
+ *  허용한다(코드 수정·실행은 practiceRun에서 여전히 마감 시각에 정확히 차단됨 —
+ *  isWithin은 graceMs 없이 호출되므로 영향 없음). 교사가 명시적으로 CLOSED로
+ *  바꾼 경우나 타이머를 일시정지한 경우는 이 유예와 무관하게 그대로 즉시 차단
+ *  (아래 조건 참고). */
+const FINAL_SUBMIT_GRACE_MS = 5 * 60 * 1000;
+
 export const finalSubmit = createCallable(finalSubmitSchema, async ({ data, authEmail }) => {
   const db = getFirestore();
   const studentId = await resolveStudentIdByEmail(db, authEmail);
@@ -39,7 +46,10 @@ export const finalSubmit = createCallable(finalSubmitSchema, async ({ data, auth
       return participant;
     }
 
-    if (!participant.isTestEntry && (quiz.status === "CLOSED" || isAfter(quiz.endAt))) {
+    if (
+      !participant.isTestEntry &&
+      (quiz.status === "CLOSED" || quiz.pausedAt || isAfter(quiz.endAt, FINAL_SUBMIT_GRACE_MS))
+    ) {
       throw domainError("QUIZ_CLOSED", "제출 마감된 퀴즈입니다.");
     }
 

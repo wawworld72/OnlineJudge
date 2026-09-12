@@ -56,26 +56,32 @@ describe("listQuizzes", () => {
     // subjectName을 의도적으로 뺐다 — 이 필드가 생기기 전에 만들어진 실제 운영 데이터를
     // 흉내낸다. undefined로 내려가면 클라이언트에서 null로 도착해 정렬(localeCompare)이
     // 깨진다(실제 장애).
-    await db.collection("quizzes").doc("legacy-quiz").set({
-      title: "예전 퀴즈",
-      description: "",
-      startAt: Timestamp.fromMillis(Date.now()),
-      endAt: Timestamp.fromMillis(Date.now() + 60_000),
-      accessCode: "ABC123",
-      status: "OPEN",
-      maxRunsPerProblem: 5,
-      courseId: null,
-      courseWorkId: null,
-      courseWorkLink: null,
-      archivedAt: null,
-      archiveSpreadsheetUrl: null,
-      deletedAt: null,
-    });
+    await db
+      .collection("quizzes")
+      .doc("legacy-quiz")
+      .set({
+        title: "예전 퀴즈",
+        description: "",
+        startAt: Timestamp.fromMillis(Date.now()),
+        endAt: Timestamp.fromMillis(Date.now() + 60_000),
+        accessCode: "ABC123",
+        status: "OPEN",
+        maxRunsPerProblem: 5,
+        courseId: null,
+        courseWorkId: null,
+        courseWorkLink: null,
+        archivedAt: null,
+        archiveSpreadsheetUrl: null,
+        deletedAt: null,
+      });
 
     const response = await listQuizzes.run(makeTeacherRequest({}));
 
     const legacy = response.quizzes.find((q: { quizId: string }) => q.quizId === "legacy-quiz");
     expect(legacy.subjectName).toBe("");
+    // timerDurationMs/pausedAt이 생기기 전 문서도 기본값으로 안전하게 채워져야 한다.
+    expect(legacy.timerDurationMs).toBe(30 * 60 * 1000);
+    expect(legacy.pausedAt).toBeNull();
   });
 
   it("교사가 아닌 계정은 거부한다", async () => {

@@ -18,21 +18,26 @@ async function seed() {
     status: "ACTIVE",
   });
 
-  await db.collection("quizzes").doc("Q1").set({
-    title: "퀵스타트 검증용 퀴즈",
-    description: "quickstart.md 시나리오용 시드 데이터",
-    startAt: Timestamp.fromMillis(Date.now() - 60_000),
-    endAt: Timestamp.fromMillis(Date.now() + 60 * 60 * 1000),
-    accessCode: "ABCD",
-    status: "DRAFT",
-    maxRunsPerProblem: 10,
-    courseId: null,
-    courseWorkId: null,
-    courseWorkLink: null,
-    archivedAt: null,
-    archiveSpreadsheetUrl: null,
-    deletedAt: null,
-  });
+  await db
+    .collection("quizzes")
+    .doc("Q1")
+    .set({
+      title: "퀵스타트 검증용 퀴즈",
+      description: "quickstart.md 시나리오용 시드 데이터",
+      startAt: Timestamp.fromMillis(Date.now() - 60_000),
+      endAt: Timestamp.fromMillis(Date.now() + 60 * 60 * 1000),
+      accessCode: "ABCD",
+      status: "DRAFT",
+      maxRunsPerProblem: 10,
+      courseId: null,
+      courseWorkId: null,
+      courseWorkLink: null,
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+      timerDurationMs: 30 * 60 * 1000,
+      pausedAt: null,
+    });
 
   await db.collection("quizzes").doc("Q1").collection("problems").doc("P1").set({
     order: 0,
@@ -45,32 +50,44 @@ async function seed() {
     deletedAt: null,
   });
 
-  await db.collection("quizzes").doc("Q1").collection("problemSecrets").doc("P1").set({
-    items: [
-      {
-        tcId: "TC1",
-        tcNo: 1,
-        input: "1 2",
-        expected: "3",
-        points: 60,
-        isPublic: true,
-        description: "공개 테스트케이스",
-      },
-      {
-        tcId: "TC2",
-        tcNo: 2,
-        input: "10 20",
-        expected: "30",
-        points: 40,
-        isPublic: false,
-        description: "비공개 테스트케이스",
-      },
-    ],
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-  await db.collection("quizzes").doc("Q1").collection("problems").doc("P1").update({ pointsTotal: 100 });
+  await db
+    .collection("quizzes")
+    .doc("Q1")
+    .collection("problemSecrets")
+    .doc("P1")
+    .set({
+      items: [
+        {
+          tcId: "TC1",
+          tcNo: 1,
+          input: "1 2",
+          expected: "3",
+          points: 60,
+          isPublic: true,
+          description: "공개 테스트케이스",
+        },
+        {
+          tcId: "TC2",
+          tcNo: 2,
+          input: "10 20",
+          expected: "30",
+          points: 40,
+          isPublic: false,
+          description: "비공개 테스트케이스",
+        },
+      ],
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  await db
+    .collection("quizzes")
+    .doc("Q1")
+    .collection("problems")
+    .doc("P1")
+    .update({ pointsTotal: 100 });
 
-  console.log("시드 완료: students/S001, quizzes/Q1, quizzes/Q1/problems/P1, quizzes/Q1/problemSecrets/P1");
+  console.log(
+    "시드 완료: students/S001, quizzes/Q1, quizzes/Q1/problems/P1, quizzes/Q1/problemSecrets/P1",
+  );
 }
 
 seed()

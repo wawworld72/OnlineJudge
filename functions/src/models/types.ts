@@ -20,6 +20,9 @@ export interface Roster {
 
 export type QuizStatus = "DRAFT" | "OPEN" | "CLOSED";
 
+/** 교사가 퀴즈 목록 화면의 "시작"으로 타이머를 처음 돌릴 때 쓰는 기본 길이(30분). */
+export const DEFAULT_TIMER_DURATION_MS = 30 * 60 * 1000;
+
 export interface Quiz {
   /**
    * 사람이 관리하는 과목 구분용 이름(예: "컴퓨터프로그래밍심화(01분반)") — Classroom
@@ -40,6 +43,12 @@ export interface Quiz {
   archivedAt: Timestamp | null;
   archiveSpreadsheetUrl: string | null;
   deletedAt: Timestamp | null;
+  /** 교사가 목록 화면에서 설정하는 타이머 길이. "시작"을 누르면
+   *  endAt = 지금 + timerDurationMs로 계산하는 데 쓴다. */
+  timerDurationMs: number;
+  /** 일시정지 시각. null이면 실행 중이거나 아직 시작 전. "시작"(재개) 시
+   *  멈춰있던 시간(now - pausedAt)만큼 endAt을 뒤로 늦추고 null로 되돌린다. */
+  pausedAt: Timestamp | null;
 }
 
 export interface Problem {

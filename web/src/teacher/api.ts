@@ -14,6 +14,8 @@ export interface QuizListItem {
   startAt: number;
   endAt: number;
   accessCode: string;
+  pausedAt: number | null;
+  timerDurationMs: number;
 }
 
 export function listQuizzes() {
@@ -144,6 +146,22 @@ export function runPreDeployCheck(input: { quizId: string }) {
 
 export function setQuizStatus(input: { quizId: string; status: QuizStatus }) {
   return callFunction<typeof input, { status: QuizStatus }>("setQuizStatus", input);
+}
+
+export function setQuizTimerDuration(input: { quizId: string; timerDurationMs: number }) {
+  return callFunction<typeof input, { timerDurationMs: number }>("setQuizTimerDuration", input);
+}
+
+export function startQuizTimer(input: { quizId: string }) {
+  return callFunction<typeof input, { status: QuizStatus }>("startQuizTimer", input);
+}
+
+export function pauseQuizTimer(input: { quizId: string }) {
+  return callFunction<typeof input, { ok: true }>("pauseQuizTimer", input);
+}
+
+export function endQuizTimer(input: { quizId: string }) {
+  return callFunction<typeof input, { ok: true }>("endQuizTimer", input);
 }
 
 export interface BatchGradeResponse {

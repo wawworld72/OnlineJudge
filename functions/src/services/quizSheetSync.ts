@@ -15,7 +15,13 @@ import { applyTestCaseDelta } from "../callable/testCases";
 import { computePreDeployCheck } from "./preDeployCheck";
 import { createCourseWork } from "./classroomClient";
 import { getAppBaseUrl, getClassroomTeacherEmail } from "../config";
-import type { Problem, ProblemSecrets, Quiz, TestCase } from "../models/types";
+import {
+  DEFAULT_TIMER_DURATION_MS,
+  type Problem,
+  type ProblemSecrets,
+  type Quiz,
+  type TestCase,
+} from "../models/types";
 
 /**
  * `upsertQuizFromSheet`(Google Apps Script, onRequest)가 던지는 도메인 오류. Callable
@@ -434,6 +440,8 @@ export async function syncQuizFromSheet(
       archivedAt: null,
       archiveSpreadsheetUrl: null,
       deletedAt: null,
+      timerDurationMs: DEFAULT_TIMER_DURATION_MS,
+      pausedAt: null,
     };
     const quizRef = await db.collection("quizzes").add(newQuiz);
     quizId = quizRef.id;

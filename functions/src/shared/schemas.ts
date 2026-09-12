@@ -173,6 +173,23 @@ export const setQuizStatusSchema = z.object({
   status: z.enum(["DRAFT", "OPEN", "CLOSED"]),
 });
 
+export const setQuizTimerDurationSchema = z.object({
+  quizId: z.string().min(1),
+  timerDurationMs: z.number().int().positive(),
+});
+
+export const startQuizTimerSchema = z.object({
+  quizId: z.string().min(1),
+});
+
+export const pauseQuizTimerSchema = z.object({
+  quizId: z.string().min(1),
+});
+
+export const endQuizTimerSchema = z.object({
+  quizId: z.string().min(1),
+});
+
 export const batchGradeSchema = z.object({
   quizId: z.string().min(1),
 });

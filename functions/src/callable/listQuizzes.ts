@@ -2,7 +2,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { listQuizzesSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
-import type { Quiz } from "../models/types";
+import { DEFAULT_TIMER_DURATION_MS, type Quiz } from "../models/types";
 
 /**
  * firestore.rules는 `status == 'OPEN'`인 퀴즈만 클라이언트 직접 read를 허용하므로, 교사가
@@ -27,6 +27,8 @@ export const listQuizzes = createCallable(listQuizzesSchema, async ({ isTeacher 
       startAt: quiz.startAt.toMillis(),
       endAt: quiz.endAt.toMillis(),
       accessCode: quiz.accessCode,
+      pausedAt: quiz.pausedAt ? quiz.pausedAt.toMillis() : null,
+      timerDurationMs: quiz.timerDurationMs ?? DEFAULT_TIMER_DURATION_MS,
     };
   });
 

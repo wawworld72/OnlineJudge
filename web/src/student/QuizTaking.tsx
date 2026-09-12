@@ -24,6 +24,12 @@ function tabStatusClass(run: PracticeRunResponse | undefined): string {
   return "status-failed";
 }
 
+/** `functions/src/callable/finalSubmit.ts`의 `FINAL_SUBMIT_GRACE_MS`와 반드시
+ *  같이 맞춰야 함 — web/functions가 별도 패키지라 공유 상수 모듈이 없어 값을
+ *  중복 정의한다. 실제 차단은 항상 서버가 재검증하므로(헌법 VII) 이 값은
+ *  UX 표시(제출 버튼 활성화 여부)용일 뿐이다. */
+const CLIENT_SUBMIT_GRACE_MS = 5 * 60 * 1000;
+
 function formatDateTime(ms: number): string {
   return new Date(ms).toLocaleString("ko-KR", {
     month: "2-digit",
@@ -40,9 +46,10 @@ function formatDateTime(ms: number): string {
  */
 export function QuizTaking({ quizId, initial }: QuizTakingProps) {
   const [participantStatus, setParticipantStatus] = useState(initial.participantStatus);
-  const [justSubmittedCode, setJustSubmittedCode] = useState<Record<string, { code: string }> | null>(
-    null,
-  );
+  const [justSubmittedCode, setJustSubmittedCode] = useState<Record<
+    string,
+    { code: string }
+  > | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [descHidden, setDescHidden] = useState(false);
   const [remainingRuns, setRemainingRuns] = useState<Record<string, number>>(() =>
@@ -60,10 +67,15 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
   const [elapsedMsByProblem, setElapsedMsByProblem] = useState<Record<string, number>>({});
   const [testedCodeByProblem, setTestedCodeByProblem] = useState<Record<string, string>>({});
   const [remainingMs, setRemainingMs] = useState(0);
+  const [remainingSubmitMs, setRemainingSubmitMs] = useState(0);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
 
   useEffect(() => startCountdown(initial.endAt, setRemainingMs), [initial.endAt]);
+  useEffect(
+    () => startCountdown(initial.endAt + CLIENT_SUBMIT_GRACE_MS, setRemainingSubmitMs),
+    [initial.endAt],
+  );
 
   const activeProblem = initial.problems[activeIndex];
 
@@ -85,10 +97,12 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
   if (!activeProblem) return null;
 
   const ended = remainingMs <= 0;
+  const submitEnded = remainingSubmitMs <= 0;
   const maxRuns = activeProblem.maxRuns;
   const remaining = remainingRuns[activeProblem.problemId] ?? maxRuns;
   const used = maxRuns > 0 ? maxRuns - remaining : 0;
-  const runCountClass = maxRuns > 0 && remaining <= 0 ? "danger" : maxRuns > 0 && remaining <= 3 ? "warn" : "";
+  const runCountClass =
+    maxRuns > 0 && remaining <= 0 ? "danger" : maxRuns > 0 && remaining <= 3 ? "warn" : "";
 
   function updateCode(problemId: string, code: string) {
     setCodeByProblem((prev) => ({ ...prev, [problemId]: code }));
@@ -107,7 +121,10 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
     try {
       const result = await practiceRun({ quizId, problemId: activeProblem!.problemId, code });
       setLastRunByProblem((prev) => ({ ...prev, [activeProblem!.problemId]: result }));
-      setElapsedMsByProblem((prev) => ({ ...prev, [activeProblem!.problemId]: Date.now() - startedAt }));
+      setElapsedMsByProblem((prev) => ({
+        ...prev,
+        [activeProblem!.problemId]: Date.now() - startedAt,
+      }));
       setTestedCodeByProblem((prev) => ({ ...prev, [activeProblem!.problemId]: code }));
       setRemainingRuns((prev) => ({ ...prev, [activeProblem!.problemId]: result.remainingRuns }));
     } catch {
@@ -121,7 +138,9 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
       code: codeByProblem[p.problemId] ?? "",
     }));
     await finalSubmit({ quizId, submissions });
-    setJustSubmittedCode(Object.fromEntries(submissions.map((s) => [s.problemId, { code: s.code }])));
+    setJustSubmittedCode(
+      Object.fromEntries(submissions.map((s) => [s.problemId, { code: s.code }])),
+    );
     setParticipantStatus("SUBMITTED");
   }
 
@@ -140,7 +159,13 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
         {remainingMs > 60 * 1000 && remainingMs <= 5 * 60 * 1000 && (
           <div className="time-warning-banner warn">5분 미만 남았습니다. 제출을 준비하세요.</div>
         )}
-        {ended && <div className="time-warning-banner danger">제출 시간이 종료되었습니다.</div>}
+        {ended && !submitEnded && (
+          <div className="time-warning-banner warn">
+            코드 수정 시간이 종료되었습니다. {formatRemaining(remainingSubmitMs)} 안에 최종 제출은
+            가능합니다.
+          </div>
+        )}
+        {submitEnded && <div className="time-warning-banner danger">제출 마감되었습니다.</div>}
 
         <div className="top-info">
           <div>
@@ -206,7 +231,10 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
           </button>
         </div>
 
-        <div className="problem-content" style={descHidden ? { gridTemplateColumns: "1fr" } : undefined}>
+        <div
+          className="problem-content"
+          style={descHidden ? { gridTemplateColumns: "1fr" } : undefined}
+        >
           {!descHidden && <Markdown text={activeProblem.description} />}
 
           <div className="problem-editor-panel">
@@ -230,13 +258,16 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
               </button>
               {maxRuns > 0 && (
                 <span className={`run-count-box ${runCountClass}`.trim()}>
-                  <span className="run-count-label">실행 횟수:</span> {used}/{maxRuns}회 · 남은 횟수 {remaining}회
+                  <span className="run-count-label">실행 횟수:</span> {used}/{maxRuns}회 · 남은 횟수{" "}
+                  {remaining}회
                 </span>
               )}
             </div>
 
             {runError && <p className="error">{runError}</p>}
-            {isStale && <p className="warning">코드가 마지막 실행 후 수정되었습니다. 다시 실행해보세요.</p>}
+            {isStale && (
+              <p className="warning">코드가 마지막 실행 후 수정되었습니다. 다시 실행해보세요.</p>
+            )}
 
             {lastRun?.status === "CE" ? (
               <div className="compile-error-box">
@@ -259,7 +290,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
           </div>
         </div>
 
-        <button className="danger" onClick={() => setShowSubmitModal(true)} disabled={ended}>
+        <button className="danger" onClick={() => setShowSubmitModal(true)} disabled={submitEnded}>
           최종 제출
         </button>
       </div>

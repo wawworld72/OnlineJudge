@@ -3,7 +3,7 @@ import { createCallable } from "../shared/callableFactory";
 import { upsertQuizSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
 import { normalizeClassroomCourseId } from "../shared/classroomCourseId";
-import type { Quiz } from "../models/types";
+import { DEFAULT_TIMER_DURATION_MS, type Quiz } from "../models/types";
 
 export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, isTeacher }) => {
   requireTeacher(isTeacher);
@@ -35,6 +35,8 @@ export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, isTeac
     archivedAt: null,
     archiveSpreadsheetUrl: null,
     deletedAt: null,
+    timerDurationMs: DEFAULT_TIMER_DURATION_MS,
+    pausedAt: null,
   };
   const quizRef = await db.collection("quizzes").add(newQuiz);
   return { quizId: quizRef.id, status: "DRAFT" as const };

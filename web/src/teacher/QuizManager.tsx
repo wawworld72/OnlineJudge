@@ -3,10 +3,15 @@ import { getAuth, signOut } from "firebase/auth";
 import { firebaseApp } from "../shared/firebaseApp";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
 import { getErrorCode } from "../shared/functionsClient";
+import { formatRemaining } from "../shared/countdown";
 import {
+  endQuizTimer,
   getQuizForEdit,
   listQuizzes,
+  pauseQuizTimer,
   setQuizStatus,
+  setQuizTimerDuration,
+  startQuizTimer,
   upsertQuiz,
   type QuizDetail,
   type QuizListItem,
@@ -75,10 +80,19 @@ function toFormFields(quiz?: QuizDetail): UpsertQuizInput {
 export function QuizManager() {
   const [quizzes, setQuizzes] = useState<QuizListItem[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [rowActionError, setRowActionError] = useState<string | null>(null);
   const [selected, setSelected] = useState<QuizDetail | null>(null);
   const [form, setForm] = useState<UpsertQuizInput>(toFormFields());
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("problems");
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  // 목록 화면의 "남은 시간" 표시가 매초 갱신되도록, 행마다 따로 타이머를 두지 않고
+  // 이 하나의 시계를 모든 행이 함께 쓴다.
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   async function refreshList() {
     setListError(null);
@@ -126,6 +140,23 @@ export function QuizManager() {
     setForm(toFormFields(quiz));
   }
 
+  /** 목록 화면의 타이머/마감 버튼들은 `DelayedActionButton` 없이 일반 버튼으로
+   *  두되(표 셀 안에 들어가는 작은 버튼이라 카드 전용 컴포넌트는 과함), 실패해도
+   *  `listError`(목록 자체를 못 불러온 경우)와 달리 표는 그대로 두고 별도
+   *  배너로만 알린다 — 행 하나의 일시적 실패로 전체 목록이 사라지면 안 된다. */
+  async function runRowAction(action: () => Promise<unknown>) {
+    try {
+      setRowActionError(null);
+      await action();
+      await refreshList();
+    } catch (cause) {
+      console.error("퀴즈 목록 행 동작 실패", cause);
+      const code = getErrorCode(cause);
+      const message = cause instanceof Error ? cause.message : String(cause);
+      setRowActionError(code ? `${message} (${code})` : message);
+    }
+  }
+
   async function advanceStatus() {
     if (!selected) return;
     const next = NEXT_STATUS[selected.status];
@@ -134,6 +165,81 @@ export function QuizManager() {
     const quiz = await getQuizForEdit({ quizId: selected.quizId });
     setSelected(quiz);
     await refreshList();
+  }
+
+  function timerDisplay(quiz: QuizListItem) {
+    if (quiz.status === "CLOSED") {
+      return <span className="muted">00:00:00</span>;
+    }
+    if (quiz.status === "DRAFT") {
+      return (
+        <span>
+          <input
+            type="number"
+            min={1}
+            defaultValue={Math.round(quiz.timerDurationMs / 60_000)}
+            onBlur={(e) => {
+              const minutes = Number(e.target.value);
+              if (minutes > 0) {
+                runRowAction(() =>
+                  setQuizTimerDuration({ quizId: quiz.quizId, timerDurationMs: minutes * 60_000 }),
+                );
+              }
+            }}
+            style={{ width: "4rem" }}
+          />{" "}
+          분
+        </span>
+      );
+    }
+    const remainingMs = quiz.pausedAt
+      ? Math.max(0, quiz.endAt - quiz.pausedAt)
+      : Math.max(0, quiz.endAt - nowMs);
+    return (
+      <span className={quiz.pausedAt ? "muted" : ""}>
+        {formatRemaining(remainingMs)}
+        {quiz.pausedAt ? " (일시정지)" : ""}
+      </span>
+    );
+  }
+
+  function timerControls(quiz: QuizListItem) {
+    if (quiz.status === "CLOSED") {
+      return <span className="muted">종료됨</span>;
+    }
+    const running = quiz.status === "OPEN" && !quiz.pausedAt;
+    return (
+      <span style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        <button
+          className="secondary"
+          onClick={() =>
+            runRowAction(() =>
+              running
+                ? pauseQuizTimer({ quizId: quiz.quizId })
+                : startQuizTimer({ quizId: quiz.quizId }),
+            )
+          }
+        >
+          {running ? "멈춤" : "시작"}
+        </button>
+        <button
+          className="secondary"
+          disabled={quiz.status !== "OPEN"}
+          onClick={() => runRowAction(() => endQuizTimer({ quizId: quiz.quizId }))}
+        >
+          종료
+        </button>
+        <button
+          className="danger"
+          disabled={quiz.status !== "OPEN"}
+          onClick={() =>
+            runRowAction(() => setQuizStatus({ quizId: quiz.quizId, status: "CLOSED" }))
+          }
+        >
+          최종 제출 마감
+        </button>
+      </span>
+    );
   }
 
   if (!showForm) {
@@ -148,6 +254,11 @@ export function QuizManager() {
         </div>
 
         <div className="card">
+          {rowActionError && (
+            <p role="alert" className="error">
+              {rowActionError}
+            </p>
+          )}
           {listError ? (
             <div>
               <p role="alert" className="error">
@@ -171,6 +282,8 @@ export function QuizManager() {
                     <th>시작시각</th>
                     <th>종료시각</th>
                     <th>상태</th>
+                    <th>타이머</th>
+                    <th>타이머 제어</th>
                     <th>출입코드</th>
                     <th>URL</th>
                   </tr>
@@ -191,6 +304,8 @@ export function QuizManager() {
                         <td>
                           <span className={`status-badge ${quiz.status}`}>{quiz.status}</span>
                         </td>
+                        <td>{timerDisplay(quiz)}</td>
+                        <td>{timerControls(quiz)}</td>
                         <td>{quiz.accessCode}</td>
                         <td>
                           <a href={url} target="_blank" rel="noreferrer">

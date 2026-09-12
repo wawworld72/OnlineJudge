@@ -13,8 +13,8 @@ export function isBefore(startAt: Timestamp): boolean {
   return serverNow().toMillis() < startAt.toMillis();
 }
 
-export function isAfter(endAt: Timestamp): boolean {
-  return serverNow().toMillis() > endAt.toMillis();
+export function isAfter(endAt: Timestamp, graceMs = 0): boolean {
+  return serverNow().toMillis() > endAt.toMillis() + graceMs;
 }
 
 export function isWithin(startAt: Timestamp, endAt: Timestamp): boolean {

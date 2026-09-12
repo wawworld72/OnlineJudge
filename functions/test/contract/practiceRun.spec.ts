@@ -19,31 +19,39 @@ function mockGraderResponse(body: unknown, ok = true) {
 
 async function seedQuizAndProblem() {
   const db = testDb();
-  await db.collection("quizzes").doc(QUIZ_ID).set({
-    title: "중간고사",
-    description: "",
-    startAt: ts(-60_000),
-    endAt: ts(60_000),
-    accessCode: "ABC123",
-    status: "OPEN",
-    maxRunsPerProblem: 3,
-    courseId: null,
-    courseWorkId: null,
-    courseWorkLink: null,
-    archivedAt: null,
-    archiveSpreadsheetUrl: null,
-    deletedAt: null,
-  });
-  await db.collection("quizzes").doc(QUIZ_ID).collection("problems").doc(PROBLEM_ID).set({
-    order: 0,
-    title: "문제1",
-    description: "",
-    initialCode: "",
-    maxRuns: null,
-    pointsTotal: 100,
-    updatedAt: ts(0),
-    deletedAt: null,
-  });
+  await db
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .set({
+      title: "중간고사",
+      description: "",
+      startAt: ts(-60_000),
+      endAt: ts(60_000),
+      accessCode: "ABC123",
+      status: "OPEN",
+      maxRunsPerProblem: 3,
+      courseId: null,
+      courseWorkId: null,
+      courseWorkLink: null,
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+    });
+  await db
+    .collection("quizzes")
+    .doc(QUIZ_ID)
+    .collection("problems")
+    .doc(PROBLEM_ID)
+    .set({
+      order: 0,
+      title: "문제1",
+      description: "",
+      initialCode: "",
+      maxRuns: null,
+      pointsTotal: 100,
+      updatedAt: ts(0),
+      deletedAt: null,
+    });
   await db
     .collection("quizzes")
     .doc(QUIZ_ID)
@@ -51,8 +59,24 @@ async function seedQuizAndProblem() {
     .doc(PROBLEM_ID)
     .set({
       items: [
-        { tcId: "tc1", tcNo: 1, input: "1", expected: "1", points: 60, isPublic: true, description: "" },
-        { tcId: "tc2", tcNo: 2, input: "2", expected: "2", points: 40, isPublic: false, description: "" },
+        {
+          tcId: "tc1",
+          tcNo: 1,
+          input: "1",
+          expected: "1",
+          points: 60,
+          isPublic: true,
+          description: "",
+        },
+        {
+          tcId: "tc2",
+          tcNo: 2,
+          input: "2",
+          expected: "2",
+          points: 40,
+          isPublic: false,
+          description: "",
+        },
       ],
       updatedAt: ts(0),
     });
@@ -61,20 +85,17 @@ async function seedQuizAndProblem() {
     email: STUDENT_EMAIL,
     status: "ACTIVE",
   });
-  await db
-    .collection("participants")
-    .doc(`${QUIZ_ID}_${STUDENT_ID}`)
-    .set({
-      quizId: QUIZ_ID,
-      studentId: STUDENT_ID,
-      enteredAt: FieldValue.serverTimestamp(),
-      finalStatus: "IN_PROGRESS",
-      finalSubmittedAt: null,
-      finalTotal: 0,
-      runsUsedByProblem: {},
-      submissions: {},
-      runResults: {},
-    });
+  await db.collection("participants").doc(`${QUIZ_ID}_${STUDENT_ID}`).set({
+    quizId: QUIZ_ID,
+    studentId: STUDENT_ID,
+    enteredAt: FieldValue.serverTimestamp(),
+    finalStatus: "IN_PROGRESS",
+    finalSubmittedAt: null,
+    finalTotal: 0,
+    runsUsedByProblem: {},
+    submissions: {},
+    runResults: {},
+  });
 }
 
 describe("practiceRun", () => {
@@ -99,8 +120,24 @@ describe("practiceRun", () => {
       maxScore: 100,
       compileErrorMessage: null,
       tcResultsFull: [
-        { result: "✅PASS", earned: 60, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" },
-        { result: "✅PASS", earned: 40, isPublic: false, input: "2", expected: "2", actual: "2", memo: "" },
+        {
+          result: "✅PASS",
+          earned: 60,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "1",
+          memo: "",
+        },
+        {
+          result: "✅PASS",
+          earned: 40,
+          isPublic: false,
+          input: "2",
+          expected: "2",
+          actual: "2",
+          memo: "",
+        },
       ],
     });
 
@@ -128,8 +165,24 @@ describe("practiceRun", () => {
       maxScore: 100,
       compileErrorMessage: null,
       tcResultsFull: [
-        { result: "❌FAIL", earned: 0, isPublic: false, input: "1", expected: "1", actual: "x", memo: "" },
-        { result: "❌FAIL", earned: 0, isPublic: false, input: "2", expected: "2", actual: "x", memo: "" },
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "x",
+          memo: "",
+        },
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "2",
+          expected: "2",
+          actual: "x",
+          memo: "",
+        },
       ],
     });
 
@@ -154,8 +207,24 @@ describe("practiceRun", () => {
       maxScore: 100,
       compileErrorMessage: null,
       tcResultsFull: [
-        { result: "✅PASS", earned: 60, isPublic: false, input: "1", expected: "1", actual: "1", memo: "" },
-        { result: "❌FAIL", earned: 0, isPublic: false, input: "2", expected: "2", actual: "x", memo: "" },
+        {
+          result: "✅PASS",
+          earned: 60,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "1",
+          memo: "",
+        },
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "2",
+          expected: "2",
+          actual: "x",
+          memo: "",
+        },
       ],
     });
 
@@ -172,6 +241,22 @@ describe("practiceRun", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("타이머가 일시정지 중이면 시간 범위 안이어도 QUIZ_NOT_ACTIVE로 거부한다", async () => {
+    await testDb()
+      .collection("quizzes")
+      .doc(QUIZ_ID)
+      .update({ pausedAt: ts(-10_000) });
+
+    await expect(
+      practiceRun.run(
+        makeRequest(
+          { quizId: QUIZ_ID, problemId: PROBLEM_ID, code: "int main(){}" },
+          STUDENT_EMAIL,
+        ),
+      ),
+    ).rejects.toMatchObject({ details: { code: "QUIZ_NOT_ACTIVE" } });
+  });
+
   it("동시 호출이 몰려도 실행 횟수 한도를 넘지 않는다", async () => {
     mockGraderResponse({
       ok: true,
@@ -180,18 +265,31 @@ describe("practiceRun", () => {
       maxScore: 100,
       compileErrorMessage: null,
       tcResultsFull: [
-        { result: "❌FAIL", earned: 0, isPublic: false, input: "1", expected: "1", actual: "x", memo: "" },
-        { result: "❌FAIL", earned: 0, isPublic: false, input: "2", expected: "2", actual: "x", memo: "" },
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "x",
+          memo: "",
+        },
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "2",
+          expected: "2",
+          actual: "x",
+          memo: "",
+        },
       ],
     });
 
     const results = await Promise.allSettled(
       Array.from({ length: 6 }, (_, i) =>
         practiceRun.run(
-          makeRequest(
-            { quizId: QUIZ_ID, problemId: PROBLEM_ID, code: `code-${i}` },
-            STUDENT_EMAIL,
-          ),
+          makeRequest({ quizId: QUIZ_ID, problemId: PROBLEM_ID, code: `code-${i}` }, STUDENT_EMAIL),
         ),
       ),
     );

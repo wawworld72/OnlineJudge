@@ -38,7 +38,8 @@ export const practiceRun = createCallable(practiceRunSchema, async ({ data, auth
   const quiz = quizSnap.exists ? (quizSnap.data() as Quiz) : null;
   if (
     !quiz ||
-    (!participant.isTestEntry && (quiz.status !== "OPEN" || !isWithin(quiz.startAt, quiz.endAt)))
+    (!participant.isTestEntry &&
+      (quiz.status !== "OPEN" || quiz.pausedAt || !isWithin(quiz.startAt, quiz.endAt)))
   ) {
     throw domainError("QUIZ_NOT_ACTIVE", "지금은 연습 실행을 할 수 없는 퀴즈입니다.");
   }
