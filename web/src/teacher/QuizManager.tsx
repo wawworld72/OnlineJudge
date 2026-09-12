@@ -34,6 +34,9 @@ const NEXT_STATUS: Record<QuizStatus, QuizStatus | null> = {
 
 type TabKey = "problems" | "deploy" | "participants" | "classroom" | "archive";
 
+/** 목록 화면의 행별 버튼/입력 클릭에 대한 처리 중 표시(시각적 피드백)에 쓴다. */
+type PendingKind = "start" | "pause" | "end" | "close" | "duration";
+
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "problems", label: "문항 관리" },
   { key: "deploy", label: "배포 · 채점" },
@@ -81,6 +84,10 @@ export function QuizManager() {
   const [quizzes, setQuizzes] = useState<QuizListItem[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [rowActionError, setRowActionError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    quizId: string;
+    kind: PendingKind;
+  } | null>(null);
   const [selected, setSelected] = useState<QuizDetail | null>(null);
   const [form, setForm] = useState<UpsertQuizInput>(toFormFields());
   const [showForm, setShowForm] = useState(false);
@@ -141,10 +148,15 @@ export function QuizManager() {
   }
 
   /** 목록 화면의 타이머/마감 버튼들은 `DelayedActionButton` 없이 일반 버튼으로
-   *  두되(표 셀 안에 들어가는 작은 버튼이라 카드 전용 컴포넌트는 과함), 실패해도
-   *  `listError`(목록 자체를 못 불러온 경우)와 달리 표는 그대로 두고 별도
-   *  배너로만 알린다 — 행 하나의 일시적 실패로 전체 목록이 사라지면 안 된다. */
-  async function runRowAction(action: () => Promise<unknown>) {
+   *  두되(표 셀 안에 들어가는 작은 버튼이라 카드 전용 컴포넌트는 과함, 게다가
+   *  `DelayedActionButton`은 에러를 자체적으로 삼켜 일반 문구로만 보여줘 우리가
+   *  이미 갖춘 구체적 에러 메시지 표시를 잃는다), 실패해도 `listError`(목록
+   *  자체를 못 불러온 경우)와 달리 표는 그대로 두고 별도 배너로만 알린다 — 행
+   *  하나의 일시적 실패로 전체 목록이 사라지면 안 된다. 처리 중에는
+   *  `pendingAction`으로 어느 행의 어떤 버튼이 눌렸는지 기록해, 눌렀다는 시각적
+   *  피드백(라벨 변경 + 같은 행 잠금)을 준다. */
+  async function runRowAction(quizId: string, kind: PendingKind, action: () => Promise<unknown>) {
+    setPendingAction({ quizId, kind });
     try {
       setRowActionError(null);
       await action();
@@ -154,6 +166,8 @@ export function QuizManager() {
       const code = getErrorCode(cause);
       const message = cause instanceof Error ? cause.message : String(cause);
       setRowActionError(code ? `${message} (${code})` : message);
+    } finally {
+      setPendingAction(null);
     }
   }
 
@@ -167,40 +181,69 @@ export function QuizManager() {
     await refreshList();
   }
 
-  function timerDisplay(quiz: QuizListItem) {
+  /** "시작시각" 열 — 아직 "시작"을 누르기 전(DRAFT)에는 의미 없는 값(생성 시점
+   *  기본값)이 보이므로 빈 칸으로 둔다. `startQuizTimer`가 "시작" 클릭 순간을
+   *  그대로 `startAt`에 못박으므로, 그 이후(OPEN/CLOSED)엔 실제 값을 보여준다. */
+  function startedAtCell(quiz: QuizListItem) {
+    return quiz.status === "DRAFT" ? "-" : new Date(quiz.startAt).toLocaleString();
+  }
+
+  /** "타이머" 열(구 "종료시각") — 절대 시각 대신 항상 카운트다운 형태로 보여준다. */
+  function timerCountdownCell(quiz: QuizListItem) {
+    if (quiz.status === "DRAFT") {
+      return <span className="muted">-</span>;
+    }
     if (quiz.status === "CLOSED") {
       return <span className="muted">00:00:00</span>;
-    }
-    if (quiz.status === "DRAFT") {
-      return (
-        <span>
-          <input
-            type="number"
-            min={1}
-            defaultValue={Math.round(quiz.timerDurationMs / 60_000)}
-            onBlur={(e) => {
-              const minutes = Number(e.target.value);
-              if (minutes > 0) {
-                runRowAction(() =>
-                  setQuizTimerDuration({ quizId: quiz.quizId, timerDurationMs: minutes * 60_000 }),
-                );
-              }
-            }}
-            style={{ width: "4rem" }}
-          />{" "}
-          분
-        </span>
-      );
     }
     const remainingMs = quiz.pausedAt
       ? Math.max(0, quiz.endAt - quiz.pausedAt)
       : Math.max(0, quiz.endAt - nowMs);
+    return <span className={quiz.pausedAt ? "muted" : ""}>{formatRemaining(remainingMs)}</span>;
+  }
+
+  /** "퀴즈시간" 열(구 "타이머") — 상태와 무관하게 항상 분 단위 입력창. 실행 중에
+   *  값을 바꿔도 이미 계산된 endAt에는 영향이 없고 다음 "시작"부터 적용되므로
+   *  그 사실을 안내 문구로 덧붙인다. */
+  function quizDurationCell(quiz: QuizListItem) {
+    const rowPending = pendingAction?.quizId === quiz.quizId;
     return (
-      <span className={quiz.pausedAt ? "muted" : ""}>
-        {formatRemaining(remainingMs)}
-        {quiz.pausedAt ? " (일시정지)" : ""}
+      <span>
+        <input
+          type="number"
+          min={1}
+          defaultValue={Math.round(quiz.timerDurationMs / 60_000)}
+          disabled={rowPending}
+          onBlur={(e) => {
+            const minutes = Number(e.target.value);
+            if (minutes > 0) {
+              runRowAction(quiz.quizId, "duration", () =>
+                setQuizTimerDuration({ quizId: quiz.quizId, timerDurationMs: minutes * 60_000 }),
+              );
+            }
+          }}
+          style={{ width: "4rem" }}
+        />{" "}
+        분
+        {quiz.status !== "DRAFT" && (
+          <p className="field-hint" style={{ margin: 0 }}>
+            다음 시작부터 적용됩니다.
+          </p>
+        )}
       </span>
     );
+  }
+
+  /** "상태" 배지 옆에 붙이는 보조 문구 — 저장된 `status` 값은 그대로 두고
+   *  화면에만 "종료됨"/"일시정지"임을 알아볼 수 있게 덧붙인다(firestore.rules가
+   *  `status == 'OPEN'`인 문서만 학생 read를 허용하므로, 마감 후 5분 유예
+   *  동안에도 status는 계속 OPEN으로 남아있어야 한다 — 그래서 실제 상태값은
+   *  바꾸지 않는다). */
+  function statusSuffix(quiz: QuizListItem): string {
+    if (quiz.status !== "OPEN") return "";
+    if (quiz.pausedAt) return " (일시정지)";
+    if (nowMs > quiz.endAt) return " (종료됨 · 제출 유예 중)";
+    return "";
   }
 
   function timerControls(quiz: QuizListItem) {
@@ -208,35 +251,42 @@ export function QuizManager() {
       return <span className="muted">종료됨</span>;
     }
     const running = quiz.status === "OPEN" && !quiz.pausedAt;
+    const rowPending = pendingAction?.quizId === quiz.quizId;
+    const isPending = (kind: PendingKind) => rowPending && pendingAction!.kind === kind;
     return (
       <span style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
         <button
           className="secondary"
+          disabled={rowPending}
           onClick={() =>
-            runRowAction(() =>
+            runRowAction(quiz.quizId, running ? "pause" : "start", () =>
               running
                 ? pauseQuizTimer({ quizId: quiz.quizId })
                 : startQuizTimer({ quizId: quiz.quizId }),
             )
           }
         >
-          {running ? "멈춤" : "시작"}
+          {isPending("start") || isPending("pause") ? "처리 중..." : running ? "멈춤" : "시작"}
         </button>
         <button
           className="secondary"
-          disabled={quiz.status !== "OPEN"}
-          onClick={() => runRowAction(() => endQuizTimer({ quizId: quiz.quizId }))}
+          disabled={rowPending || quiz.status !== "OPEN"}
+          onClick={() =>
+            runRowAction(quiz.quizId, "end", () => endQuizTimer({ quizId: quiz.quizId }))
+          }
         >
-          종료
+          {isPending("end") ? "처리 중..." : "종료"}
         </button>
         <button
           className="danger"
-          disabled={quiz.status !== "OPEN"}
+          disabled={rowPending || quiz.status !== "OPEN"}
           onClick={() =>
-            runRowAction(() => setQuizStatus({ quizId: quiz.quizId, status: "CLOSED" }))
+            runRowAction(quiz.quizId, "close", () =>
+              setQuizStatus({ quizId: quiz.quizId, status: "CLOSED" }),
+            )
           }
         >
-          최종 제출 마감
+          {isPending("close") ? "처리 중..." : "최종 제출 마감"}
         </button>
       </span>
     );
@@ -280,9 +330,9 @@ export function QuizManager() {
                     <th>과목명</th>
                     <th>퀴즈명</th>
                     <th>시작시각</th>
-                    <th>종료시각</th>
-                    <th>상태</th>
                     <th>타이머</th>
+                    <th>상태</th>
+                    <th>퀴즈시간</th>
                     <th>타이머 제어</th>
                     <th>출입코드</th>
                     <th>URL</th>
@@ -299,12 +349,13 @@ export function QuizManager() {
                             {quiz.title}
                           </button>
                         </td>
-                        <td>{new Date(quiz.startAt).toLocaleString()}</td>
-                        <td>{new Date(quiz.endAt).toLocaleString()}</td>
+                        <td>{startedAtCell(quiz)}</td>
+                        <td>{timerCountdownCell(quiz)}</td>
                         <td>
                           <span className={`status-badge ${quiz.status}`}>{quiz.status}</span>
+                          {statusSuffix(quiz)}
                         </td>
-                        <td>{timerDisplay(quiz)}</td>
+                        <td>{quizDurationCell(quiz)}</td>
                         <td>{timerControls(quiz)}</td>
                         <td>{quiz.accessCode}</td>
                         <td>
