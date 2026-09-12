@@ -233,7 +233,10 @@ export function QuizManager() {
     if (quiz.status === "CLOSED") {
       return <span className="muted">종료됨</span>;
     }
-    const running = quiz.status === "OPEN" && !quiz.pausedAt;
+    // endAt이 이미 지났으면(자연 마감 또는 "종료" 클릭) 코딩은 끝난 상태이므로,
+    // "멈춤"을 거치지 않고 바로 "시작"(새로 시작)이 보이게 한다 — 서버
+    // `startQuizTimer`의 "이미 실행 중" 판정과 동일한 조건을 쓴다.
+    const running = quiz.status === "OPEN" && !quiz.pausedAt && quiz.endAt > nowMs;
     const rowPending = pendingAction?.quizId === quiz.quizId;
     const isPending = (kind: PendingKind) => rowPending && pendingAction!.kind === kind;
     return (

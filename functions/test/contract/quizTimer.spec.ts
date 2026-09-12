@@ -132,6 +132,50 @@ describe("quizTimer", () => {
       expect(shiftedBy).toBeLessThan(25_000);
     });
 
+    it("OPEN이지만 이미 종료 시각이 지났고 일시정지도 아니면 새로 시작한다", async () => {
+      await seedQuiz({
+        timerDurationMs: 10 * 60 * 1000,
+        status: "OPEN",
+        startAt: Timestamp.fromMillis(Date.now() - 120_000),
+        endAt: Timestamp.fromMillis(Date.now() - 60_000), // 1분 전에 이미 끝남
+        pausedAt: null,
+      });
+      await seedDeployableProblem();
+
+      const before = Date.now();
+      const response = await startQuizTimer.run(makeTeacherRequest({ quizId: QUIZ_ID }));
+      expect(response.status).toBe("OPEN");
+
+      const quiz = (await testDb().collection("quizzes").doc(QUIZ_ID).get()).data()!;
+      expect(quiz.pausedAt).toBeNull();
+      expect(quiz.startAt.toMillis()).toBeGreaterThanOrEqual(before);
+      const expectedEnd = quiz.startAt.toMillis() + 10 * 60 * 1000;
+      expect(Math.abs(quiz.endAt.toMillis() - expectedEnd)).toBeLessThan(1000);
+    });
+
+    it("이미 끝난 뒤에 일시정지됐다면 재개가 아니라 새로 시작한다", async () => {
+      await seedQuiz({
+        timerDurationMs: 10 * 60 * 1000,
+        status: "OPEN",
+        startAt: Timestamp.fromMillis(Date.now() - 120_000),
+        endAt: Timestamp.fromMillis(Date.now() - 60_000), // 1분 전에 이미 끝남
+        pausedAt: Timestamp.fromMillis(Date.now() - 30_000), // 그 뒤(30초 전)에 멈춤
+      });
+      await seedDeployableProblem();
+
+      const before = Date.now();
+      const response = await startQuizTimer.run(makeTeacherRequest({ quizId: QUIZ_ID }));
+      expect(response.status).toBe("OPEN");
+
+      const quiz = (await testDb().collection("quizzes").doc(QUIZ_ID).get()).data()!;
+      expect(quiz.pausedAt).toBeNull();
+      expect(quiz.startAt.toMillis()).toBeGreaterThanOrEqual(before);
+      // 재개 공식(멈춰있던 30초만 더함)이었다면 여전히 과거였을 것 — 새로
+      // 시작해 "지금 + timerDurationMs" 근처인지로 구분한다.
+      const expectedEnd = quiz.startAt.toMillis() + 10 * 60 * 1000;
+      expect(Math.abs(quiz.endAt.toMillis() - expectedEnd)).toBeLessThan(1000);
+    });
+
     it("이미 마감(CLOSED)된 퀴즈는 QUIZ_CLOSED로 거부한다", async () => {
       await seedQuiz({ status: "CLOSED" });
 

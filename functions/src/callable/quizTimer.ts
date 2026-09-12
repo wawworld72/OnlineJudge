@@ -37,13 +37,22 @@ export const startQuizTimer = createCallable(startQuizTimerSchema, async ({ data
   if (quiz.status === "CLOSED") {
     throw domainError("QUIZ_CLOSED", "이미 마감된 퀴즈입니다.");
   }
-  if (quiz.status === "OPEN" && !quiz.pausedAt) {
-    throw domainError("TIMER_ALREADY_RUNNING", "이미 타이머가 실행 중입니다.");
-  }
 
   const now = Timestamp.now();
 
-  if (quiz.pausedAt) {
+  // "이미 실행 중"은 종료 시각이 아직 안 지난 경우만 해당한다 — endAt이 이미
+  // 지났다면(자연 마감 또는 "종료" 클릭) 코딩은 끝났어도 아직 새로 시작한 적은
+  // 없는 상태이므로 아래에서 새로 시작할 수 있어야 한다.
+  const isStillRunning =
+    quiz.status === "OPEN" && !quiz.pausedAt && quiz.endAt.toMillis() > now.toMillis();
+  if (isStillRunning) {
+    throw domainError("TIMER_ALREADY_RUNNING", "이미 타이머가 실행 중입니다.");
+  }
+
+  // 재개는 "일시정지 시점에 아직 끝나지 않았던" 경우에만 한다 — 이미 끝난 뒤에
+  // 멈춘 것이라면 멈춰있던 시간을 더해봐야 여전히 과거라 재개가 의미 없으므로,
+  // 아래 "새로 시작" 분기로 자연스럽게 넘어가게 둔다.
+  if (quiz.pausedAt && quiz.endAt.toMillis() > quiz.pausedAt.toMillis()) {
     // 재개: 멈춰있던 시간만큼 종료 시각을 뒤로 늦춘다.
     const pausedMs = now.toMillis() - quiz.pausedAt.toMillis();
     await quizRef.update({
@@ -53,7 +62,9 @@ export const startQuizTimer = createCallable(startQuizTimerSchema, async ({ data
     return { status: "OPEN" as const };
   }
 
-  // 최초 시작(DRAFT) — setQuizStatus의 OPEN 전환과 동일한 사전점검을 재사용한다.
+  // 새로 시작 — DRAFT이거나, OPEN이지만 이미 끝난(자연 마감·"종료"·이미 끝난
+  // 뒤에 일시정지) 경우 전부 여기서 지금부터 다시 시작한다. setQuizStatus의
+  // OPEN 전환과 동일한 사전점검을 재사용한다.
   const { blockingCount } = await computePreDeployCheck(db, data.quizId);
   if (blockingCount > 0) {
     throw domainError(
