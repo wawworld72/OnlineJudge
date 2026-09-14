@@ -1,8 +1,10 @@
 import type { Firestore } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/v2";
 import type { Participant, Problem, Quiz } from "../models/types";
 import { getParticipantOverviewData } from "./participantOverview";
 import { STATUS_LABEL } from "../http/exportGradesToSheet";
 import { extractQuizIdFromUrl } from "./quizSheetSync";
+import { runBatchGrade } from "./batchGradeService";
 
 const HEADER = [
   "제출시각",
@@ -36,6 +38,19 @@ export async function getQuizResultRows(
   const quiz = quizSnap.data() as Quiz | undefined;
   if (!quizSnap.exists || !quiz || quiz.deletedAt !== null) {
     throw new Error("퀴즈를 찾을 수 없습니다.");
+  }
+
+  // 내보내기 시점에 아직 채점되지 않은 제출건이 있으면 먼저 채점해 반영한다.
+  // 채점 자체가 실패해도(그레이더 오류 등) 내보내기는 막지 않고 기존 상태
+  // 그대로 계속 진행한다.
+  try {
+    await runBatchGrade(db, resolvedQuizId);
+  } catch (cause) {
+    logger.warn(
+      "quizResultExport: 자동 채점 실패, 기존 상태로 내보내기를 계속 진행",
+      resolvedQuizId,
+      cause,
+    );
   }
 
   const problemsSnap = await db

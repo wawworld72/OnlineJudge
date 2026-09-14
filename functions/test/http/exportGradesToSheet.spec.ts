@@ -1,4 +1,5 @@
-import { beforeEach, afterAll, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { clearFirestore, teardownTestApp, testDb, ts } from "../testEnv";
 import { exportGradesToSheet } from "../../src/http/exportGradesToSheet";
 
@@ -7,7 +8,8 @@ const SUBJECT = "컴퓨터프로그래밍심화";
 
 function makeReq(opts: { token?: string; subject?: string }) {
   return {
-    get: (name: string) => (name === "Authorization" && opts.token ? `Bearer ${opts.token}` : undefined),
+    get: (name: string) =>
+      name === "Authorization" && opts.token ? `Bearer ${opts.token}` : undefined,
     query: { subject: opts.subject },
   } as never;
 }
@@ -22,22 +24,25 @@ function makeRes() {
 }
 
 async function seedQuiz(quizId: string, title: string) {
-  await testDb().collection("quizzes").doc(quizId).set({
-    subjectName: SUBJECT,
-    title,
-    description: "",
-    startAt: ts(-60_000),
-    endAt: ts(60_000),
-    accessCode: "ABC123",
-    status: "OPEN",
-    maxRunsPerProblem: 5,
-    courseId: null,
-    courseWorkId: null,
-    courseWorkLink: null,
-    archivedAt: null,
-    archiveSpreadsheetUrl: null,
-    deletedAt: null,
-  });
+  await testDb()
+    .collection("quizzes")
+    .doc(quizId)
+    .set({
+      subjectName: SUBJECT,
+      title,
+      description: "",
+      startAt: ts(-60_000),
+      endAt: ts(60_000),
+      accessCode: "ABC123",
+      status: "OPEN",
+      maxRunsPerProblem: 5,
+      courseId: null,
+      courseWorkId: null,
+      courseWorkLink: null,
+      archivedAt: null,
+      archiveSpreadsheetUrl: null,
+      deletedAt: null,
+    });
 }
 
 function findTab(tabs: Array<{ sheetName: string; rows: string[][] }>, sheetName: string) {
@@ -47,6 +52,10 @@ function findTab(tabs: Array<{ sheetName: string; rows: string[][] }>, sheetName
 describe("exportGradesToSheet", () => {
   beforeEach(async () => {
     await clearFirestore();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -79,16 +88,21 @@ describe("exportGradesToSheet", () => {
   it("같은 과목명의 퀴즈 여러 개를 묶어 성적결과/문항별_TC결과 두 탭으로 반환한다", async () => {
     await seedQuiz("quiz-1", "중간고사");
     await seedQuiz("quiz-2", "기말고사");
-    await testDb().collection("quizzes").doc("quiz-1").collection("problems").doc("p1").set({
-      order: 0,
-      title: "레벨업",
-      description: "",
-      initialCode: "",
-      maxRuns: null,
-      pointsTotal: 20,
-      updatedAt: ts(0),
-      deletedAt: null,
-    });
+    await testDb()
+      .collection("quizzes")
+      .doc("quiz-1")
+      .collection("problems")
+      .doc("p1")
+      .set({
+        order: 0,
+        title: "레벨업",
+        description: "",
+        initialCode: "",
+        maxRuns: null,
+        pointsTotal: 20,
+        updatedAt: ts(0),
+        deletedAt: null,
+      });
     await testDb()
       .collection("participants")
       .doc("quiz-1_20240001")
@@ -140,7 +154,15 @@ describe("exportGradesToSheet", () => {
     expect(body.tabs).toHaveLength(2);
 
     const detail = findTab(body.tabs, "문항별_TC결과");
-    expect(detail.rows[0]).toEqual(["이름", "학번", "과목명", "퀴즈명", "문항명", "TC", "획득 점수"]);
+    expect(detail.rows[0]).toEqual([
+      "이름",
+      "학번",
+      "과목명",
+      "퀴즈명",
+      "문항명",
+      "TC",
+      "획득 점수",
+    ]);
     expect(detail.rows).toHaveLength(3); // 헤더 + TC 2개(중간고사만 runResults 있음)
     expect(detail.rows).toContainEqual([
       "20240001",
@@ -162,12 +184,109 @@ describe("exportGradesToSheet", () => {
     ]);
 
     const summary = findTab(body.tabs, "성적결과");
-    expect(summary.rows[0]).toEqual(["이름", "학번", "과목명", "퀴즈명", "상태", "제출시각", "확정점수"]);
+    expect(summary.rows[0]).toEqual([
+      "이름",
+      "학번",
+      "과목명",
+      "퀴즈명",
+      "상태",
+      "제출시각",
+      "확정점수",
+    ]);
     expect(summary.rows).toHaveLength(3); // 헤더 + quiz-1 참가자 1명 + quiz-2 참가자 1명
     const midterm = summary.rows.find((r) => r[3] === "중간고사")!;
     expect(midterm[4]).toBe("채점완료");
     expect(midterm[6]).toBe("10");
     const final = summary.rows.find((r) => r[3] === "기말고사")!;
     expect(final[4]).toBe("응시중");
+  });
+
+  it("SUBMITTED(미채점) 참가자가 있으면 내보내기 전에 자동으로 일괄 채점을 수행한다", async () => {
+    await seedQuiz("quiz-1", "중간고사");
+    await testDb()
+      .collection("quizzes")
+      .doc("quiz-1")
+      .collection("problems")
+      .doc("p1")
+      .set({
+        order: 0,
+        title: "레벨업",
+        description: "",
+        initialCode: "",
+        maxRuns: null,
+        pointsTotal: 20,
+        updatedAt: ts(0),
+        deletedAt: null,
+      });
+    await testDb()
+      .collection("quizzes")
+      .doc("quiz-1")
+      .collection("problemSecrets")
+      .doc("p1")
+      .set({
+        items: [
+          {
+            tcId: "tc-1",
+            tcNo: 1,
+            input: "1",
+            expected: "1",
+            points: 20,
+            isPublic: true,
+            description: "",
+          },
+        ],
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    await testDb()
+      .collection("participants")
+      .doc("quiz-1_20240001")
+      .set({
+        quizId: "quiz-1",
+        studentId: "20240001",
+        enteredAt: ts(-50_000),
+        finalStatus: "SUBMITTED",
+        finalSubmittedAt: ts(-10_000),
+        finalTotal: 0,
+        runsUsedByProblem: {},
+        submissions: { p1: { code: "int main(){}", submittedAt: Timestamp.now() } },
+        runResults: {},
+        gradePushedAt: null,
+      });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        status: "JUDGED",
+        score: 20,
+        maxScore: 20,
+        compileErrorMessage: null,
+        tcResultsFull: [
+          {
+            result: "✅PASS",
+            earned: 1,
+            isPublic: true,
+            input: "1",
+            expected: "1",
+            actual: "1",
+            memo: "",
+          },
+        ],
+      }),
+    } as Response);
+
+    const res = makeRes();
+    await exportGradesToSheet(makeReq({ token: TOKEN, subject: SUBJECT }), res as never);
+
+    const body = res.json.mock.calls[0]![0];
+    const summary = findTab(body.tabs, "성적결과");
+    const row = summary.rows.find((r: string[]) => r[1] === "20240001")!;
+    expect(row[4]).toBe("채점완료");
+    expect(row[6]).toBe("20");
+
+    const participant = (
+      await testDb().collection("participants").doc("quiz-1_20240001").get()
+    ).data()!;
+    expect(participant.finalStatus).toBe("FINALIZED");
   });
 });

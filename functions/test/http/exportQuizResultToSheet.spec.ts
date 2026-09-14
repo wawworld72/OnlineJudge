@@ -1,5 +1,5 @@
-import { beforeEach, afterAll, describe, expect, it, vi } from "vitest";
-import { FieldValue } from "firebase-admin/firestore";
+import { beforeEach, afterAll, afterEach, describe, expect, it, vi } from "vitest";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { clearFirestore, teardownTestApp, testDb, ts } from "../testEnv";
 import { exportQuizResultToSheet } from "../../src/http/exportQuizResultToSheet";
 
@@ -87,6 +87,10 @@ async function seedParticipant(overrides: Record<string, unknown>) {
 describe("exportQuizResultToSheet", () => {
   beforeEach(async () => {
     await clearFirestore();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -184,7 +188,7 @@ describe("exportQuizResultToSheet", () => {
     expect(row[9]).toBe("15");
   });
 
-  it("SUBMITTED(아직 미채점) 참가자는 총점/문항별 점수/TC 점수가 모두 빈 문자열이다", async () => {
+  it("SUBMITTED(미채점) 참가자는 내보내기 시점에 자동으로 채점되어 확정된다(제출한 코드가 없으면 0점)", async () => {
     await seedQuiz();
     await seedProblem("p1", 0, "1번");
     await seedParticipant({
@@ -198,10 +202,85 @@ describe("exportQuizResultToSheet", () => {
 
     const body = res.json.mock.calls[0]![0];
     const row = body.rows[1];
-    expect(row[6]).toBe("제출완료");
-    expect(row[7]).toBe(""); // 문항별 점수
-    expect(row[8]).toBe(""); // 문항별 테스트케이스 점수
-    expect(row[9]).toBe(""); // 총점
+    // batchGrade를 따로 호출하지 않았지만, 내보내기 자체가 자동으로 채점을 수행해
+    // 미제출 문항은 NOT_ATTEMPTED 0점으로 확정한다(기존에는 "제출완료"로만 남고
+    // 점수 칸이 비어 있었던 버그).
+    expect(row[6]).toBe("채점완료");
+    expect(row[7]).toBe("0"); // 문항별 점수
+    expect(row[8]).toBe(""); // TC를 채점하지 않았으므로 TC별 점수는 없음
+    expect(row[9]).toBe("0"); // 총점
+
+    const participant = (
+      await testDb().collection("participants").doc(`${QUIZ_ID}_20240002`).get()
+    ).data()!;
+    expect(participant.finalStatus).toBe("FINALIZED");
+  });
+
+  it("SUBMITTED + 실제 제출 코드가 있는 참가자는 내보내기 시점에 자동 채점되어 실제 점수가 채워진다", async () => {
+    await seedQuiz();
+    await seedProblem("p1", 0, "1번");
+    await testDb()
+      .collection("quizzes")
+      .doc(QUIZ_ID)
+      .collection("problemSecrets")
+      .doc("p1")
+      .set({
+        items: [
+          {
+            tcId: "tc-1",
+            tcNo: 1,
+            input: "1",
+            expected: "1",
+            points: 20,
+            isPublic: true,
+            description: "",
+          },
+        ],
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    await seedParticipant({
+      studentId: "20240003",
+      finalStatus: "SUBMITTED",
+      finalSubmittedAt: ts(-5_000),
+      submissions: { p1: { code: "int main(){}", submittedAt: Timestamp.now() } },
+    });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        status: "JUDGED",
+        score: 20,
+        maxScore: 20,
+        compileErrorMessage: null,
+        tcResultsFull: [
+          {
+            result: "✅PASS",
+            earned: 1,
+            isPublic: true,
+            input: "1",
+            expected: "1",
+            actual: "1",
+            memo: "",
+          },
+        ],
+      }),
+    } as Response);
+
+    const res = makeRes();
+    await exportQuizResultToSheet(makeReq({ token: TOKEN, quizId: QUIZ_ID }), res as never);
+
+    const body = res.json.mock.calls[0]![0];
+    const row = body.rows.find((r: string[]) => r[3] === "20240003")!;
+    expect(row[6]).toBe("채점완료");
+    expect(row[7]).toBe("20"); // 문항별 점수
+    expect(row[8]).toBe("20"); // TC별 점수
+    expect(row[9]).toBe("20"); // 총점
+
+    const participant = (
+      await testDb().collection("participants").doc(`${QUIZ_ID}_20240003`).get()
+    ).data()!;
+    expect(participant.finalStatus).toBe("FINALIZED");
   });
 
   it("Classroom 연동 퀴즈의 미입장 수강생은 상태만 채우고 나머지 칸은 빈 문자열이다", async () => {

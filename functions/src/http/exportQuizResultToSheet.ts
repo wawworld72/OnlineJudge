@@ -14,7 +14,7 @@ import { getQuizResultRows } from "../services/quizResultExport";
  * `quizId` 또는 `quizUrl` 하나로 그 퀴즈만의 결과를 참가자 1명 = 1행인 단일 표로
  * 반환한다 — 식별 기준과 반환 형태가 둘 다 달라 기존 계약을 건드리지 않고 새로 뒀다.
  */
-export const exportQuizResultToSheet = onRequest(async (req, res) => {
+export const exportQuizResultToSheet = onRequest({ timeoutSeconds: 540 }, async (req, res) => {
   const authHeader = req.get("Authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : "";
   if (!token || token !== getSheetExportApiToken()) {

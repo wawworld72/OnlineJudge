@@ -1,6 +1,8 @@
 import type { Firestore } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/v2";
 import type { Participant, Problem, Quiz } from "../models/types";
 import { getParticipantOverviewData, type OverviewItem } from "./participantOverview";
+import { runBatchGrade } from "./batchGradeService";
 
 export interface GradeSummaryRow {
   subjectName: string;
@@ -107,6 +109,14 @@ export async function getGradeExportForSubject(
   const out: GradeExportResult = { summary: [], detail: [] };
   for (const doc of quizzesSnap.docs) {
     const quiz = doc.data() as Quiz;
+    // 내보내기 시점에 아직 채점되지 않은 제출건이 있으면 먼저 채점해 반영한다.
+    // 채점 자체가 실패해도(그레이더 오류 등) 내보내기는 막지 않고 기존 상태
+    // 그대로 계속 진행한다.
+    try {
+      await runBatchGrade(db, doc.id);
+    } catch (cause) {
+      logger.warn("gradeExport: 자동 채점 실패, 기존 상태로 내보내기를 계속 진행", doc.id, cause);
+    }
     await collectForQuiz(db, subjectName, doc.id, quiz.title, out);
   }
   return out;

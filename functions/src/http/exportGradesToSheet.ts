@@ -52,7 +52,7 @@ function toDetailRow(row: GradeDetailTcRow): string[] {
  * 1행=1 TC)와 "성적결과"(퀴즈별 상태·확정 점수, 1행=1 참가자). 각 행이 어느 과목·
  * 어느 퀴즈인지는 "과목명"/"퀴즈명" 열로 구분한다.
  */
-export const exportGradesToSheet = onRequest(async (req, res) => {
+export const exportGradesToSheet = onRequest({ timeoutSeconds: 540 }, async (req, res) => {
   const authHeader = req.get("Authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : "";
   if (!token || token !== getSheetExportApiToken()) {
