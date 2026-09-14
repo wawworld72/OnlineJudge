@@ -58,6 +58,7 @@ export interface QuizDetail {
   courseWorkLink: string | null;
   archivedAt: number | null;
   archiveSpreadsheetUrl: string | null;
+  revealTestCases: boolean;
   problems: ProblemDetail[];
 }
 
@@ -162,6 +163,10 @@ export function pauseQuizTimer(input: { quizId: string }) {
 
 export function endQuizTimer(input: { quizId: string }) {
   return callFunction<typeof input, { ok: true }>("endQuizTimer", input);
+}
+
+export function setTestCaseReveal(input: { quizId: string; revealed: boolean }) {
+  return callFunction<typeof input, { revealTestCases: boolean }>("setTestCaseReveal", input);
 }
 
 export interface BatchGradeResponse {

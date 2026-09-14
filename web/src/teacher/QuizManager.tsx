@@ -20,6 +20,7 @@ import {
 import { ProblemEditor } from "./ProblemEditor";
 import { PreDeployCheck } from "./PreDeployCheck";
 import { BatchGrade } from "./BatchGrade";
+import { TestCaseReveal } from "./TestCaseReveal";
 import { ParticipantStatus } from "./ParticipantStatus";
 import { ClassroomPanel } from "./ClassroomPanel";
 import { ArchiveDelete } from "./ArchiveDelete";
@@ -474,6 +475,11 @@ export function QuizManager() {
                 <PreDeployCheck quizId={selected.quizId} />
                 <h3>일괄 채점</h3>
                 <BatchGrade quizId={selected.quizId} />
+                <TestCaseReveal
+                  quizId={selected.quizId}
+                  revealTestCases={selected.revealTestCases}
+                  onChanged={() => openForEdit(selected.quizId)}
+                />
               </>
             )}
 

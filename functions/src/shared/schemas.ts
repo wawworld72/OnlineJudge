@@ -190,6 +190,11 @@ export const endQuizTimerSchema = z.object({
   quizId: z.string().min(1),
 });
 
+export const setTestCaseRevealSchema = z.object({
+  quizId: z.string().min(1),
+  revealed: z.boolean(),
+});
+
 export const batchGradeSchema = z.object({
   quizId: z.string().min(1),
 });

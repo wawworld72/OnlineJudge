@@ -37,6 +37,7 @@ async function seed() {
       deletedAt: null,
       timerDurationMs: 30 * 60 * 1000,
       pausedAt: null,
+      revealTestCases: false,
     });
 
   await db.collection("quizzes").doc("Q1").collection("problems").doc("P1").set({

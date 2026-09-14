@@ -49,6 +49,11 @@ export interface Quiz {
   /** 일시정지 시각. null이면 실행 중이거나 아직 시작 전. "시작"(재개) 시
    *  멈춰있던 시간(now - pausedAt)만큼 endAt을 뒤로 늦추고 null로 되돌린다. */
   pausedAt: Timestamp | null;
+  /** 교사가 켜면, 퀴즈가 CLOSED된 뒤 학생 본인 결과 화면에서 비공개
+   *  테스트케이스의 input/expected까지 공개한다(getMyResult.ts). 기본 false —
+   *  같은 문제를 다른 분반 퀴즈에 재사용 중이면 그 분반이 다 끝나기 전에는
+   *  켜면 안 된다(교사가 직접 판단, 시스템이 감지하지 못함). */
+  revealTestCases: boolean;
 }
 
 export interface Problem {

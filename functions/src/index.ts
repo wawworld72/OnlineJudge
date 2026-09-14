@@ -23,6 +23,7 @@ export {
   pauseQuizTimer,
   endQuizTimer,
 } from "./callable/quizTimer";
+export { setTestCaseReveal } from "./callable/setTestCaseReveal";
 export { batchGrade } from "./callable/batchGrade";
 export { getParticipantOverview } from "./callable/getParticipantOverview";
 export { getParticipantDetail } from "./callable/getParticipantDetail";

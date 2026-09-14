@@ -37,6 +37,7 @@ export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, isTeac
     deletedAt: null,
     timerDurationMs: DEFAULT_TIMER_DURATION_MS,
     pausedAt: null,
+    revealTestCases: false,
   };
   const quizRef = await db.collection("quizzes").add(newQuiz);
   return { quizId: quizRef.id, status: "DRAFT" as const };
