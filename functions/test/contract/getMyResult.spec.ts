@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { clearFirestore, makeRequest, teardownTestApp, testDb } from "../testEnv";
 import { getMyResult } from "../../src/callable/getMyResult";
+import type { TestCaseResult } from "../../src/models/types";
 
 const QUIZ_ID = "quiz-1";
 const PROBLEM_ID = "p1";
@@ -180,7 +181,7 @@ describe("getMyResult", () => {
 
     const response = await getMyResult.run(makeRequest({ quizId: QUIZ_ID }, STUDENT_EMAIL));
 
-    const tc2 = response.perProblem![0]!.tcResults.find((tc) => tc.tcId === "tc2")!;
+    const tc2 = response.perProblem![0]!.tcResults.find((tc: TestCaseResult) => tc.tcId === "tc2")!;
     expect(tc2).toEqual({ tcId: "tc2", passed: false, isPublic: false, points: 40 });
   });
 
@@ -191,7 +192,7 @@ describe("getMyResult", () => {
 
     const response = await getMyResult.run(makeRequest({ quizId: QUIZ_ID }, STUDENT_EMAIL));
 
-    const tc2 = response.perProblem![0]!.tcResults.find((tc) => tc.tcId === "tc2")!;
+    const tc2 = response.perProblem![0]!.tcResults.find((tc: TestCaseResult) => tc.tcId === "tc2")!;
     expect(tc2).toEqual({ tcId: "tc2", passed: false, isPublic: false, points: 40 });
   });
 
