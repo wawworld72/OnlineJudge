@@ -21,7 +21,10 @@ export const testCaseInputSchema = z.object({
 
 export const enterQuizSchema = z.object({
   quizId: z.string().min(1),
-  accessCode: z.string().min(1),
+  // 이미 채점 완료된 참가자의 복기 재입장(enterQuiz.ts의 isReviewOnly)은 출입코드를
+  // 검사하지 않으므로, 빈 문자열도 허용한다 — 살아있는 신규 응시는 여전히 실제
+  // accessCode와 일치해야 하므로 보안 완화는 없다.
+  accessCode: z.string(),
   // Classroom 연동 퀴즈는 로그인 이메일로 명부(rosters)에서 신원을 바로 찾으므로
   // 클라이언트가 이 둘을 보내지 않는다(enterQuiz.ts) — 비연동 퀴즈만 여전히 요구한다.
   studentId: z.string().min(1).optional(),

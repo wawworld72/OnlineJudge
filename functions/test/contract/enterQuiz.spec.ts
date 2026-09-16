@@ -227,6 +227,37 @@ describe("enterQuiz", () => {
       expect(response.gradedResult?.p1.score).toBe(10);
     });
 
+    it("이미 채점 완료된 참가자는 출입코드를 몰라도(틀리거나 비워도) 복기 재입장할 수 있다", async () => {
+      await seedClosedQuiz();
+      await testDb()
+        .collection("participants")
+        .doc(`${CLOSED_QUIZ_ID}_${STUDENT_ID}`)
+        .set({
+          quizId: CLOSED_QUIZ_ID,
+          studentId: STUDENT_ID,
+          enteredAt: ts(-100_000),
+          finalStatus: "FINALIZED",
+          finalSubmittedAt: ts(-90_000),
+          finalTotal: 10,
+          runsUsedByProblem: {},
+          submissions: { p1: { code: "int main(){}", submittedAt: ts(-90_000) } },
+          runResults: {
+            p1: { status: "AC", score: 10, maxScore: 10, compileErrorMessage: null, tcResults: [] },
+          },
+          gradePushedAt: null,
+        });
+
+      const response = await enterQuiz.run(
+        makeRequest(
+          { quizId: CLOSED_QUIZ_ID, accessCode: "", studentId: STUDENT_ID, name: "홍길동" },
+          STUDENT_EMAIL,
+        ),
+      );
+
+      expect(response.participantStatus).toBe("FINALIZED");
+      expect(response.gradedResult?.p1.score).toBe(10);
+    });
+
     it("아직 IN_PROGRESS인 참가자는 퀴즈 종료 후 재입장이 QUIZ_NOT_OPEN으로 거부된다", async () => {
       await seedClosedQuiz();
       await testDb()

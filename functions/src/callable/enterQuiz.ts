@@ -26,14 +26,11 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
   }
   const quiz = quizSnap.data() as Quiz;
 
-  if (quiz.accessCode !== data.accessCode) {
-    throw domainError("INVALID_ACCESS_CODE", "출입코드가 일치하지 않습니다.");
-  }
-
   // Classroom 연동 퀴즈는 "Classroom에 등록된 학생은 이미 검증됐다"는 전제로, 학번/이름을
   // 직접 입력받지 않고 로그인 이메일로 그 강의 명부에서 신원을 바로 찾는다(문제가 있는
   // 학생은 교사가 Classroom에서 직접 제외). 비연동 퀴즈는 기존처럼 학번/이름/이메일
-  // 3중 대조를 그대로 요구한다.
+  // 3중 대조를 그대로 요구한다. 출입코드 검사보다 신원 검사를 먼저 하는 이유는 아래
+  // isReviewOnly 판단 참고.
   let studentId: string;
   let studentName: string;
   let isTestEntry = false;
@@ -63,7 +60,16 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
     participantSnap.exists && (participantSnap.data() as Participant).finalStatus !== "IN_PROGRESS";
   // 교사가 "테스트용 수강생 추가"로 만든 항목(isTestEntry)은 퀴즈 상태·시간 게이트를
   // 전부 우회한다 — 아무 때나 학생 화면(입장→실행→제출)을 미리 볼 수 있어야 하므로.
+  //
+  // 출입코드도 이 두 경우엔 함께 건너뛴다 — 신원(로그인 이메일+학번·이름 대조, 또는
+  // Classroom 명부 대조)은 위에서 이미 확실히 확인됐고, 복기·테스트 항목엔 더 이상
+  // 보호할 "진행 중인 응시"가 없다. 그렇지 않으면 시험이 끝난 지 오래된 뒤 학생이
+  // 예전 링크(/quiz/{quizId})로 자기 성적을 다시 보러 왔을 때, 시험 당일 한 번
+  // 공지됐던 출입코드를 기억하지 못하면 영영 접근할 수 없게 된다.
   if (!isReviewOnly && !isTestEntry) {
+    if (quiz.accessCode !== data.accessCode) {
+      throw domainError("INVALID_ACCESS_CODE", "출입코드가 일치하지 않습니다.");
+    }
     if (quiz.status !== "OPEN") {
       throw domainError("QUIZ_NOT_OPEN", "지금은 응시할 수 없는 퀴즈입니다.");
     }
