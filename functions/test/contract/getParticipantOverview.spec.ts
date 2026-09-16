@@ -97,6 +97,33 @@ describe("getParticipantOverview", () => {
     expect(response.participants[0]!.status).toBe("IN_PROGRESS");
   });
 
+  it("분반이 연동되지 않아도 students 컬렉션의 실제 이름·이메일을 보여준다(학번을 이름 대신 쓰지 않는다)", async () => {
+    await seedQuiz(null);
+    await testDb().collection("students").doc("20240001").set({
+      name: "홍길동",
+      email: "hong@hoseo.edu",
+      status: "ACTIVE",
+    });
+    await seedParticipant("20240001", "FINALIZED");
+
+    const response = await getParticipantOverview.run(makeTeacherRequest({ quizId: QUIZ_ID }));
+
+    const participants = response.participants as OverviewItem[];
+    expect(participants[0]!.name).toBe("홍길동");
+    expect(participants[0]!.email).toBe("hong@hoseo.edu");
+  });
+
+  it("분반이 연동되지 않고 students 문서가 없으면 방어적으로 학번을 이름 대신 쓴다", async () => {
+    await seedQuiz(null);
+    await seedParticipant("20240099", "IN_PROGRESS");
+
+    const response = await getParticipantOverview.run(makeTeacherRequest({ quizId: QUIZ_ID }));
+
+    const participants = response.participants as OverviewItem[];
+    expect(participants[0]!.name).toBe("20240099");
+    expect(participants[0]!.email).toBeNull();
+  });
+
   it("테스트용 수강생 항목(isTestEntry)은 참가자 현황에서 완전히 제외된다", async () => {
     await seedQuiz("course-1");
     await testDb().collection("rosters").doc("course-1_20240001").set({

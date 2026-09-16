@@ -176,9 +176,9 @@ describe("exportQuizResultToSheet", () => {
     expect(body.rows).toHaveLength(2);
     const row = body.rows[1];
     expect(row[1]).toBe("hong@hoseo.edu");
-    // courseId가 없는 퀴즈는 명부가 없어 이름을 알 수 없으므로 studentId를 이름으로 쓴다
-    // (getParticipantOverviewData의 기존 동작 그대로 — students.name은 쓰지 않음).
-    expect(row[2]).toBe("20240001");
+    // courseId가 없는 퀴즈는 명부가 없어, students 컬렉션에 저장된 실제 이름을 쓴다
+    // (getParticipantOverviewData가 students.name을 직접 조회).
+    expect(row[2]).toBe("홍길동");
     expect(row[3]).toBe("20240001");
     expect(row[4]).toBe("중간고사");
     expect(row[5]).toBe(SUBJECT);

@@ -55,18 +55,20 @@ export async function getParticipantOverviewData(
 
   if (!quiz.courseId) {
     if (participantDocs.length === 0) return [];
-    // 비연동 퀴즈는 명부가 없어 이메일도 이름과 마찬가지로 students 컬렉션에서 직접
-    // 가져와야 한다 — 참가자 수만큼 db.getAll()로 한 번에 배치 조회한다.
+    // 비연동 퀴즈는 명부가 없어 이름·이메일 모두 students 컬렉션에서 직접 가져와야
+    // 한다 — 참가자 수만큼 db.getAll()로 한 번에 배치 조회한다. student 문서가
+    // 없는 경우(이론상 나오면 안 되지만 방어적으로)에만 studentId를 이름 대신 쓴다.
     const studentIds = participantDocs.map((doc) => doc.data().studentId as string);
     const studentSnaps = await db.getAll(
       ...studentIds.map((studentId) => db.collection("students").doc(studentId)),
     );
-    const emailByStudentId = new Map(
-      studentSnaps.map((snap) => [snap.id, (snap.data() as Student | undefined)?.email ?? null]),
+    const studentById = new Map(
+      studentSnaps.map((snap) => [snap.id, snap.data() as Student | undefined]),
     );
-    return studentIds.map((studentId) =>
-      toItem(studentId, studentId, emailByStudentId.get(studentId) ?? null),
-    );
+    return studentIds.map((studentId) => {
+      const student = studentById.get(studentId);
+      return toItem(studentId, student?.name ?? studentId, student?.email ?? null);
+    });
   }
 
   const rosterSnap = await db.collection("rosters").where("courseId", "==", quiz.courseId).get();
