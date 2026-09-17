@@ -1,9 +1,13 @@
+import { serverNow } from "./serverClock";
+
 /**
  * 서버가 준 종료시각(`endAt`, epoch ms) 기준으로 클라이언트에서 로컬 카운트다운만 계산한다.
  * Firestore `onSnapshot` 구독은 쓰지 않는다(헌법 IV — 서버 쓰기/구독 비용 최소화, 헌법 VII —
- * 실제 마감 판단은 항상 서버가 재검증하므로 이 값은 UX 표시용일 뿐이다).
+ * 실제 마감 판단은 항상 서버가 재검증하므로 이 값은 UX 표시용일 뿐이다). "지금"의 기본값은
+ * 기기 시계가 아니라 `serverClock.ts`가 보정한 서버 기준 시각이다 — 그래야 기기 시계가
+ * 서로 다른 학생들 화면에도 같은 카운트다운이 보인다.
  */
-export function remainingMillis(endAtMs: number, nowMs: number = Date.now()): number {
+export function remainingMillis(endAtMs: number, nowMs: number = serverNow()): number {
   return Math.max(0, endAtMs - nowMs);
 }
 

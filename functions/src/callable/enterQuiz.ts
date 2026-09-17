@@ -1,4 +1,4 @@
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
 import { createCallable } from "../shared/callableFactory";
 import { enterQuizSchema } from "../shared/schemas";
 import {
@@ -140,6 +140,12 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
     studentId: string;
     studentName: string;
     studentEmail: string;
+    // 학생 기기마다 시스템 시계가 조금씩 달라, 로컬 시각으로만 카운트다운을 계산하면
+    // 같은 퀴즈인데도 화면에 보이는 남은 시간이 서로 달라 보인다(실제 마감 판정은
+    // 항상 서버가 재검증하므로 공정성 자체엔 문제가 없지만, 표시가 다르면 혼란·이의
+    // 제기의 원인이 됨). 입장 시점에 딱 한 번 서버 시각을 함께 내려줘, 클라이언트가
+    // 이후 카운트다운 계산에 쓸 오프셋을 계산하게 한다(추가 호출·구독 비용 없음).
+    serverNow: number;
     existingSubmission?: Participant["submissions"];
     gradedResult?: Participant["runResults"];
   } = {
@@ -151,6 +157,7 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
     studentId,
     studentName,
     studentEmail: authEmail,
+    serverNow: Timestamp.now().toMillis(),
   };
 
   if (participant.finalStatus !== "IN_PROGRESS") {

@@ -7,6 +7,7 @@ import { firebaseApp } from "../shared/firebaseApp";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
 import { getErrorCode } from "../shared/functionsClient";
 import { enterQuiz, registerStudentEmail, type EnterQuizResponse } from "./api";
+import { setClockOffset } from "../shared/serverClock";
 import { QuizTaking } from "./QuizTaking";
 
 interface QuizInfo {
@@ -90,6 +91,7 @@ export function QuizEntry() {
           : { quizId: quizId!, accessCode, studentId, name },
       );
       setNeedsEmailRegistration(false);
+      setClockOffset(response.serverNow);
       setEntered(response);
     } catch (err) {
       const code = getErrorCode(err);

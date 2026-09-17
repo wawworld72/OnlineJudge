@@ -115,6 +115,20 @@ describe("enterQuiz", () => {
     expect(participant.runResults).toEqual({});
   });
 
+  it("응답에 학생 기기 시계 보정용 서버 시각(serverNow)을 함께 내려준다", async () => {
+    const before = Date.now();
+    const response = await enterQuiz.run(
+      makeRequest(
+        { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },
+        STUDENT_EMAIL,
+      ),
+    );
+    const after = Date.now();
+
+    expect(response.serverNow).toBeGreaterThanOrEqual(before);
+    expect(response.serverNow).toBeLessThanOrEqual(after);
+  });
+
   it("OPEN 상태여도 시작 시각 전이면 QUIZ_NOT_STARTED로 거부한다", async () => {
     const db = testDb();
     await db
