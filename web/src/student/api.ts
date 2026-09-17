@@ -89,7 +89,7 @@ export function finalSubmit(input: {
 
 export interface PerProblemResult {
   problemId: string;
-  status: "AC" | "WA" | "CE";
+  status: "AC" | "WA" | "CE" | "NOT_ATTEMPTED";
   score: number;
   maxScore: number;
   tcResults: TestCaseResult[];

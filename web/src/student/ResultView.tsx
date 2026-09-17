@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CEditor } from "../editor/CEditor";
-import type { EnterQuizResponse, GradedProblemResult } from "./api";
+import {
+  getMyResult,
+  type EnterQuizResponse,
+  type GradedProblemResult,
+  type TestCaseResult,
+} from "./api";
 import { Markdown } from "./Markdown";
 import { TcResultTable } from "./TcResultTable";
 
@@ -38,6 +43,30 @@ function tabStatusClass(result: GradedProblemResult | undefined): string {
  */
 export function ResultView({ quizId, initial }: ResultViewProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  // enterQuiz의 gradedResult(=participant.runResults)는 채점 시점에 마스킹된 그대로다.
+  // 퀴즈 종료 후 교사가 테스트케이스 공개를 켰다면, getMyResult가 그 순간에 계산하는
+  // 공개 오버레이를 따로 받아와 tcResults만 덮어써야 실제로 화면에 반영된다(공개
+  // 여부와 무관하게 항상 존재하는 status/score/compileErrorMessage는 그대로 gradedResult
+  // 쪽 값을 쓴다 — getMyResult 응답에는 compileErrorMessage가 없다).
+  const [revealedTcResults, setRevealedTcResults] = useState<Record<
+    string,
+    TestCaseResult[]
+  > | null>(null);
+
+  useEffect(() => {
+    if (initial.participantStatus !== "FINALIZED") return;
+    getMyResult({ quizId })
+      .then((response) => {
+        if (!response.perProblem) return;
+        const byProblemId: Record<string, TestCaseResult[]> = {};
+        for (const p of response.perProblem) byProblemId[p.problemId] = p.tcResults;
+        setRevealedTcResults(byProblemId);
+      })
+      .catch(() => {
+        // 실패해도 기존 gradedResult 기반 마스킹 화면을 그대로 보여준다.
+      });
+  }, [quizId, initial.participantStatus]);
+
   const activeProblem = initial.problems[activeIndex];
   if (!activeProblem) return null;
 
@@ -50,6 +79,7 @@ export function ResultView({ quizId, initial }: ResultViewProps) {
 
   const activeResult = graded?.[activeProblem.problemId];
   const activeCode = submissions?.[activeProblem.problemId]?.code ?? "";
+  const activeTcResults = revealedTcResults?.[activeProblem.problemId] ?? activeResult?.tcResults;
 
   return (
     <div className="container">
@@ -104,7 +134,11 @@ export function ResultView({ quizId, initial }: ResultViewProps) {
                 onClick={() => setActiveIndex(index)}
               >
                 {problem.title}
-                {result && <span className="tab-meta">{result.score}/{result.maxScore}점</span>}
+                {result && (
+                  <span className="tab-meta">
+                    {result.score}/{result.maxScore}점
+                  </span>
+                )}
               </button>
             );
           })}
@@ -134,7 +168,7 @@ export function ResultView({ quizId, initial }: ResultViewProps) {
                 <p>
                   결과: {activeResult.status} ({activeResult.score} / {activeResult.maxScore}점)
                 </p>
-                <TcResultTable tcResults={activeResult.tcResults} />
+                <TcResultTable tcResults={activeTcResults ?? []} />
               </>
             )}
           </div>
