@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CEditor } from "../editor/CEditor";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
+import { SplitPanel } from "../shared/SplitPanel";
 import { formatRemaining, startCountdown } from "../shared/countdown";
 import { finalSubmit, practiceRun, type EnterQuizResponse, type PracticeRunResponse } from "./api";
 import { FinalSubmitModal } from "./FinalSubmitModal";
@@ -231,64 +232,66 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
           </button>
         </div>
 
-        <div
-          className="problem-content"
-          style={descHidden ? { gridTemplateColumns: "1fr" } : undefined}
-        >
-          {!descHidden && <Markdown text={activeProblem.description} />}
+        <SplitPanel
+          className="problem-content split-panel"
+          storageKey="cquiz_problemSplitRatio"
+          leftHidden={descHidden}
+          left={<Markdown text={activeProblem.description} />}
+          right={
+            <div className="problem-editor-panel">
+              <div className="editor-shell">
+                <CEditor
+                  value={codeByProblem[activeProblem.problemId] ?? ""}
+                  onChange={(code) => updateCode(activeProblem.problemId, code)}
+                  readOnly={ended}
+                />
+              </div>
 
-          <div className="problem-editor-panel">
-            <div className="editor-shell">
-              <CEditor
-                value={codeByProblem[activeProblem.problemId] ?? ""}
-                onChange={(code) => updateCode(activeProblem.problemId, code)}
-                readOnly={ended}
-              />
-            </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <DelayedActionButton
+                  label="실행"
+                  pendingLabel="실행 중..."
+                  delayedLabel="채점이 지연되고 있습니다..."
+                  onAction={runActiveProblem}
+                />
+                <button className="secondary" onClick={resetToInitialCode} disabled={ended}>
+                  기본 코드
+                </button>
+                {maxRuns > 0 && (
+                  <span className={`run-count-box ${runCountClass}`.trim()}>
+                    <span className="run-count-label">실행 횟수:</span> {used}/{maxRuns}회 · 남은
+                    횟수 {remaining}회
+                  </span>
+                )}
+              </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <DelayedActionButton
-                label="실행"
-                pendingLabel="실행 중..."
-                delayedLabel="채점이 지연되고 있습니다..."
-                onAction={runActiveProblem}
-              />
-              <button className="secondary" onClick={resetToInitialCode} disabled={ended}>
-                기본 코드
-              </button>
-              {maxRuns > 0 && (
-                <span className={`run-count-box ${runCountClass}`.trim()}>
-                  <span className="run-count-label">실행 횟수:</span> {used}/{maxRuns}회 · 남은 횟수{" "}
-                  {remaining}회
-                </span>
+              {runError && <p className="error">{runError}</p>}
+              {isStale && (
+                <p className="warning">코드가 마지막 실행 후 수정되었습니다. 다시 실행해보세요.</p>
+              )}
+
+              {lastRun?.status === "CE" ? (
+                <div className="compile-error-box">
+                  <b>컴파일 오류</b>
+                  <pre>{lastRun.compileErrorMessage}</pre>
+                </div>
+              ) : lastRun ? (
+                <>
+                  <p>
+                    실행 결과: {lastRun.score} / {lastRun.maxScore}
+                    {elapsedMsByProblem[activeProblem.problemId] !== undefined &&
+                      ` (${elapsedMsByProblem[activeProblem.problemId]}ms)`}
+                    {lastRun.usedCache &&
+                      " · 같은 코드의 이전 결과를 사용했습니다(횟수 차감 없음)."}
+                  </p>
+                  <TcResultTable tcResults={lastRun.tcResults} />
+                </>
+              ) : (
+                <div className="result-box muted">실행 결과가 없습니다.</div>
               )}
             </div>
-
-            {runError && <p className="error">{runError}</p>}
-            {isStale && (
-              <p className="warning">코드가 마지막 실행 후 수정되었습니다. 다시 실행해보세요.</p>
-            )}
-
-            {lastRun?.status === "CE" ? (
-              <div className="compile-error-box">
-                <b>컴파일 오류</b>
-                <pre>{lastRun.compileErrorMessage}</pre>
-              </div>
-            ) : lastRun ? (
-              <>
-                <p>
-                  실행 결과: {lastRun.score} / {lastRun.maxScore}
-                  {elapsedMsByProblem[activeProblem.problemId] !== undefined &&
-                    ` (${elapsedMsByProblem[activeProblem.problemId]}ms)`}
-                  {lastRun.usedCache && " · 같은 코드의 이전 결과를 사용했습니다(횟수 차감 없음)."}
-                </p>
-                <TcResultTable tcResults={lastRun.tcResults} />
-              </>
-            ) : (
-              <div className="result-box muted">실행 결과가 없습니다.</div>
-            )}
-          </div>
-        </div>
+          }
+        />
 
         <button className="danger" onClick={() => setShowSubmitModal(true)} disabled={submitEnded}>
           최종 제출

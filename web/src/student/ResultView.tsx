@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CEditor } from "../editor/CEditor";
+import { SplitPanel } from "../shared/SplitPanel";
 import {
   getMyResult,
   type EnterQuizResponse,
@@ -148,31 +149,34 @@ export function ResultView({ quizId, initial }: ResultViewProps) {
       <div className="card">
         <h2>{activeProblem.title}</h2>
 
-        <div className="problem-content">
-          <Markdown text={activeProblem.description} />
-
-          <div className="problem-editor-panel">
-            <div className="editor-shell">
-              <CEditor value={activeCode} onChange={noop} readOnly />
-            </div>
-
-            {!activeResult ? (
-              <div className="result-box muted">채점 대기 중입니다.</div>
-            ) : activeResult.status === "CE" ? (
-              <div className="compile-error-box">
-                <b>컴파일 오류</b>
-                <pre>{activeResult.compileErrorMessage}</pre>
+        <SplitPanel
+          className="problem-content split-panel"
+          storageKey="cquiz_problemSplitRatio"
+          left={<Markdown text={activeProblem.description} />}
+          right={
+            <div className="problem-editor-panel">
+              <div className="editor-shell">
+                <CEditor value={activeCode} onChange={noop} readOnly />
               </div>
-            ) : (
-              <>
-                <p>
-                  결과: {activeResult.status} ({activeResult.score} / {activeResult.maxScore}점)
-                </p>
-                <TcResultTable tcResults={activeTcResults ?? []} />
-              </>
-            )}
-          </div>
-        </div>
+
+              {!activeResult ? (
+                <div className="result-box muted">채점 대기 중입니다.</div>
+              ) : activeResult.status === "CE" ? (
+                <div className="compile-error-box">
+                  <b>컴파일 오류</b>
+                  <pre>{activeResult.compileErrorMessage}</pre>
+                </div>
+              ) : (
+                <>
+                  <p>
+                    결과: {activeResult.status} ({activeResult.score} / {activeResult.maxScore}점)
+                  </p>
+                  <TcResultTable tcResults={activeTcResults ?? []} />
+                </>
+              )}
+            </div>
+          }
+        />
       </div>
     </div>
   );

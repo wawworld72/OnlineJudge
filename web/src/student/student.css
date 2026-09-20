@@ -132,7 +132,9 @@ button:disabled {
   cursor: pointer;
   color: inherit;
   text-decoration: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .quiz-card:hover {
@@ -255,6 +257,44 @@ button:disabled {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   align-items: start;
+}
+
+.split-panel {
+  gap: 4px;
+}
+
+.split-panel-left,
+.split-panel-right {
+  min-width: 0;
+}
+
+.split-handle {
+  align-self: stretch;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: col-resize;
+  border-radius: 4px;
+  touch-action: none;
+}
+
+.split-handle::after {
+  content: "";
+  width: 4px;
+  height: 40px;
+  border-radius: 2px;
+  background: #ccc;
+}
+
+.split-handle:hover::after,
+.split-handle:focus-visible::after {
+  background: #999;
+}
+
+.split-handle:focus-visible {
+  outline: 2px solid #4a90d9;
+  outline-offset: 2px;
 }
 
 .problem-description-panel {
@@ -489,6 +529,11 @@ th {
     grid-template-columns: 1fr;
   }
   .problem-content {
-    grid-template-columns: 1fr;
+    /* SplitPanel이 인라인 style로 비율을 지정해도(3열: 왼쪽/손잡이/오른쪽),
+       좁은 화면에서는 항상 세로로 쌓는다 — 드래그 손잡이도 의미가 없어 숨긴다. */
+    grid-template-columns: 1fr !important;
+  }
+  .split-handle {
+    display: none;
   }
 }
