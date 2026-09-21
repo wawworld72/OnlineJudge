@@ -1,4 +1,5 @@
 import type { Firestore } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/v2";
 import { processInChunks } from "../shared/chunkedConcurrency";
 import { grade } from "./graderClient";
 import { computeFinalTotal } from "./scoreAggregation";
@@ -75,7 +76,16 @@ export async function runBatchGrade(db: Firestore, quizId: string): Promise<Batc
         finalStatus: "FINALIZED",
       });
       return { ok: true as const };
-    } catch {
+    } catch (cause) {
+      // 개별 참가자 채점 실패는 전체 일괄 채점을 막지 않고 failed로만 집계하지만,
+      // 원인을 남겨두지 않으면 "왜 이 학생만 실패했는지" 나중에 알 방법이 없다
+      // (특정 그레이더 오류는 graderClient.ts의 systemError가 이미 로그를 남기지만,
+      // Firestore 쓰기 실패 등 다른 원인은 여기서만 잡힌다).
+      logger.warn("runBatchGrade: 참가자 채점 실패", {
+        quizId,
+        studentId: participant.studentId,
+        cause,
+      });
       return { ok: false as const, studentId: participant.studentId };
     }
   });
