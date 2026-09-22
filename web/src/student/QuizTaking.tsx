@@ -240,7 +240,12 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
           right={
             <div className="problem-editor-panel">
               <div className="editor-shell">
+                {/* key로 문제가 바뀔 때마다 에디터를 새로 마운트한다 — 그렇지 않으면 CEditor
+                    안의 CodeMirror 인스턴스가 재사용되면서, 문제 전환 시 내용을 바꿔치기하는
+                    트랜잭션이 실행취소(Ctrl+Z) 히스토리에 그대로 남아, 새 문제에서 되돌리기를
+                    반복하면 이전 문제의 코드까지 복원되는 버그가 있었다. */}
                 <CEditor
+                  key={activeProblem.problemId}
                   value={codeByProblem[activeProblem.problemId] ?? ""}
                   onChange={(code) => updateCode(activeProblem.problemId, code)}
                   readOnly={ended}

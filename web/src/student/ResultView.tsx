@@ -156,7 +156,14 @@ export function ResultView({ quizId, initial }: ResultViewProps) {
           right={
             <div className="problem-editor-panel">
               <div className="editor-shell">
-                <CEditor value={activeCode} onChange={noop} readOnly />
+                {/* QuizTaking.tsx와 같은 이유로 key를 둔다 — 문제 전환 시 에디터를 새로
+                    마운트해 CodeMirror 실행취소 히스토리가 문제 간에 섞이지 않게 한다. */}
+                <CEditor
+                  key={activeProblem.problemId}
+                  value={activeCode}
+                  onChange={noop}
+                  readOnly
+                />
               </div>
 
               {!activeResult ? (
