@@ -31,6 +31,8 @@ export interface EnterQuizResponse {
   studentEmail: string;
   // 입장 시점의 서버 시각(ms) — 기기 시계 오차를 보정하는 데 쓴다(shared/serverClock.ts).
   serverNow: number;
+  // 응시 화면 코드 에디터에서 복사·붙여넣기를 막을지(부정행위 방지) — CEditor.tsx.
+  clipboardRestricted: boolean;
   // 제출완료/채점완료 상태로 (재)입장했을 때만 채워진다 — 응시 화면 그대로의 모습으로
   // "제출했던 코드"와 "테스트케이스 결과"를 복기할 수 있게 하기 위함(ResultView).
   existingSubmission?: Record<string, { code: string; submittedAt?: number }>;

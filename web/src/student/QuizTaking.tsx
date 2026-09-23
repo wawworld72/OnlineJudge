@@ -239,6 +239,11 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
           left={<Markdown text={activeProblem.description} />}
           right={
             <div className="problem-editor-panel">
+              {initial.clipboardRestricted && (
+                <p className="clipboard-restricted-note">
+                  🔒 이 퀴즈는 코드 에디터에서 복사·붙여넣기가 제한됩니다.
+                </p>
+              )}
               <div className="editor-shell">
                 {/* key로 문제가 바뀔 때마다 에디터를 새로 마운트한다 — 그렇지 않으면 CEditor
                     안의 CodeMirror 인스턴스가 재사용되면서, 문제 전환 시 내용을 바꿔치기하는
@@ -249,6 +254,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
                   value={codeByProblem[activeProblem.problemId] ?? ""}
                   onChange={(code) => updateCode(activeProblem.problemId, code)}
                   readOnly={ended}
+                  restrictClipboard={initial.clipboardRestricted}
                 />
               </div>
 

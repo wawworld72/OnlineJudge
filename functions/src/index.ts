@@ -24,6 +24,7 @@ export {
   endQuizTimer,
 } from "./callable/quizTimer";
 export { setTestCaseReveal } from "./callable/setTestCaseReveal";
+export { setClipboardRestriction } from "./callable/setClipboardRestriction";
 export { batchGrade } from "./callable/batchGrade";
 export { getParticipantOverview } from "./callable/getParticipantOverview";
 export { getParticipantDetail } from "./callable/getParticipantDetail";

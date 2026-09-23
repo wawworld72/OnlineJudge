@@ -443,6 +443,7 @@ export async function syncQuizFromSheet(
       timerDurationMs: DEFAULT_TIMER_DURATION_MS,
       pausedAt: null,
       revealTestCases: false,
+      clipboardRestricted: false,
     };
     const quizRef = await db.collection("quizzes").add(newQuiz);
     quizId = quizRef.id;

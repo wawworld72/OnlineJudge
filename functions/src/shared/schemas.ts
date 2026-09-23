@@ -198,6 +198,11 @@ export const setTestCaseRevealSchema = z.object({
   revealed: z.boolean(),
 });
 
+export const setClipboardRestrictionSchema = z.object({
+  quizId: z.string().min(1),
+  restricted: z.boolean(),
+});
+
 export const batchGradeSchema = z.object({
   quizId: z.string().min(1),
 });

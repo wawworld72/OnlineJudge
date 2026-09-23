@@ -146,6 +146,9 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
     // 제기의 원인이 됨). 입장 시점에 딱 한 번 서버 시각을 함께 내려줘, 클라이언트가
     // 이후 카운트다운 계산에 쓸 오프셋을 계산하게 한다(추가 호출·구독 비용 없음).
     serverNow: number;
+    // 교사가 켜면 응시 화면(QuizTaking)의 코드 에디터에서 복사·붙여넣기가 막힌다
+    // (부정행위 방지 — CEditor.tsx). 참가자 상태와 무관하게 항상 내려준다.
+    clipboardRestricted: boolean;
     existingSubmission?: Participant["submissions"];
     gradedResult?: Participant["runResults"];
   } = {
@@ -158,6 +161,7 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
     studentName,
     studentEmail: authEmail,
     serverNow: Timestamp.now().toMillis(),
+    clipboardRestricted: quiz.clipboardRestricted ?? false,
   };
 
   if (participant.finalStatus !== "IN_PROGRESS") {

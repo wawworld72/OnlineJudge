@@ -60,6 +60,7 @@ export const getQuizForEdit = createCallable(getQuizForEditSchema, async ({ data
     archivedAt: quiz.archivedAt?.toMillis() ?? null,
     archiveSpreadsheetUrl: quiz.archiveSpreadsheetUrl,
     revealTestCases: quiz.revealTestCases ?? false,
+    clipboardRestricted: quiz.clipboardRestricted ?? false,
     problems,
   };
 });

@@ -129,6 +129,30 @@ describe("enterQuiz", () => {
     expect(response.serverNow).toBeLessThanOrEqual(after);
   });
 
+  it("clipboardRestricted 필드가 없는(레거시) 퀴즈 문서는 응답에서 false로 내려온다", async () => {
+    const response = await enterQuiz.run(
+      makeRequest(
+        { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },
+        STUDENT_EMAIL,
+      ),
+    );
+
+    expect(response.clipboardRestricted).toBe(false);
+  });
+
+  it("퀴즈에 clipboardRestricted: true가 설정되어 있으면 응답에 그대로 반영된다", async () => {
+    await testDb().collection("quizzes").doc(QUIZ_ID).update({ clipboardRestricted: true });
+
+    const response = await enterQuiz.run(
+      makeRequest(
+        { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },
+        STUDENT_EMAIL,
+      ),
+    );
+
+    expect(response.clipboardRestricted).toBe(true);
+  });
+
   it("OPEN 상태여도 시작 시각 전이면 QUIZ_NOT_STARTED로 거부한다", async () => {
     const db = testDb();
     await db

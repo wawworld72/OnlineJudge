@@ -448,6 +448,28 @@ th {
   font-family: Consolas, Monaco, monospace;
 }
 
+.clipboard-blocked-banner {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #fff0f0;
+  border: 1px solid #f44336;
+  color: #b00020;
+  font-size: 12px;
+  font-weight: bold;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.clipboard-restricted-note {
+  font-size: 13px;
+  font-weight: bold;
+  color: #b36b00;
+  margin: 0 0 8px;
+}
+
 .time-warning-banner {
   padding: 10px 16px;
   border-radius: 8px;

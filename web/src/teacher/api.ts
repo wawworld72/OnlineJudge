@@ -59,6 +59,7 @@ export interface QuizDetail {
   archivedAt: number | null;
   archiveSpreadsheetUrl: string | null;
   revealTestCases: boolean;
+  clipboardRestricted: boolean;
   problems: ProblemDetail[];
 }
 
@@ -167,6 +168,13 @@ export function endQuizTimer(input: { quizId: string }) {
 
 export function setTestCaseReveal(input: { quizId: string; revealed: boolean }) {
   return callFunction<typeof input, { revealTestCases: boolean }>("setTestCaseReveal", input);
+}
+
+export function setClipboardRestriction(input: { quizId: string; restricted: boolean }) {
+  return callFunction<typeof input, { clipboardRestricted: boolean }>(
+    "setClipboardRestriction",
+    input,
+  );
 }
 
 export interface BatchGradeResponse {
