@@ -13,13 +13,18 @@ export async function incrementRunCountOrThrow(
   participantRef: DocumentReference,
   problemId: string,
   maxRuns: number,
+  // 교사의 "테스트용 수강생" 참가자(isTestEntry)는 실행 횟수 한도 없이 계속
+  // 실행해볼 수 있어야 한다 — practiceRun.ts가 participant.isTestEntry를 그대로
+  // 넘겨준다. 카운트 자체는 계속 증가시키므로 remainingRuns 표시만 0으로
+  // 클램프될 뿐, 실제 차단은 일어나지 않는다.
+  unlimited = false,
 ): Promise<number> {
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(participantRef);
     const participant = snap.data() as Participant;
     const current = participant.runsUsedByProblem[problemId] ?? 0;
 
-    if (current >= maxRuns) {
+    if (!unlimited && current >= maxRuns) {
       throw domainError("NO_RUNS_LEFT", "이 문항의 실행 횟수를 모두 사용했습니다.");
     }
 

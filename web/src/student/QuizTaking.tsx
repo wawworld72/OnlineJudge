@@ -97,8 +97,10 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
 
   if (!activeProblem) return null;
 
-  const ended = remainingMs <= 0;
-  const submitEnded = remainingSubmitMs <= 0;
+  // 교사의 "테스트용 수강생" 참가자는 서버(practiceRun.ts/finalSubmit.ts)가 이미
+  // 마감시각을 우회하므로, 화면도 맞춰서 마감시각 경과에 따른 잠금을 걸지 않는다.
+  const ended = !initial.isTestEntry && remainingMs <= 0;
+  const submitEnded = !initial.isTestEntry && remainingSubmitMs <= 0;
   const maxRuns = activeProblem.maxRuns;
   const remaining = remainingRuns[activeProblem.problemId] ?? maxRuns;
   const used = maxRuns > 0 ? maxRuns - remaining : 0;

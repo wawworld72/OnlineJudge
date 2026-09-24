@@ -10,21 +10,18 @@ const PROBLEM_ID = "p1";
 describe("incrementRunCountOrThrow", () => {
   beforeEach(async () => {
     await clearFirestore();
-    await testDb()
-      .collection("participants")
-      .doc(`${QUIZ_ID}_${STUDENT_ID}`)
-      .set({
-        quizId: QUIZ_ID,
-        studentId: STUDENT_ID,
-        enteredAt: FieldValue.serverTimestamp(),
-        finalStatus: "IN_PROGRESS",
-        finalSubmittedAt: null,
-        finalTotal: 0,
-        runsUsedByProblem: {},
-        submissions: {},
-        runResults: {},
-        gradePushedAt: null,
-      });
+    await testDb().collection("participants").doc(`${QUIZ_ID}_${STUDENT_ID}`).set({
+      quizId: QUIZ_ID,
+      studentId: STUDENT_ID,
+      enteredAt: FieldValue.serverTimestamp(),
+      finalStatus: "IN_PROGRESS",
+      finalSubmittedAt: null,
+      finalTotal: 0,
+      runsUsedByProblem: {},
+      submissions: {},
+      runResults: {},
+      gradePushedAt: null,
+    });
   });
 
   afterAll(async () => {
@@ -49,6 +46,17 @@ describe("incrementRunCountOrThrow", () => {
     await expect(incrementRunCountOrThrow(db, ref, PROBLEM_ID, 1)).rejects.toMatchObject({
       details: { code: "NO_RUNS_LEFT" },
     });
+  });
+
+  it("unlimited가 true면 한도를 넘겨도 예외 없이 카운트가 계속 증가한다", async () => {
+    const db = testDb();
+    const ref = db.collection("participants").doc(`${QUIZ_ID}_${STUDENT_ID}`);
+
+    await incrementRunCountOrThrow(db, ref, PROBLEM_ID, 1, true);
+    const second = await incrementRunCountOrThrow(db, ref, PROBLEM_ID, 1, true);
+    expect(second).toBe(2);
+    const third = await incrementRunCountOrThrow(db, ref, PROBLEM_ID, 1, true);
+    expect(third).toBe(3);
   });
 
   it("동시에 여러 요청이 들어와도 한도(FR-014)를 넘지 않는다", async () => {

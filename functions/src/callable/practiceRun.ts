@@ -65,7 +65,13 @@ export const practiceRun = createCallable(practiceRunSchema, async ({ data, auth
     return { ...cached, remainingRuns: Math.max(0, maxRuns - used), usedCache: true };
   }
 
-  const newCount = await incrementRunCountOrThrow(db, participantRef, data.problemId, maxRuns);
+  const newCount = await incrementRunCountOrThrow(
+    db,
+    participantRef,
+    data.problemId,
+    maxRuns,
+    participant.isTestEntry,
+  );
 
   const secretsSnap = await quizRef.collection("problemSecrets").doc(data.problemId).get();
   const secrets = secretsSnap.data() as ProblemSecrets;

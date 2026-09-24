@@ -33,6 +33,9 @@ export interface EnterQuizResponse {
   serverNow: number;
   // 응시 화면 코드 에디터에서 복사·붙여넣기를 막을지(부정행위 방지) — CEditor.tsx.
   clipboardRestricted: boolean;
+  // 교사의 "테스트용 수강생" 참가자 여부 — 참이면 QuizTaking.tsx가 마감시각 경과에
+  // 따른 화면 잠금(readOnly/버튼 비활성화)을 걸지 않는다.
+  isTestEntry: boolean;
   // 제출완료/채점완료 상태로 (재)입장했을 때만 채워진다 — 응시 화면 그대로의 모습으로
   // "제출했던 코드"와 "테스트케이스 결과"를 복기할 수 있게 하기 위함(ResultView).
   existingSubmission?: Record<string, { code: string; submittedAt?: number }>;

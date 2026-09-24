@@ -385,6 +385,48 @@ describe("enterQuiz", () => {
       expect(response.studentName).toBe("김철수");
     });
 
+    it("일반 로스터 항목은 응답의 isTestEntry가 false로 내려온다", async () => {
+      await seedClassroomQuiz();
+      await testDb()
+        .collection("rosters")
+        .doc(`${COURSE_ID}_20240002`)
+        .set({
+          courseId: COURSE_ID,
+          studentId: "20240002",
+          name: "김철수",
+          email: "student2@hoseo.edu",
+          syncedAt: ts(0),
+          isTestEntry: false,
+        });
+
+      const response = await enterQuiz.run(
+        makeRequest({ quizId: CLASSROOM_QUIZ_ID, accessCode: "ABC123" }, "student2@hoseo.edu"),
+      );
+
+      expect(response.isTestEntry).toBe(false);
+    });
+
+    it("교사가 추가한 테스트용 수강생 로스터 항목은 응답의 isTestEntry가 true로 내려온다", async () => {
+      await seedClassroomQuiz();
+      await testDb()
+        .collection("rosters")
+        .doc(`${COURSE_ID}_teacher-test`)
+        .set({
+          courseId: COURSE_ID,
+          studentId: "teacher-test",
+          name: "테스트교사",
+          email: "teacher@hoseo.edu",
+          syncedAt: ts(0),
+          isTestEntry: true,
+        });
+
+      const response = await enterQuiz.run(
+        makeRequest({ quizId: CLASSROOM_QUIZ_ID, accessCode: "ABC123" }, "teacher@hoseo.edu"),
+      );
+
+      expect(response.isTestEntry).toBe(true);
+    });
+
     it("이 강의 명부에서 로그인 이메일을 찾을 수 없으면 NOT_IN_CLASSROOM_ROSTER로 거부한다", async () => {
       await seedClassroomQuiz();
 

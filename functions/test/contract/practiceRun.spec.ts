@@ -241,6 +241,57 @@ describe("practiceRun", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("isTestEntry 참가자는 실행 횟수 한도를 넘겨도 NO_RUNS_LEFT 없이 계속 실행할 수 있다", async () => {
+    await testDb()
+      .collection("participants")
+      .doc(`${QUIZ_ID}_${STUDENT_ID}`)
+      .update({ isTestEntry: true });
+
+    mockGraderResponse({
+      ok: true,
+      status: "JUDGED",
+      score: 0,
+      maxScore: 100,
+      compileErrorMessage: null,
+      tcResultsFull: [
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "x",
+          memo: "",
+        },
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "2",
+          expected: "2",
+          actual: "x",
+          memo: "",
+        },
+      ],
+    });
+
+    const request = makeRequest(
+      { quizId: QUIZ_ID, problemId: PROBLEM_ID, code: "int main(){}" },
+      STUDENT_EMAIL,
+    );
+    // maxRunsPerProblem은 3 — 한도보다 많은 4번째 호출도 성공해야 한다.
+    await practiceRun.run(request);
+    await practiceRun.run({ ...request, data: { ...request.data, code: "code-2" } });
+    await practiceRun.run({ ...request, data: { ...request.data, code: "code-3" } });
+    const fourth = await practiceRun.run({ ...request, data: { ...request.data, code: "code-4" } });
+
+    expect(fourth.remainingRuns).toBe(0);
+    const participant = (
+      await testDb().collection("participants").doc(`${QUIZ_ID}_${STUDENT_ID}`).get()
+    ).data()!;
+    expect(participant.runsUsedByProblem[PROBLEM_ID]).toBe(4);
+  });
+
   it("타이머가 일시정지 중이면 시간 범위 안이어도 QUIZ_NOT_ACTIVE로 거부한다", async () => {
     await testDb()
       .collection("quizzes")
