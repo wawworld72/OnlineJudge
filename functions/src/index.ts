@@ -29,7 +29,7 @@ export { batchGrade } from "./callable/batchGrade";
 export { getParticipantOverview } from "./callable/getParticipantOverview";
 export { getParticipantDetail } from "./callable/getParticipantDetail";
 export { syncRoster } from "./callable/syncRoster";
-export { addTestRosterEntry } from "./callable/addTestRosterEntry";
+export { addGlobalTestAccount } from "./callable/addGlobalTestAccount";
 export {
   deployClassroomAssignment,
   resetClassroomDeployment,

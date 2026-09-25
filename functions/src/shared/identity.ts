@@ -2,6 +2,23 @@ import type { Firestore } from "firebase-admin/firestore";
 import type { Roster, Student } from "../models/types";
 import { domainError } from "./errors";
 
+/**
+ * 교사가 `addGlobalTestAccount`로 등록한 전역 테스트 계정인지 확인한다. 있으면
+ * `enterQuiz.ts`가 어떤 퀴즈든(Classroom 연동 여부·분반과 무관) 곧바로 테스트
+ * 참가자로 처리한다 — `resolveStudentIdByEmail`과 같은 이메일 조회 패턴을 쓴다.
+ */
+export async function resolveGlobalTestAccount(
+  db: Firestore,
+  authEmail: string,
+): Promise<{ studentId: string; name: string } | null> {
+  const snap = await db.collection("students").where("email", "==", authEmail).limit(1).get();
+  if (snap.empty) return null;
+  const doc = snap.docs[0]!;
+  const student = doc.data() as Student;
+  if (!student.isGlobalTestAccount) return null;
+  return { studentId: doc.id, name: student.name };
+}
+
 interface IdentityInput {
   studentId: string;
   name: string;

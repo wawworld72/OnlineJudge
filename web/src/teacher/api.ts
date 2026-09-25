@@ -237,13 +237,8 @@ export function syncRoster(input: { courseId: string }) {
   return callFunction<typeof input, SyncRosterResponse>("syncRoster", input);
 }
 
-export function addTestRosterEntry(input: {
-  courseId: string;
-  studentId: string;
-  name: string;
-  email: string;
-}) {
-  return callFunction<typeof input, { ok: true }>("addTestRosterEntry", input);
+export function addGlobalTestAccount(input: { studentId: string; name: string; email: string }) {
+  return callFunction<typeof input, { ok: true }>("addGlobalTestAccount", input);
 }
 
 export function deployClassroomAssignment(input: { quizId: string }) {

@@ -458,6 +458,62 @@ describe("enterQuiz", () => {
     });
   });
 
+  describe("전역 테스트 계정(isGlobalTestAccount)", () => {
+    const GLOBAL_TEST_EMAIL = "globaltester@hoseo.edu";
+
+    async function seedGlobalTestAccount() {
+      await testDb().collection("students").doc("global-tester").set({
+        name: "전역테스트계정",
+        email: GLOBAL_TEST_EMAIL,
+        status: "ACTIVE",
+        isGlobalTestAccount: true,
+      });
+    }
+
+    it("분반 명부(rosters)에 없어도 Classroom 연동 퀴즈에 전역 테스트 계정으로 입장한다", async () => {
+      const COURSE_ID = "course-global";
+      const CLASSROOM_QUIZ_ID = "quiz-global-classroom";
+      await testDb()
+        .collection("quizzes")
+        .doc(CLASSROOM_QUIZ_ID)
+        .set({
+          title: "중간고사",
+          description: "",
+          startAt: ts(-60_000),
+          endAt: ts(60_000),
+          accessCode: "ABC123",
+          status: "OPEN",
+          maxRunsPerProblem: 5,
+          courseId: COURSE_ID,
+          courseWorkId: null,
+          courseWorkLink: null,
+          archivedAt: null,
+          archiveSpreadsheetUrl: null,
+          deletedAt: null,
+        });
+      await seedGlobalTestAccount();
+
+      const response = await enterQuiz.run(
+        makeRequest({ quizId: CLASSROOM_QUIZ_ID, accessCode: "ABC123" }, GLOBAL_TEST_EMAIL),
+      );
+
+      expect(response.isTestEntry).toBe(true);
+      expect(response.studentId).toBe("global-tester");
+      expect(response.studentName).toBe("전역테스트계정");
+    });
+
+    it("Classroom 미연동 퀴즈에도 전역 테스트 계정으로 입장한다(비어있는 출입코드·학번·이름이어도)", async () => {
+      await seedGlobalTestAccount();
+
+      const response = await enterQuiz.run(
+        makeRequest({ quizId: QUIZ_ID, accessCode: "" }, GLOBAL_TEST_EMAIL),
+      );
+
+      expect(response.isTestEntry).toBe(true);
+      expect(response.studentId).toBe("global-tester");
+    });
+  });
+
   it("이미 입장한 참가자가 다시 호출해도 기존 문서를 덮어쓰지 않는다(멱등성)", async () => {
     const request = makeRequest(
       { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },

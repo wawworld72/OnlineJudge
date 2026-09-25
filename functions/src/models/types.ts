@@ -6,6 +6,11 @@ export interface Student {
   name: string;
   email: string | null;
   status: StudentStatus;
+  /** 교사가 전역으로 한 번 등록한 테스트 계정이면 true(실제 학생이 아님).
+   *  `enterQuiz.ts`가 이 이메일로 로그인하면 어떤 퀴즈든(Classroom 연동
+   *  여부·분반과 무관) isTestEntry로 처리해 상태·시간·일시정지·마감·실행
+   *  횟수 게이트를 모두 우회하게 한다. */
+  isGlobalTestAccount?: boolean;
 }
 
 export interface Roster {
@@ -14,7 +19,9 @@ export interface Roster {
   name: string;
   email: string;
   syncedAt: Timestamp;
-  /** `addTestRosterEntry`가 만든 항목이면 true. 실제 `syncCourseRoster`가 채운 항목은 false. */
+  /** (레거시) 과거 `addTestRosterEntry`가 만든 항목이면 true. 실제 `syncCourseRoster`가
+   *  채운 항목은 false. 이 콜러블은 제거됐지만 이미 만들어진 항목은 계속 동작한다 —
+   *  새 테스트 계정은 `Student.isGlobalTestAccount`로 등록한다. */
   isTestEntry: boolean;
 }
 
@@ -139,9 +146,10 @@ export interface Participant {
    */
   gradePushedAt: Timestamp | null;
   /**
-   * `enterQuiz`가 `addTestRosterEntry`로 만든 테스트 로스터 항목으로 입장시킨
-   * 참가자면 true. 퀴즈 상태·시작/종료 시각 게이트(`enterQuiz`/`practiceRun`/
-   * `finalSubmit`)를 우회하고, 참가자 현황·성적 반영·시트 내보내기에서는 자동으로
+   * `enterQuiz`가 전역 테스트 계정(`Student.isGlobalTestAccount`, 레거시로는
+   * `Roster.isTestEntry`)으로 입장시킨 참가자면 true. 퀴즈 상태·시작/종료
+   * 시각·일시정지·실행 횟수 게이트(`enterQuiz`/`practiceRun`/`finalSubmit`)를
+   * 우회하고, 참가자 현황·성적 반영·시트 내보내기에서는 자동으로
    * 제외된다(`participantOverview.ts`/`batchGrade.ts`).
    */
   isTestEntry: boolean;

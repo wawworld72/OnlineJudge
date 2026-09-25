@@ -25,6 +25,7 @@ import { ClipboardRestriction } from "./ClipboardRestriction";
 import { ParticipantStatus } from "./ParticipantStatus";
 import { ClassroomPanel } from "./ClassroomPanel";
 import { ArchiveDelete } from "./ArchiveDelete";
+import { GlobalTestAccount } from "./GlobalTestAccount";
 import "./teacher.css";
 
 type TabKey = "problems" | "deploy" | "participants" | "classroom" | "archive";
@@ -289,6 +290,10 @@ export function QuizManager() {
           <button className="secondary" onClick={() => signOut(getAuth(firebaseApp))}>
             로그아웃
           </button>
+        </div>
+
+        <div className="card">
+          <GlobalTestAccount />
         </div>
 
         <div className="card">

@@ -4,6 +4,7 @@ import { enterQuizSchema } from "../shared/schemas";
 import {
   normalizeStudentId,
   resolveClassroomIdentity,
+  resolveGlobalTestAccount,
   verifyStudentIdentity,
 } from "../shared/identity";
 import { computeParticipantId } from "../shared/participantId";
@@ -31,10 +32,19 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
   // 학생은 교사가 Classroom에서 직접 제외). 비연동 퀴즈는 기존처럼 학번/이름/이메일
   // 3중 대조를 그대로 요구한다. 출입코드 검사보다 신원 검사를 먼저 하는 이유는 아래
   // isReviewOnly 판단 참고.
+  //
+  // 교사가 `addGlobalTestAccount`로 등록한 전역 테스트 계정은 이 두 분기보다
+  // 먼저 확인한다 — Classroom 연동 여부·분반과 무관하게 어떤 퀴즈든 곧바로
+  // 테스트 참가자로 처리해, 퀴즈/분반마다 따로 등록할 필요가 없게 한다.
   let studentId: string;
   let studentName: string;
   let isTestEntry = false;
-  if (quiz.courseId) {
+  const globalTestAccount = await resolveGlobalTestAccount(db, authEmail);
+  if (globalTestAccount) {
+    studentId = globalTestAccount.studentId;
+    studentName = globalTestAccount.name;
+    isTestEntry = true;
+  } else if (quiz.courseId) {
     const identity = await resolveClassroomIdentity(db, { courseId: quiz.courseId, authEmail });
     studentId = identity.studentId;
     studentName = identity.name;
@@ -149,7 +159,7 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
     // 교사가 켜면 응시 화면(QuizTaking)의 코드 에디터에서 복사·붙여넣기가 막힌다
     // (부정행위 방지 — CEditor.tsx). 참가자 상태와 무관하게 항상 내려준다.
     clipboardRestricted: boolean;
-    // 교사의 "테스트용 수강생" 참가자 여부(addTestRosterEntry). 클라이언트가 이 값을
+    // 교사의 전역 테스트 계정(addGlobalTestAccount) 등 테스트 참가자 여부. 클라이언트가 이 값을
     // 알아야 QuizTaking.tsx가 마감시각 경과에 따른 화면 잠금(에디터 readOnly, 기본
     // 코드/최종 제출 버튼 비활성화 등)을 테스트 참가자에게는 걸지 않을 수 있다 —
     // 서버(practiceRun.ts/finalSubmit.ts)는 이미 isTestEntry를 우회하고 있으므로
