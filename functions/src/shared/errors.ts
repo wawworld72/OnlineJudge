@@ -23,7 +23,8 @@ export type DomainErrorCode =
   | "NOT_ENTERED"
   | "STUDENT_ID_TAKEN"
   | "TIMER_ALREADY_RUNNING"
-  | "TIMER_NOT_RUNNING";
+  | "TIMER_NOT_RUNNING"
+  | "ACCESS_BLOCKED";
 
 /**
  * 예상된 업무 규칙 위반(FR-010 등 "서로 구분된 사유")은 사용자에게 그대로 보여줘도 되는

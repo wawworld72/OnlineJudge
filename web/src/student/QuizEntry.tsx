@@ -125,6 +125,10 @@ export function QuizEntry() {
         setError("아직 공개되지 않았거나 종료된 퀴즈입니다. 담당 교사에게 문의해주세요.");
         return;
       }
+      if (code === "ACCESS_BLOCKED") {
+        setError("담당 교사가 이 퀴즈에 대한 접근을 차단했습니다.");
+        return;
+      }
       setError("출입코드 또는 학번·이름을 확인해주세요.");
     }
   }

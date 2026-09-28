@@ -22,6 +22,7 @@ import { PreDeployCheck } from "./PreDeployCheck";
 import { BatchGrade } from "./BatchGrade";
 import { TestCaseReveal } from "./TestCaseReveal";
 import { ClipboardRestriction } from "./ClipboardRestriction";
+import { AccessBlock } from "./AccessBlock";
 import { ParticipantStatus } from "./ParticipantStatus";
 import { ClassroomPanel } from "./ClassroomPanel";
 import { ArchiveDelete } from "./ArchiveDelete";
@@ -489,6 +490,11 @@ export function QuizManager() {
                 <ClipboardRestriction
                   quizId={selected.quizId}
                   clipboardRestricted={selected.clipboardRestricted}
+                  onChanged={() => openForEdit(selected.quizId)}
+                />
+                <AccessBlock
+                  quizId={selected.quizId}
+                  accessBlocked={selected.accessBlocked}
                   onChanged={() => openForEdit(selected.quizId)}
                 />
               </>

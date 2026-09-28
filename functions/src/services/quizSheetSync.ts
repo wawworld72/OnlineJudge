@@ -444,6 +444,7 @@ export async function syncQuizFromSheet(
       pausedAt: null,
       revealTestCases: false,
       clipboardRestricted: false,
+      accessBlocked: false,
     };
     const quizRef = await db.collection("quizzes").add(newQuiz);
     quizId = quizRef.id;

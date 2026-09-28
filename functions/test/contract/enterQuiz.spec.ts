@@ -514,6 +514,88 @@ describe("enterQuiz", () => {
     });
   });
 
+  describe("접근 차단(accessBlocked)", () => {
+    it("OPEN 퀴즈여도 accessBlocked가 켜져 있으면 신규 입장이 ACCESS_BLOCKED로 거부된다", async () => {
+      await testDb().collection("quizzes").doc(QUIZ_ID).update({ accessBlocked: true });
+
+      await expect(
+        enterQuiz.run(
+          makeRequest(
+            { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },
+            STUDENT_EMAIL,
+          ),
+        ),
+      ).rejects.toMatchObject({ details: { code: "ACCESS_BLOCKED" } });
+    });
+
+    it("이미 채점 완료된 참가자의 복기 재입장도 accessBlocked가 켜져 있으면 ACCESS_BLOCKED로 거부된다", async () => {
+      const BLOCKED_QUIZ_ID = "quiz-blocked-review";
+      await testDb()
+        .collection("quizzes")
+        .doc(BLOCKED_QUIZ_ID)
+        .set({
+          title: "지난 중간고사",
+          description: "",
+          startAt: ts(-120_000),
+          endAt: ts(-60_000),
+          accessCode: "ABC123",
+          status: "CLOSED",
+          maxRunsPerProblem: 5,
+          courseId: null,
+          courseWorkId: null,
+          courseWorkLink: null,
+          archivedAt: null,
+          archiveSpreadsheetUrl: null,
+          deletedAt: null,
+          accessBlocked: true,
+        });
+      await testDb()
+        .collection("participants")
+        .doc(`${BLOCKED_QUIZ_ID}_${STUDENT_ID}`)
+        .set({
+          quizId: BLOCKED_QUIZ_ID,
+          studentId: STUDENT_ID,
+          enteredAt: ts(-100_000),
+          finalStatus: "FINALIZED",
+          finalSubmittedAt: ts(-90_000),
+          finalTotal: 10,
+          runsUsedByProblem: {},
+          submissions: { p1: { code: "int main(){}", submittedAt: ts(-90_000) } },
+          runResults: {
+            p1: { status: "AC", score: 10, maxScore: 10, compileErrorMessage: null, tcResults: [] },
+          },
+          gradePushedAt: null,
+        });
+
+      await expect(
+        enterQuiz.run(
+          makeRequest(
+            { quizId: BLOCKED_QUIZ_ID, accessCode: "", studentId: STUDENT_ID, name: "홍길동" },
+            STUDENT_EMAIL,
+          ),
+        ),
+      ).rejects.toMatchObject({ details: { code: "ACCESS_BLOCKED" } });
+    });
+
+    it("전역 테스트 계정은 accessBlocked가 켜져 있어도 예외로 계속 입장할 수 있다", async () => {
+      const GLOBAL_TEST_EMAIL = "globaltester2@hoseo.edu";
+      await testDb().collection("students").doc("global-tester-2").set({
+        name: "전역테스트계정2",
+        email: GLOBAL_TEST_EMAIL,
+        status: "ACTIVE",
+        isGlobalTestAccount: true,
+      });
+      await testDb().collection("quizzes").doc(QUIZ_ID).update({ accessBlocked: true });
+
+      const response = await enterQuiz.run(
+        makeRequest({ quizId: QUIZ_ID, accessCode: "" }, GLOBAL_TEST_EMAIL),
+      );
+
+      expect(response.isTestEntry).toBe(true);
+      expect(response.studentId).toBe("global-tester-2");
+    });
+  });
+
   it("이미 입장한 참가자가 다시 호출해도 기존 문서를 덮어쓰지 않는다(멱등성)", async () => {
     const request = makeRequest(
       { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },

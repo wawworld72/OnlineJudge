@@ -225,6 +225,11 @@ export const syncRosterSchema = z.object({
  * 테스트할 수 있도록, `students`에 전역 테스트 계정 하나를 등록하는
  * `addGlobalTestAccount`용 스키마.
  */
+export const setAccessBlockedSchema = z.object({
+  quizId: z.string().min(1),
+  blocked: z.boolean(),
+});
+
 export const addGlobalTestAccountSchema = z.object({
   studentId: z.string().min(1),
   name: z.string().min(1),

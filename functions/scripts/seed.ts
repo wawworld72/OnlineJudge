@@ -39,6 +39,7 @@ async function seed() {
       pausedAt: null,
       revealTestCases: false,
       clipboardRestricted: false,
+      accessBlocked: false,
     });
 
   await db.collection("quizzes").doc("Q1").collection("problems").doc("P1").set({

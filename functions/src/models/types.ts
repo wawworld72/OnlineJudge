@@ -67,6 +67,11 @@ export interface Quiz {
    *  차단이라 DevTools 등으로 우회 가능한 억제책일 뿐, 완전한 차단은 아니다.
    *  기본 false. 복기 화면(ResultView)에는 적용하지 않는다. */
   clipboardRestricted: boolean;
+  /** 교사가 켜면 퀴즈 상태(OPEN/CLOSED)·복기 여부와 완전히 무관하게 이 퀴즈에
+   *  대한 모든 학생 접근(신규 입장은 물론 이미 채점된 참가자의 복기·성적 확인
+   *  재입장까지)을 즉시 차단한다(`enterQuiz.ts`) — 문제 유출 방지용 비상 잠금.
+   *  전역 테스트 계정(isTestEntry)만 예외로 계속 접근 가능하다. 기본 false. */
+  accessBlocked: boolean;
 }
 
 export interface Problem {

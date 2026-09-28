@@ -60,6 +60,7 @@ export interface QuizDetail {
   archiveSpreadsheetUrl: string | null;
   revealTestCases: boolean;
   clipboardRestricted: boolean;
+  accessBlocked: boolean;
   problems: ProblemDetail[];
 }
 
@@ -175,6 +176,10 @@ export function setClipboardRestriction(input: { quizId: string; restricted: boo
     "setClipboardRestriction",
     input,
   );
+}
+
+export function setAccessBlocked(input: { quizId: string; blocked: boolean }) {
+  return callFunction<typeof input, { accessBlocked: boolean }>("setAccessBlocked", input);
 }
 
 export interface BatchGradeResponse {

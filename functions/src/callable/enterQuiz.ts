@@ -58,6 +58,14 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
     await verifyStudentIdentity(db, { studentId, name: studentName, authEmail });
   }
 
+  // 문제 유출 방지용 비상 잠금 — 켜져 있으면 신규 입장이든 이미 채점된 참가자의
+  // 복기 재입장이든 전부 막는다(퀴즈 상태·복기 여부와 무관, 교사의 전역 테스트
+  // 계정만 예외). 아래 isReviewOnly 계산보다 먼저 확인해야, "복기는 언제나
+  // 허용"하는 기존 규칙이 이 잠금을 우회하지 못한다.
+  if (quiz.accessBlocked && !isTestEntry) {
+    throw domainError("ACCESS_BLOCKED", "교사가 이 퀴즈에 대한 접근을 차단했습니다.");
+  }
+
   const participantId = computeParticipantId(data.quizId, studentId);
   const participantRef = db.collection("participants").doc(participantId);
   const participantSnap = await participantRef.get();
