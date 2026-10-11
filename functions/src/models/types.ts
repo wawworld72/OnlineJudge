@@ -43,7 +43,11 @@ export interface Quiz {
   endAt: Timestamp;
   accessCode: string;
   status: QuizStatus;
-  maxRunsPerProblem: number;
+  /** 퀴즈 전체(모든 문항 합산)에서 허용되는 연습 실행 총 횟수. */
+  maxRunsTotal?: number;
+  /** @deprecated 문항당 한도였던 시절의 필드. `maxRunsTotal`이 없는 기존 문서에서만 읽는다
+   *  (shared/runLimit.ts `getQuizMaxRuns`). */
+  maxRunsPerProblem?: number;
   courseId: string | null;
   courseWorkId: string | null;
   courseWorkLink: string | null;
@@ -79,7 +83,6 @@ export interface Problem {
   title: string;
   description: string;
   initialCode: string;
-  maxRuns: number | null;
   pointsTotal: number;
   updatedAt: Timestamp;
   deletedAt: Timestamp | null;

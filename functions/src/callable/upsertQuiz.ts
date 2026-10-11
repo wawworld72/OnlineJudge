@@ -16,7 +16,7 @@ export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, isTeac
     startAt: Timestamp.fromMillis(data.startAt),
     endAt: Timestamp.fromMillis(data.endAt),
     accessCode: data.accessCode,
-    maxRunsPerProblem: data.maxRunsPerProblem,
+    maxRunsTotal: data.maxRunsTotal,
     courseId: data.courseId ? normalizeClassroomCourseId(data.courseId) : null,
   };
 

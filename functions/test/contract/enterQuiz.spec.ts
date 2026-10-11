@@ -19,7 +19,7 @@ async function seedOpenQuiz() {
       endAt: ts(60_000),
       accessCode: "ABC123",
       status: "OPEN",
-      maxRunsPerProblem: 5,
+      maxRunsTotal: 5,
       courseId: null,
       courseWorkId: null,
       courseWorkLink: null,
@@ -102,6 +102,9 @@ describe("enterQuiz", () => {
     );
 
     expect(response.participantStatus).toBe("IN_PROGRESS");
+    // 실행 횟수는 문항별이 아니라 퀴즈 전체 기준으로 최상위에 내려준다.
+    expect(response.maxRuns).toBe(5);
+    expect(response.remainingRuns).toBe(5);
 
     const participantSnap = await testDb()
       .collection("participants")
@@ -223,7 +226,7 @@ describe("enterQuiz", () => {
           endAt: ts(-60_000),
           accessCode: "ABC123",
           status: "CLOSED",
-          maxRunsPerProblem: 5,
+          maxRunsTotal: 5,
           courseId: null,
           courseWorkId: null,
           courseWorkLink: null,
@@ -353,7 +356,7 @@ describe("enterQuiz", () => {
           endAt: ts(60_000),
           accessCode: "ABC123",
           status: "OPEN",
-          maxRunsPerProblem: 5,
+          maxRunsTotal: 5,
           courseId: COURSE_ID,
           courseWorkId: null,
           courseWorkLink: null,
@@ -483,7 +486,7 @@ describe("enterQuiz", () => {
           endAt: ts(60_000),
           accessCode: "ABC123",
           status: "OPEN",
-          maxRunsPerProblem: 5,
+          maxRunsTotal: 5,
           courseId: COURSE_ID,
           courseWorkId: null,
           courseWorkLink: null,
@@ -540,7 +543,7 @@ describe("enterQuiz", () => {
           endAt: ts(-60_000),
           accessCode: "ABC123",
           status: "CLOSED",
-          maxRunsPerProblem: 5,
+          maxRunsTotal: 5,
           courseId: null,
           courseWorkId: null,
           courseWorkLink: null,

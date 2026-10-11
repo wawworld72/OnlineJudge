@@ -13,7 +13,6 @@ async function seedEmptyProblem() {
     title: "문제1",
     description: "",
     initialCode: "",
-    maxRuns: null,
     pointsTotal: 0,
     updatedAt: FieldValue.serverTimestamp(),
     deletedAt: null,

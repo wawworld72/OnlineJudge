@@ -27,7 +27,7 @@ async function seedOpenQuizWithProblem() {
     endAt: ts(60_000),
     accessCode: "ABC123",
     status: "OPEN",
-    maxRunsPerProblem: 3,
+    maxRunsTotal: 3,
     courseId: null,
     courseWorkId: null,
     courseWorkLink: null,
@@ -40,7 +40,6 @@ async function seedOpenQuizWithProblem() {
     title: "문제1",
     description: "",
     initialCode: "",
-    maxRuns: null,
     pointsTotal: 100,
     updatedAt: ts(0),
     deletedAt: null,
@@ -86,7 +85,7 @@ describe("학생 응시 전체 흐름 (입장 → 연습 실행 → 최종 제�
     );
     expect(enterResponse.participantStatus).toBe("IN_PROGRESS");
     expect(enterResponse.problems).toHaveLength(1);
-    expect(enterResponse.problems[0]!.remainingRuns).toBe(3);
+    expect(enterResponse.remainingRuns).toBe(3);
 
     const fetchSpy = mockGraderResponse({
       ok: true,

@@ -21,7 +21,7 @@
   통과하면 `participants/{quizId}_{studentId}` 문서가 없을 경우 이 시점에 생성한다
   (`finalStatus: 'IN_PROGRESS'`, `runsUsedByProblem/submissions/runResults: {}` — research.md
   §10, data-model.md). 이미 존재하면 그대로 조회만 한다.
-- **Response**: `{ participantStatus, problems: [{problemId, title, description, initialCode, maxRuns, remainingRuns, pointsTotal}], endAt, existingSubmission?, gradedResult? }`
+- **Response**: `{ participantStatus, problems: [{problemId, title, description, initialCode, pointsTotal}], maxRuns, remainingRuns /* 퀴즈 전체 기준 */, endAt, existingSubmission?, gradedResult? }`
 - **오류 코드**: `INVALID_ACCESS_CODE`, `IDENTITY_MISMATCH`, `QUIZ_NOT_OPEN`(존재하지 않음/DRAFT·CLOSED
   상태), `QUIZ_NOT_STARTED`(상태는 OPEN이지만 아직 시작 시각 전), `QUIZ_ENDED`(상태는 OPEN이지만
   종료 시각 지남), `NEEDS_EMAIL_REGISTRATION` — 시간 관련 두 코드는 출입코드/학번과 무관한
@@ -38,12 +38,12 @@
 - **Request**: `{ quizId: string, problemId: string, code: string }`
 - **처리**: FR-013~FR-016. `(quizId, problemId, code, 문항 updatedAt)` 캐시 키로 먼저 조회 →
   캐시 히트 시 Grader 미호출(횟수 차감도 없음) → 캐시 미스면 `runTransaction`으로
-  `participants/{quizId}_{studentId}.runsUsedByProblem.{problemId}`을 조회해 `maxRuns` 미만인
-  경우에만 1 증가시켜 커밋(research.md §5 — `FieldValue.increment()` 단독 사용은 조건부 거부가
+  `participants/{quizId}_{studentId}.runsUsedByProblem`의 합(퀴즈 전체 사용량)을 조회해 퀴즈의
+  `maxRunsTotal` 미만인 경우에만 해당 문항 카운터를 1 증가시켜 커밋(research.md §5 — `FieldValue.increment()` 단독 사용은 조건부 거부가
   안 되므로 쓰지 않는다) → 트랜잭션 커밋에 성공한 요청만 Grader 호출(contracts/grader-api.md
   `/grade`) → 비공개 TC 마스킹 → `SYSTEM_ERROR`가 아닌 결과만 캐시에 저장. `problemSecrets`
   문서에서 테스트케이스 배열을 1회 읽어 Grader 요청을 구성한다.
-- **Response**: `{ status, score, maxScore, compileErrorMessage?, tcResults: [...], remainingRuns, usedCache: boolean }`
+- **Response**: `{ status, score, maxScore, compileErrorMessage?, tcResults: [...], remainingRuns /* 퀴즈 전체 남은 횟수 */, usedCache: boolean }`
 - **오류 코드**: `NO_RUNS_LEFT`, `QUIZ_NOT_ACTIVE`
 
 ### `finalSubmit`

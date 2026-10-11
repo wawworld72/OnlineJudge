@@ -4,7 +4,7 @@ import { deleteProblemSchema, upsertProblemSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
 
 /**
- * 문항 메타데이터(제목·설명·초기코드·maxRuns)만 다룬다. `pointsTotal`/`updatedAt`은
+ * 문항 메타데이터(제목·설명·초기코드)만 다룬다. `pointsTotal`/`updatedAt`은
  * 신규 생성 시에만 초기화하고, 이후 이 함수는 절대 건드리지 않는다 — 그 둘의 소유자는
  * `upsertTestCase`/`deleteTestCase`뿐이다(data-model.md "pointsTotal/updatedAt의 소유권").
  */
@@ -18,7 +18,6 @@ export const upsertProblem = createCallable(upsertProblemSchema, async ({ data, 
     title: data.title,
     description: data.description,
     initialCode: data.initialCode,
-    maxRuns: data.maxRuns,
   };
 
   if (data.problemId) {

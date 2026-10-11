@@ -35,7 +35,6 @@ export function ProblemEditor({ quizId, problems, onChanged }: ProblemEditorProp
     title: "",
     description: "",
     initialCode: "",
-    maxRuns: "" as string | number,
   });
 
   async function addProblem() {
@@ -45,9 +44,8 @@ export function ProblemEditor({ quizId, problems, onChanged }: ProblemEditorProp
       title: newProblem.title,
       description: newProblem.description,
       initialCode: newProblem.initialCode,
-      maxRuns: newProblem.maxRuns === "" ? null : Number(newProblem.maxRuns),
     });
-    setNewProblem({ title: "", description: "", initialCode: "", maxRuns: "" });
+    setNewProblem({ title: "", description: "", initialCode: "" });
     onChanged();
   }
 
@@ -87,13 +85,6 @@ export function ProblemEditor({ quizId, problems, onChanged }: ProblemEditorProp
             onChange={(e) => setNewProblem({ ...newProblem, initialCode: e.target.value })}
           />
         </label>
-        <label>
-          문항별 최대 실행 횟수 (비우면 퀴즈 기본값 사용)
-          <input
-            value={newProblem.maxRuns}
-            onChange={(e) => setNewProblem({ ...newProblem, maxRuns: e.target.value })}
-          />
-        </label>
         <button onClick={addProblem}>문항 추가</button>
       </div>
     </div>
@@ -113,7 +104,6 @@ function ProblemPanel({
   const [title, setTitle] = useState(problem.title);
   const [description, setDescription] = useState(problem.description);
   const [initialCode, setInitialCode] = useState(problem.initialCode);
-  const [maxRuns, setMaxRuns] = useState<string | number>(problem.maxRuns ?? "");
   const [newTestCase, setNewTestCase] = useState(EMPTY_TEST_CASE);
 
   async function saveMetadata() {
@@ -124,7 +114,6 @@ function ProblemPanel({
       title,
       description,
       initialCode,
-      maxRuns: maxRuns === "" ? null : Number(maxRuns),
     });
     setEditing(false);
     onChanged();
@@ -156,10 +145,6 @@ function ProblemPanel({
           <input value={title} onChange={(e) => setTitle(e.target.value)} />
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
           <textarea value={initialCode} onChange={(e) => setInitialCode(e.target.value)} />
-          <label>
-            문항별 최대 실행 횟수 (비우면 퀴즈 기본값 사용)
-            <input value={maxRuns} onChange={(e) => setMaxRuns(e.target.value)} />
-          </label>
           <button onClick={saveMetadata}>저장</button>
           <button className="secondary" onClick={() => setEditing(false)}>
             취소

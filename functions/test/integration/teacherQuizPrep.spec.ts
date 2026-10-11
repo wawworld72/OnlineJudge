@@ -24,7 +24,7 @@ describe("교사의 퀴즈 준비 흐름 (생성 → 문항/테스트케이스 �
         startAt: Date.now(),
         endAt: Date.now() + 60 * 60 * 1000,
         accessCode: "ABC123",
-        maxRunsPerProblem: 5,
+        maxRunsTotal: 5,
         courseId: null,
       }),
     );
@@ -37,7 +37,6 @@ describe("교사의 퀴즈 준비 흐름 (생성 → 문항/테스트케이스 �
         title: "문제1",
         description: "설명",
         initialCode: "",
-        maxRuns: null,
       }),
     );
 

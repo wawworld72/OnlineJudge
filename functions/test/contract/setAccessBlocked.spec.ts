@@ -16,7 +16,7 @@ async function seedQuiz(overrides: Record<string, unknown> = {}) {
       endAt: Timestamp.fromMillis(Date.now() + 60_000),
       accessCode: "ABC123",
       status: "DRAFT",
-      maxRunsPerProblem: 5,
+      maxRunsTotal: 5,
       courseId: null,
       courseWorkId: null,
       courseWorkLink: null,

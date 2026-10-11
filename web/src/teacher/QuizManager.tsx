@@ -71,7 +71,7 @@ function toFormFields(quiz?: QuizDetail): UpsertQuizInput {
     startAt: quiz?.startAt ?? Date.now(),
     endAt: quiz?.endAt ?? Date.now() + 60 * 60 * 1000,
     accessCode: quiz?.accessCode ?? "",
-    maxRunsPerProblem: quiz?.maxRunsPerProblem ?? 5,
+    maxRunsTotal: quiz?.maxRunsTotal ?? 10,
     courseId: quiz?.courseId ?? null,
   };
 }
@@ -410,11 +410,11 @@ export function QuizManager() {
           />
         </label>
         <label>
-          문항당 기본 최대 실행 횟수
+          퀴즈 전체 최대 실행 횟수 (모든 문항 합산)
           <input
             type="number"
-            value={form.maxRunsPerProblem}
-            onChange={(e) => setForm({ ...form, maxRunsPerProblem: Number(e.target.value) })}
+            value={form.maxRunsTotal}
+            onChange={(e) => setForm({ ...form, maxRunsTotal: Number(e.target.value) })}
           />
         </label>
         <label>

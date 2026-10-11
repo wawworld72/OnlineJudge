@@ -35,7 +35,7 @@ async function seedClassroomQuiz() {
       endAt: ts(60_000),
       accessCode: "ABC123",
       status: "OPEN",
-      maxRunsPerProblem: 5,
+      maxRunsTotal: 5,
       courseId: COURSE_ID,
       courseWorkId: null,
       courseWorkLink: null,
@@ -117,7 +117,7 @@ describe("addGlobalTestAccount", () => {
         endAt: ts(-60_000), // 이미 종료됨
         accessCode: "ABC123",
         status: "CLOSED",
-        maxRunsPerProblem: 1,
+        maxRunsTotal: 1,
         courseId: null,
         courseWorkId: null,
         courseWorkLink: null,
@@ -135,7 +135,6 @@ describe("addGlobalTestAccount", () => {
         title: "문제1",
         description: "",
         initialCode: "",
-        maxRuns: null,
         pointsTotal: 100,
         updatedAt: ts(0),
         deletedAt: null,
@@ -187,7 +186,7 @@ describe("addGlobalTestAccount", () => {
         },
       ],
     });
-    // maxRunsPerProblem은 1 — 두 번째 실행도 성공해야 실행 횟수 제한 우회를 함께 확인한다.
+    // maxRunsTotal은 1 — 두 번째 실행도 성공해야 실행 횟수 제한 우회를 함께 확인한다.
     await practiceRun.run(
       makeRequest({ quizId: PLAIN_QUIZ_ID, problemId: "p1", code: "code-1" }, "tester@hoseo.edu"),
     );

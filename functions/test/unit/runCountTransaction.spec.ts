@@ -59,6 +59,19 @@ describe("incrementRunCountOrThrow", () => {
     expect(third).toBe(3);
   });
 
+  it("한도는 문항과 무관하게 퀴즈 전체 합산으로 적용된다", async () => {
+    const db = testDb();
+    const ref = db.collection("participants").doc(`${QUIZ_ID}_${STUDENT_ID}`);
+
+    expect(await incrementRunCountOrThrow(db, ref, "p1", 3)).toBe(1);
+    expect(await incrementRunCountOrThrow(db, ref, "p2", 3)).toBe(2);
+    expect(await incrementRunCountOrThrow(db, ref, "p1", 3)).toBe(3);
+    // 문항 p3은 한 번도 실행하지 않았어도 전체 한도를 이미 소진했으므로 거부된다.
+    await expect(incrementRunCountOrThrow(db, ref, "p3", 3)).rejects.toMatchObject({
+      details: { code: "NO_RUNS_LEFT" },
+    });
+  });
+
   it("동시에 여러 요청이 들어와도 한도(FR-014)를 넘지 않는다", async () => {
     const db = testDb();
     const ref = db.collection("participants").doc(`${QUIZ_ID}_${STUDENT_ID}`);

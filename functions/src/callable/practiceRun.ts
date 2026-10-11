@@ -6,6 +6,7 @@ import { computeParticipantId } from "../shared/participantId";
 import { isWithin } from "../shared/timeAuthority";
 import { domainError } from "../shared/errors";
 import { incrementRunCountOrThrow } from "../services/runCountTransaction";
+import { getQuizMaxRuns, getRunsUsedTotal } from "../shared/runLimit";
 import { getCached, makeCacheKey, setCached } from "../services/practiceRunCache";
 import { grade } from "../services/graderClient";
 import type { Participant, Problem, ProblemSecrets, Quiz } from "../models/types";
@@ -51,7 +52,7 @@ export const practiceRun = createCallable(practiceRunSchema, async ({ data, auth
     throw domainError("QUIZ_NOT_ACTIVE", "존재하지 않는 문항입니다.");
   }
 
-  const maxRuns = problem.maxRuns ?? quiz.maxRunsPerProblem;
+  const maxRuns = getQuizMaxRuns(quiz);
   const cacheKey = makeCacheKey(
     data.quizId,
     data.problemId,
@@ -61,7 +62,7 @@ export const practiceRun = createCallable(practiceRunSchema, async ({ data, auth
   const cached = getCached(cacheKey);
 
   if (cached) {
-    const used = participant.runsUsedByProblem[data.problemId] ?? 0;
+    const used = getRunsUsedTotal(participant);
     return { ...cached, remainingRuns: Math.max(0, maxRuns - used), usedCache: true };
   }
 

@@ -25,7 +25,7 @@ async function seedDeployedQuiz() {
       endAt: ts(-1_000),
       accessCode: "ABC123",
       status: "CLOSED",
-      maxRunsPerProblem: 5,
+      maxRunsTotal: 5,
       courseId: "course-1",
       courseWorkId: "cw-1",
       courseWorkLink: "https://classroom.example/cw-1",

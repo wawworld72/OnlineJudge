@@ -41,7 +41,7 @@ const CREATE_BASE = {
   startAt: Date.now() - 60_000,
   endAt: Date.now() + 60_000,
   accessCode: "ABC123",
-  maxRunsPerProblem: 5,
+  maxRunsTotal: 5,
 };
 
 describe("upsertQuizFromSheet", () => {
@@ -60,6 +60,61 @@ describe("upsertQuizFromSheet", () => {
     await upsertQuizFromSheet(makeReq({ token: "wrong", body: CREATE_BASE }), res as never);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ ok: false, error: "unauthorized" });
+  });
+
+  describe("구 필드 maxRunsPerProblem 호환(요청에 담긴 문항만 합산)", () => {
+    const NEW_PROBLEM = { description: "d", initialCode: "" };
+    const LEGACY_BASE = { ...CREATE_BASE, maxRunsTotal: undefined };
+    const quizMaxRuns = async (quizId: string) =>
+      (await testDb().collection("quizzes").doc(quizId).get()).data()!.maxRunsTotal;
+
+    it("문항별 maxRuns가 있으면 그 값, 없으면 maxRunsPerProblem으로 합산한다", async () => {
+      const body = await call({
+        ...LEGACY_BASE,
+        maxRunsPerProblem: 5,
+        problems: [
+          { title: "A", ...NEW_PROBLEM },
+          { title: "B", maxRuns: 3, ...NEW_PROBLEM },
+          { title: "C", maxRuns: null, ...NEW_PROBLEM },
+        ],
+      });
+      expect(body.ok).toBe(true);
+      expect(await quizMaxRuns(body.quizId)).toBe(13); // 5 + 3 + 5
+    });
+
+    it("maxRunsTotal이 함께 오면 그 값이 우선한다", async () => {
+      const body = await call({
+        ...LEGACY_BASE,
+        maxRunsTotal: 7,
+        maxRunsPerProblem: 5,
+        problems: [
+          { title: "A", ...NEW_PROBLEM },
+          { title: "B", ...NEW_PROBLEM },
+        ],
+      });
+      expect(await quizMaxRuns(body.quizId)).toBe(7);
+    });
+
+    it("신규 생성 시 문항이 없으면 구 필드 값을 그대로 총 한도로 쓴다", async () => {
+      const body = await call({ ...LEGACY_BASE, maxRunsPerProblem: 5 });
+      expect(await quizMaxRuns(body.quizId)).toBe(5);
+    });
+
+    it("갱신 시 문항이 없으면 한도를 바꾸지 않고, 있으면 요청 문항만 합산해 갱신한다", async () => {
+      const created = await call(CREATE_BASE); // maxRunsTotal 5
+      await call({ quizId: created.quizId, maxRunsPerProblem: 9 });
+      expect(await quizMaxRuns(created.quizId)).toBe(5);
+
+      await call({
+        quizId: created.quizId,
+        maxRunsPerProblem: 4,
+        problems: [
+          { title: "A", ...NEW_PROBLEM },
+          { title: "B", ...NEW_PROBLEM },
+        ],
+      });
+      expect(await quizMaxRuns(created.quizId)).toBe(8);
+    });
   });
 
   it("생성 시 필수 필드가 빠지면 malformed 오류를 반환한다", async () => {
@@ -213,7 +268,6 @@ describe("upsertQuizFromSheet", () => {
           title: "중복",
           description: "",
           initialCode: "",
-          maxRuns: null,
           pointsTotal: 0,
           updatedAt: ts(0),
           deletedAt: null,
@@ -226,7 +280,6 @@ describe("upsertQuizFromSheet", () => {
           title: "중복",
           description: "",
           initialCode: "",
-          maxRuns: null,
           pointsTotal: 0,
           updatedAt: ts(0),
           deletedAt: null,

@@ -17,7 +17,7 @@ async function seedQuiz(courseId: string | null) {
       endAt: ts(60_000),
       accessCode: "ABC123",
       status: "OPEN",
-      maxRunsPerProblem: 5,
+      maxRunsTotal: 5,
       courseId,
       courseWorkId: null,
       courseWorkLink: null,

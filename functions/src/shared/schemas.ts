@@ -70,7 +70,7 @@ export const upsertQuizSchema = z.object({
   startAt: z.number(),
   endAt: z.number(),
   accessCode: z.string().min(1),
-  maxRunsPerProblem: z.number().int().positive(),
+  maxRunsTotal: z.number().int().positive(),
   courseId: z.string().min(1).nullable(),
 });
 
@@ -97,6 +97,8 @@ export const sheetProblemSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   initialCode: z.string().optional(),
+  // 문항당 한도였던 시절의 필드 — 저장하지 않고, 구 필드 `maxRunsPerProblem`으로 들어온
+  // 요청의 총 한도를 합산할 때만 쓴다(services/quizSheetSync.ts `resolveSheetMaxRunsTotal`).
   maxRuns: z.number().int().positive().nullable().optional(),
   order: z.number().int().nonnegative().optional(),
   // 정상적인 퀴즈보다 훨씬 넉넉한 상한 — 실수로 비정상적으로 큰 요청이 들어오는 것만
@@ -114,6 +116,9 @@ export const sheetUpsertQuizSchema = z
     startAt: z.union([z.number(), z.string().min(1)]).optional(),
     endAt: z.union([z.number(), z.string().min(1)]).optional(),
     accessCode: z.string().min(1).optional(),
+    maxRunsTotal: z.number().int().positive().optional(),
+    // 문항당 한도였던 시절의 필드명 — 아직 갱신되지 않은 Apps Script 호환용 별칭.
+    // 서비스 계층이 `maxRunsTotal ?? maxRunsPerProblem`으로 읽는다.
     maxRunsPerProblem: z.number().int().positive().optional(),
     courseId: z.string().min(1).nullable().optional(),
     problems: z.array(sheetProblemSchema).max(50).optional(),
@@ -127,7 +132,6 @@ export const sheetUpsertQuizSchema = z
       "startAt",
       "endAt",
       "accessCode",
-      "maxRunsPerProblem",
     ] as const;
     for (const field of requiredForCreate) {
       if (val[field] === undefined) {
@@ -138,6 +142,13 @@ export const sheetUpsertQuizSchema = z
         });
       }
     }
+    if (val.maxRunsTotal === undefined && val.maxRunsPerProblem === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["maxRunsTotal"],
+        message: "신규 퀴즈 생성 시 필수 항목입니다.",
+      });
+    }
   });
 
 export const upsertProblemSchema = z.object({
@@ -147,7 +158,6 @@ export const upsertProblemSchema = z.object({
   title: z.string().min(1),
   description: z.string(),
   initialCode: z.string(),
-  maxRuns: z.number().int().positive().nullable(),
 });
 
 export const deleteProblemSchema = z.object({

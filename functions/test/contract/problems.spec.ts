@@ -22,7 +22,6 @@ describe("upsertProblem / deleteProblem", () => {
         title: "문제1",
         description: "설명",
         initialCode: "",
-        maxRuns: null,
       }),
     );
 
@@ -58,7 +57,6 @@ describe("upsertProblem / deleteProblem", () => {
         title: "문제1",
         description: "",
         initialCode: "",
-        maxRuns: null,
       }),
     );
     const problemRef = testDb()
@@ -77,7 +75,6 @@ describe("upsertProblem / deleteProblem", () => {
         title: "문제1 (수정)",
         description: "",
         initialCode: "",
-        maxRuns: null,
       }),
     );
 
@@ -95,7 +92,6 @@ describe("upsertProblem / deleteProblem", () => {
         title: "문제1",
         description: "",
         initialCode: "",
-        maxRuns: null,
       }),
     );
 

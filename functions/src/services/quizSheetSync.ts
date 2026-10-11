@@ -193,6 +193,23 @@ async function resolveProblems(
   });
 }
 
+/**
+ * 시트 연동 요청의 퀴즈 총 실행 횟수 한도. `maxRunsTotal`이 있으면 그대로 쓴다.
+ * 없고 구 필드 `maxRunsPerProblem`(문항당 한도)만 있으면, 아직 갱신되지 않은 Apps Script
+ * 호환을 위해 요청에 담긴 문항들만 합산한다: Σ(문항 `maxRuns` ?? `maxRunsPerProblem`).
+ * 요청에 문항이 없으면 합산할 수 없으므로 undefined(갱신 시 한도 유지)를 돌려준다 —
+ * 신규 생성만 구 필드 값을 그대로 쓴다(호출부 참고). 서버에 이미 있지만 이번 요청에
+ * 없는 문항은 합산에 포함되지 않는다.
+ */
+function resolveSheetMaxRunsTotal(input: SheetInput): number | undefined {
+  if (input.maxRunsTotal !== undefined) return input.maxRunsTotal;
+  const perProblem = input.maxRunsPerProblem;
+  if (perProblem === undefined || !input.problems || input.problems.length === 0) {
+    return undefined;
+  }
+  return input.problems.reduce((sum, p) => sum + (p.maxRuns ?? perProblem), 0);
+}
+
 function buildQuizPatch(input: SheetInput): Partial<Record<keyof Quiz, unknown>> {
   const patch: Partial<Record<keyof Quiz, unknown>> = {};
   if (input.subjectName !== undefined) patch.subjectName = input.subjectName;
@@ -201,7 +218,8 @@ function buildQuizPatch(input: SheetInput): Partial<Record<keyof Quiz, unknown>>
   if (input.startAt !== undefined) patch.startAt = parseFlexibleTimestamp(input.startAt);
   if (input.endAt !== undefined) patch.endAt = parseFlexibleTimestamp(input.endAt);
   if (input.accessCode !== undefined) patch.accessCode = input.accessCode;
-  if (input.maxRunsPerProblem !== undefined) patch.maxRunsPerProblem = input.maxRunsPerProblem;
+  const maxRunsTotal = resolveSheetMaxRunsTotal(input);
+  if (maxRunsTotal !== undefined) patch.maxRunsTotal = maxRunsTotal;
   if (input.courseId !== undefined) {
     patch.courseId = input.courseId ? normalizeClassroomCourseId(input.courseId) : null;
   }
@@ -225,7 +243,6 @@ async function writeProblem(
     const metadata: Partial<Problem> = {};
     if (reqProblem.description !== undefined) metadata.description = reqProblem.description;
     if (reqProblem.initialCode !== undefined) metadata.initialCode = reqProblem.initialCode;
-    if (reqProblem.maxRuns !== undefined) metadata.maxRuns = reqProblem.maxRuns;
     if (reqProblem.order !== undefined) metadata.order = reqProblem.order;
     if (Object.keys(metadata).length > 0) {
       await problemsRef.doc(problemId).update(metadata);
@@ -265,7 +282,6 @@ async function writeProblem(
       title: reqProblem.title,
       description: reqProblem.description ?? "",
       initialCode: reqProblem.initialCode ?? "",
-      maxRuns: reqProblem.maxRuns ?? null,
       pointsTotal,
       updatedAt: FieldValue.serverTimestamp(),
       deletedAt: null,
@@ -433,7 +449,7 @@ export async function syncQuizFromSheet(
       endAt: parseFlexibleTimestamp(input.endAt!),
       accessCode: input.accessCode!,
       status: "DRAFT",
-      maxRunsPerProblem: input.maxRunsPerProblem!,
+      maxRunsTotal: (resolveSheetMaxRunsTotal(input) ?? input.maxRunsPerProblem)!,
       courseId: input.courseId ? normalizeClassroomCourseId(input.courseId) : null,
       courseWorkId: null,
       courseWorkLink: null,

@@ -26,7 +26,7 @@ describe("upsertQuiz", () => {
         startAt: Date.now(),
         endAt: Date.now() + 60_000,
         accessCode: "ABC123",
-        maxRunsPerProblem: 5,
+        maxRunsTotal: 5,
         courseId: null,
       }),
     );
@@ -50,7 +50,7 @@ describe("upsertQuiz", () => {
             startAt: Date.now(),
             endAt: Date.now() + 60_000,
             accessCode: "ABC123",
-            maxRunsPerProblem: 5,
+            maxRunsTotal: 5,
             courseId: null,
           },
           "student1@hoseo.edu",
@@ -68,7 +68,7 @@ describe("upsertQuiz", () => {
         startAt: Date.now(),
         endAt: Date.now() + 60_000,
         accessCode: "ABC123",
-        maxRunsPerProblem: 5,
+        maxRunsTotal: 5,
         courseId: null,
       }),
     );
@@ -83,7 +83,7 @@ describe("upsertQuiz", () => {
         startAt: Date.now(),
         endAt: Date.now() + 60_000,
         accessCode: "ABC123",
-        maxRunsPerProblem: 5,
+        maxRunsTotal: 5,
         courseId: null,
       }),
     );
