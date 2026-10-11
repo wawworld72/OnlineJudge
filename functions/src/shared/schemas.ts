@@ -97,6 +97,9 @@ export const sheetProblemSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   initialCode: z.string().optional(),
+  // 문항당 한도였던 시절의 필드 — 저장하지 않고, 구 필드 `maxRunsPerProblem`으로 들어온
+  // 요청의 총 한도를 합산할 때만 쓴다(services/quizSheetSync.ts `resolveSheetMaxRunsTotal`).
+  maxRuns: z.number().int().positive().nullable().optional(),
   order: z.number().int().nonnegative().optional(),
   // 정상적인 퀴즈보다 훨씬 넉넉한 상한 — 실수로 비정상적으로 큰 요청이 들어오는 것만
   // 막는 저비용 방어선이다(정상 사용은 절대 안 걸림).
