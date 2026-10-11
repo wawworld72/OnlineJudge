@@ -51,12 +51,12 @@
 ## 5. 실행 횟수 차감의 동시성 보장 (FR-014)
 
 - **Decision**: `FieldValue.increment()`만으로는 "확인 후 증가"가 원자적이지 않아 한도를
-  넘길 수 있으므로 사용하지 않는다. 대신 Firestore `runTransaction`으로 "남은 횟수 조회 → 0
+  넘길 수 있으므로 사용하지 않는다. 대신 Firestore `runTransaction`으로 "퀴즈 전체 남은 횟수(문항별 사용량의 합 기준) 조회 → 0
   초과 확인 → 1 차감"을 원자적으로 수행한다. 트랜잭션 커밋에 성공한 요청만 Grader를 호출한다.
   카운터는 별도 문서가 아니라 `participants/{quizId}_{studentId}.runsUsedByProblem`
   (map<problemId, number>) 필드에 둔다(data-model.md 참고) — 참가자 문서 자체가 트랜잭션의
   대상이 된다.
-- **Rationale**: 클라이언트가 같은 문항에 실행 요청을 동시에 여러 번 보내도(Clarify Session
+- **Rationale**: 클라이언트가 실행 요청을 동시에 여러 번 보내도(Clarify Session
   Q4), Firestore 트랜잭션의 낙관적 동시성 제어가 재시도로 정확히 한도를 지킨다. 별도의 락 서버나
   큐를 두지 않아 비용 상한(헌법 IV)과도 충돌하지 않는다.
 - **Alternatives considered**: `FieldValue.increment(1)` 단독 사용(무조건 더하기만 하고 조건부

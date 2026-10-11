@@ -38,7 +38,6 @@ export interface ProblemDetail {
   title: string;
   description: string;
   initialCode: string;
-  maxRuns: number | null;
   pointsTotal: number;
   testCases: TestCaseDetail[];
 }
@@ -52,7 +51,7 @@ export interface QuizDetail {
   endAt: number;
   accessCode: string;
   status: QuizStatus;
-  maxRunsPerProblem: number;
+  maxRunsTotal: number;
   courseId: string | null;
   courseWorkId: string | null;
   courseWorkLink: string | null;
@@ -76,7 +75,7 @@ export interface UpsertQuizInput {
   startAt: number;
   endAt: number;
   accessCode: string;
-  maxRunsPerProblem: number;
+  maxRunsTotal: number;
   courseId: string | null;
 }
 
@@ -91,7 +90,6 @@ export interface UpsertProblemInput {
   title: string;
   description: string;
   initialCode: string;
-  maxRuns: number | null;
 }
 
 export function upsertProblem(input: UpsertProblemInput) {

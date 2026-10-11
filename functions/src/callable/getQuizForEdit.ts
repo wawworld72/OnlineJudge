@@ -3,6 +3,7 @@ import { createCallable } from "../shared/callableFactory";
 import { getQuizForEditSchema } from "../shared/schemas";
 import { requireTeacher } from "../shared/authorization";
 import { domainError } from "../shared/errors";
+import { getQuizMaxRuns } from "../shared/runLimit";
 import type { Problem, ProblemSecrets, Quiz } from "../models/types";
 
 /**
@@ -37,7 +38,6 @@ export const getQuizForEdit = createCallable(getQuizForEditSchema, async ({ data
         title: problem.title,
         description: problem.description,
         initialCode: problem.initialCode,
-        maxRuns: problem.maxRuns,
         pointsTotal: problem.pointsTotal,
         testCases: secrets?.items ?? [],
       };
@@ -53,7 +53,7 @@ export const getQuizForEdit = createCallable(getQuizForEditSchema, async ({ data
     endAt: quiz.endAt.toMillis(),
     accessCode: quiz.accessCode,
     status: quiz.status,
-    maxRunsPerProblem: quiz.maxRunsPerProblem,
+    maxRunsTotal: getQuizMaxRuns(quiz),
     courseId: quiz.courseId,
     courseWorkId: quiz.courseWorkId,
     courseWorkLink: quiz.courseWorkLink,

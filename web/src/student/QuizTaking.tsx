@@ -53,9 +53,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
   > | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [descHidden, setDescHidden] = useState(false);
-  const [remainingRuns, setRemainingRuns] = useState<Record<string, number>>(() =>
-    Object.fromEntries(initial.problems.map((p) => [p.problemId, p.remainingRuns])),
-  );
+  const [remaining, setRemaining] = useState(initial.remainingRuns);
   const [codeByProblem, setCodeByProblem] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       initial.problems.map((p) => [
@@ -101,8 +99,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
   // 마감시각을 우회하므로, 화면도 맞춰서 마감시각 경과에 따른 잠금을 걸지 않는다.
   const ended = !initial.isTestEntry && remainingMs <= 0;
   const submitEnded = !initial.isTestEntry && remainingSubmitMs <= 0;
-  const maxRuns = activeProblem.maxRuns;
-  const remaining = remainingRuns[activeProblem.problemId] ?? maxRuns;
+  const maxRuns = initial.maxRuns;
   const used = maxRuns > 0 ? maxRuns - remaining : 0;
   const runCountClass =
     maxRuns > 0 && remaining <= 0 ? "danger" : maxRuns > 0 && remaining <= 3 ? "warn" : "";
@@ -129,7 +126,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
         [activeProblem!.problemId]: Date.now() - startedAt,
       }));
       setTestedCodeByProblem((prev) => ({ ...prev, [activeProblem!.problemId]: code }));
-      setRemainingRuns((prev) => ({ ...prev, [activeProblem!.problemId]: result.remainingRuns }));
+      setRemaining(result.remainingRuns);
     } catch {
       setRunError("실행에 실패했습니다. 잠시 후 다시 시도해주세요.");
     }
@@ -215,10 +212,7 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
               >
                 {problem.title}
                 <span className="tab-meta">
-                  {problem.maxRuns > 0
-                    ? `실행: ${problem.maxRuns - (remainingRuns[problem.problemId] ?? problem.maxRuns)}/${problem.maxRuns}회`
-                    : ""}
-                  {run ? ` | ${run.score}/${run.maxScore}점(예상)` : ""}
+                  {run ? `${run.score}/${run.maxScore}점(예상)` : ""}
                 </span>
               </button>
             );

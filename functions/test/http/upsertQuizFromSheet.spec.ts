@@ -41,7 +41,7 @@ const CREATE_BASE = {
   startAt: Date.now() - 60_000,
   endAt: Date.now() + 60_000,
   accessCode: "ABC123",
-  maxRunsPerProblem: 5,
+  maxRunsTotal: 5,
 };
 
 describe("upsertQuizFromSheet", () => {
@@ -213,7 +213,6 @@ describe("upsertQuizFromSheet", () => {
           title: "중복",
           description: "",
           initialCode: "",
-          maxRuns: null,
           pointsTotal: 0,
           updatedAt: ts(0),
           deletedAt: null,
@@ -226,7 +225,6 @@ describe("upsertQuizFromSheet", () => {
           title: "중복",
           description: "",
           initialCode: "",
-          maxRuns: null,
           pointsTotal: 0,
           updatedAt: ts(0),
           deletedAt: null,

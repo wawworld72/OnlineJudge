@@ -10,6 +10,7 @@ import {
 import { computeParticipantId } from "../shared/participantId";
 import { isAfter, isBefore } from "../shared/timeAuthority";
 import { domainError } from "../shared/errors";
+import { getQuizMaxRuns, getRunsUsedTotal } from "../shared/runLimit";
 import type { Participant, Problem, Quiz } from "../models/types";
 
 /**
@@ -136,22 +137,24 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
 
   const problems = problemsSnap.docs.map((doc) => {
     const problem = doc.data() as Problem;
-    const maxRuns = problem.maxRuns ?? quiz.maxRunsPerProblem;
-    const used = participant.runsUsedByProblem[doc.id] ?? 0;
     return {
       problemId: doc.id,
       title: problem.title,
       description: problem.description,
       initialCode: problem.initialCode,
-      maxRuns,
-      remainingRuns: Math.max(0, maxRuns - used),
       pointsTotal: problem.pointsTotal,
     };
   });
 
+  // 실행 횟수 한도는 문항별이 아니라 퀴즈 전체 기준이다.
+  const maxRuns = getQuizMaxRuns(quiz);
+  const remainingRuns = Math.max(0, maxRuns - getRunsUsedTotal(participant));
+
   const response: {
     participantStatus: Participant["finalStatus"];
     problems: typeof problems;
+    maxRuns: number;
+    remainingRuns: number;
     startAt: number;
     endAt: number;
     quizTitle: string;
@@ -178,6 +181,8 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
   } = {
     participantStatus: participant.finalStatus,
     problems,
+    maxRuns,
+    remainingRuns,
     startAt: quiz.startAt.toMillis(),
     endAt: quiz.endAt.toMillis(),
     quizTitle: quiz.title,

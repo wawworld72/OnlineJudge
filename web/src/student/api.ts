@@ -5,8 +5,6 @@ export interface ProblemSummary {
   title: string;
   description: string;
   initialCode: string;
-  maxRuns: number;
-  remainingRuns: number;
   pointsTotal: number;
 }
 
@@ -23,6 +21,9 @@ export interface GradedProblemResult {
 export interface EnterQuizResponse {
   participantStatus: ParticipantStatus;
   problems: ProblemSummary[];
+  /** 퀴즈 전체(모든 문항 합산) 연습 실행 한도와 남은 횟수 */
+  maxRuns: number;
+  remainingRuns: number;
   startAt: number;
   endAt: number;
   quizTitle: string;

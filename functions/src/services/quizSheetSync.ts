@@ -201,7 +201,8 @@ function buildQuizPatch(input: SheetInput): Partial<Record<keyof Quiz, unknown>>
   if (input.startAt !== undefined) patch.startAt = parseFlexibleTimestamp(input.startAt);
   if (input.endAt !== undefined) patch.endAt = parseFlexibleTimestamp(input.endAt);
   if (input.accessCode !== undefined) patch.accessCode = input.accessCode;
-  if (input.maxRunsPerProblem !== undefined) patch.maxRunsPerProblem = input.maxRunsPerProblem;
+  const maxRunsTotal = input.maxRunsTotal ?? input.maxRunsPerProblem;
+  if (maxRunsTotal !== undefined) patch.maxRunsTotal = maxRunsTotal;
   if (input.courseId !== undefined) {
     patch.courseId = input.courseId ? normalizeClassroomCourseId(input.courseId) : null;
   }
@@ -225,7 +226,6 @@ async function writeProblem(
     const metadata: Partial<Problem> = {};
     if (reqProblem.description !== undefined) metadata.description = reqProblem.description;
     if (reqProblem.initialCode !== undefined) metadata.initialCode = reqProblem.initialCode;
-    if (reqProblem.maxRuns !== undefined) metadata.maxRuns = reqProblem.maxRuns;
     if (reqProblem.order !== undefined) metadata.order = reqProblem.order;
     if (Object.keys(metadata).length > 0) {
       await problemsRef.doc(problemId).update(metadata);
@@ -265,7 +265,6 @@ async function writeProblem(
       title: reqProblem.title,
       description: reqProblem.description ?? "",
       initialCode: reqProblem.initialCode ?? "",
-      maxRuns: reqProblem.maxRuns ?? null,
       pointsTotal,
       updatedAt: FieldValue.serverTimestamp(),
       deletedAt: null,
@@ -433,7 +432,7 @@ export async function syncQuizFromSheet(
       endAt: parseFlexibleTimestamp(input.endAt!),
       accessCode: input.accessCode!,
       status: "DRAFT",
-      maxRunsPerProblem: input.maxRunsPerProblem!,
+      maxRunsTotal: (input.maxRunsTotal ?? input.maxRunsPerProblem)!,
       courseId: input.courseId ? normalizeClassroomCourseId(input.courseId) : null,
       courseWorkId: null,
       courseWorkLink: null,

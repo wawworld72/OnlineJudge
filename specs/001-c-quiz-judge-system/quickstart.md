@@ -12,7 +12,7 @@ firebase emulators:start --only auth,firestore,functions
 - 시드 스크립트(구현 단계에서 `functions/scripts/seed.ts` 등으로 작성)로 아래 최소 데이터를
   Firestore 에뮬레이터에 넣는다:
   - `students/S001` (`name: "홍길동"`, `email: null`, `status: 'ACTIVE'`)
-  - `quizzes/Q1` (`status: 'DRAFT'`, `accessCode: 'ABCD'`, `maxRunsPerProblem: 10`, 응시 기간은
+  - `quizzes/Q1` (`status: 'DRAFT'`, `accessCode: 'ABCD'`, `maxRunsTotal: 10`, 응시 기간은
     현재 시각 기준 시작 전~1시간 뒤)
   - `quizzes/Q1/problems/P1` + `quizzes/Q1/problemSecrets/P1.items = [TC1(공개), TC2(비공개)]`
 - Grader 호출은 에뮬레이터 환경에서 로컬 스텁 서버(고정 응답 반환)로 대체한다.
@@ -35,7 +35,7 @@ firebase emulators:start --only auth,firestore,functions
    있는지 확인.
 3. 같은 `code`로 `practiceRun`을 다시 호출 → `usedCache: true`, `remainingRuns` 그대로 9(FR-016
    확인).
-4. `maxRuns`(10)에 도달할 때까지 다른 코드로 반복 호출 → 11번째 호출에서 `NO_RUNS_LEFT` 오류
+4. 퀴즈 전체 한도 `maxRunsTotal`(10)에 도달할 때까지(문항을 바꿔가며 써도 합산) 다른 코드로 반복 호출 → 11번째 호출에서 `NO_RUNS_LEFT` 오류
    확인(FR-014, 동시성 보장은 통합 테스트에서 병렬 호출로 별도 검증).
 5. `finalSubmit({quizId:'Q1', submissions:[{problemId:'P1', code:'<최종 코드>'}]})` 호출 →
    `participantStatus: 'SUBMITTED'`.

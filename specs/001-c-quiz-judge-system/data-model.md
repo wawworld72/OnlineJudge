@@ -53,7 +53,7 @@ Firestore 컬렉션 경로와 문서 스키마. spec.md의 Key Entities와 1:1 �
 | startAt, endAt | timestamp | 응시 기간 (헌법 VII: 서버 기준 시간으로만 판단) |
 | accessCode | string | 출입코드 |
 | status | `'DRAFT' \| 'OPEN' \| 'CLOSED'` | PAUSED 없음 (Clarify Q2로 범위 제외) |
-| maxRunsPerProblem | number | 문항 기본 최대 실행 횟수 |
+| maxRunsTotal | number | 퀴즈 전체(모든 문항 합산) 최대 연습 실행 횟수. 이 필드가 없는 기존 문서는 구 필드 `maxRunsPerProblem` 값을 그대로 총 한도로 사용한다 |
 | courseId | string \| null | 연결된 분반 |
 | courseWorkId, courseWorkLink | string \| null | Classroom 과제 배포 결과 (FR-028~029) |
 | archivedAt | timestamp \| null | 마지막 아카이브 생성 시각. null이면 미아카이브 (FR-040) |
@@ -70,13 +70,11 @@ Firestore 컬렉션 경로와 문서 스키마. spec.md의 Key Entities와 1:1 �
 | order | number | 문항 순서 |
 | title, description | string | description은 Markdown 원문 (렌더링은 클라이언트) |
 | initialCode | string | 초기 코드 |
-| maxRuns | number \| null | null이면 퀴즈의 `maxRunsPerProblem` 사용 (FR-004) |
 | pointsTotal | number | `problemSecrets.items`의 배점 합. **소유자는 `problemSecrets` 쓰기 경로뿐**(아래 참고) |
 | updatedAt | timestamp | 테스트케이스/배점 수정 캐시 무효화 판단에 사용 (FR-016). **소유자는 `problemSecrets` 쓰기 경로뿐** |
 | deletedAt | timestamp \| null | 소프트 삭제 시각. null이면 유효한 문항 (FR-004) |
 
-**`pointsTotal`/`updatedAt`의 소유권**: 이 두 필드는 문항 메타데이터(제목·설명·초기코드·
-maxRuns)를 바꾸는 `upsertProblem`이 아니라, 테스트케이스를 바꾸는 `upsertTestCase`/
+**`pointsTotal`/`updatedAt`의 소유권**: 이 두 필드는 문항 메타데이터(제목·설명·초기코드)를 바꾸는 `upsertProblem`이 아니라, 테스트케이스를 바꾸는 `upsertTestCase`/
 `deleteTestCase`만 갱신한다. `upsertProblem`은 문항을 새로 생성할 때만 `pointsTotal: 0`으로
 초기화하고, 이후 메타데이터 수정 시에는 이 두 필드를 절대 건드리지 않는다(제목만 고쳤는데
 연습 실행 캐시가 불필요하게 무효화되는 것을 막기 위함). 배점·테스트케이스 변경 여부만이
@@ -136,7 +134,7 @@ lost-update가 발생할 수 있었다.
 | finalSubmittedAt | timestamp \| null | |
 | finalTotal | number | 확정 총점 |
 | completedCount, totalCount | number | 참가자 현황 화면용 진행도 (FR-025) |
-| runsUsedByProblem | map<problemId, number> | 문항별 실행 횟수 사용량. `runTransaction`으로만 증가(FR-014, research.md §5) |
+| runsUsedByProblem | map<problemId, number> | 문항별 실행 횟수 사용량(통계용). 한도 판정은 이 값들의 합(퀴즈 전체 사용량)으로 하며 `runTransaction`으로만 증가(FR-014, research.md §5) |
 | submissions | map<problemId, `{code, submittedAt}`> | 문항별 최종 제출 코드(구 `submissions` 서브컬렉션, FR-017) |
 | runResults | map<problemId, `{status, score, maxScore, compileErrorMessage, tcResults}`> | 문항별 확정 채점 결과(구 `runResults` 서브컬렉션, FR-024). `status`는 `'AC'\|'WA'\|'CE'\|'NOT_ATTEMPTED'` — 코드를 제출하지 않은 문항은 `'NOT_ATTEMPTED'`/0점으로 기록한다(FR-022) |
 | gradePushedAt | timestamp \| null | `pushGrades`(User Story 5)가 이 참가자의 성적을 Classroom에 성공 반영한 시각. `batchGrade`가 `classroomGradesPending`(FR-023)을 판단하려면 "이미 반영됨"과 "아직 반영 안 됨"을 구분할 무언가가 필요한데, 원래 설계엔 이 필드가 없었다(research.md §19 — 구현 중 발견) |

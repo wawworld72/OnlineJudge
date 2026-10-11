@@ -29,7 +29,7 @@ async function seedQuizAndProblem() {
       endAt: ts(60_000),
       accessCode: "ABC123",
       status: "OPEN",
-      maxRunsPerProblem: 3,
+      maxRunsTotal: 3,
       courseId: null,
       courseWorkId: null,
       courseWorkLink: null,
@@ -47,7 +47,6 @@ async function seedQuizAndProblem() {
       title: "문제1",
       description: "",
       initialCode: "",
-      maxRuns: null,
       pointsTotal: 100,
       updatedAt: ts(0),
       deletedAt: null,
@@ -155,6 +154,108 @@ describe("practiceRun", () => {
     expect(privateResult.actualOutput).toBeUndefined();
     const publicResult = tcResults.find((r) => r.tcId === "tc1")!;
     expect(publicResult.input).toBe("1");
+  });
+
+  it("실행 횟수 한도는 문항별이 아니라 퀴즈 전체 합산으로 적용된다", async () => {
+    const db = testDb();
+    const quizRef = db.collection("quizzes").doc(QUIZ_ID);
+    await quizRef
+      .collection("problems")
+      .doc("p2")
+      .set({
+        order: 1,
+        title: "문제2",
+        description: "",
+        initialCode: "",
+        pointsTotal: 100,
+        updatedAt: ts(0),
+        deletedAt: null,
+      });
+    const secrets = (await quizRef.collection("problemSecrets").doc(PROBLEM_ID).get()).data()!;
+    await quizRef.collection("problemSecrets").doc("p2").set(secrets);
+
+    mockGraderResponse({
+      ok: true,
+      status: "JUDGED",
+      score: 0,
+      maxScore: 100,
+      compileErrorMessage: null,
+      tcResultsFull: [
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "x",
+          memo: "",
+        },
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "2",
+          expected: "2",
+          actual: "x",
+          memo: "",
+        },
+      ],
+    });
+
+    const run = (problemId: string, code: string) =>
+      practiceRun.run(makeRequest({ quizId: QUIZ_ID, problemId, code }, STUDENT_EMAIL));
+
+    // maxRunsTotal은 3 — 문항1에서 2회, 문항2에서 1회를 쓰면 전체가 소진된다.
+    expect((await run(PROBLEM_ID, "a1")).remainingRuns).toBe(2);
+    expect((await run(PROBLEM_ID, "a2")).remainingRuns).toBe(1);
+    expect((await run("p2", "b1")).remainingRuns).toBe(0);
+    await expect(run("p2", "b2")).rejects.toMatchObject({ details: { code: "NO_RUNS_LEFT" } });
+    await expect(run(PROBLEM_ID, "a3")).rejects.toMatchObject({
+      details: { code: "NO_RUNS_LEFT" },
+    });
+  });
+
+  it("maxRunsTotal이 없는 기존 퀴즈는 maxRunsPerProblem 값을 총 한도로 사용한다", async () => {
+    await testDb()
+      .collection("quizzes")
+      .doc(QUIZ_ID)
+      .update({ maxRunsTotal: FieldValue.delete(), maxRunsPerProblem: 1 });
+    mockGraderResponse({
+      ok: true,
+      status: "JUDGED",
+      score: 0,
+      maxScore: 100,
+      compileErrorMessage: null,
+      tcResultsFull: [
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "1",
+          expected: "1",
+          actual: "x",
+          memo: "",
+        },
+        {
+          result: "❌FAIL",
+          earned: 0,
+          isPublic: false,
+          input: "2",
+          expected: "2",
+          actual: "x",
+          memo: "",
+        },
+      ],
+    });
+
+    const request = makeRequest(
+      { quizId: QUIZ_ID, problemId: PROBLEM_ID, code: "legacy-1" },
+      STUDENT_EMAIL,
+    );
+    expect((await practiceRun.run(request)).remainingRuns).toBe(0);
+    await expect(
+      practiceRun.run({ ...request, data: { ...request.data, code: "legacy-2" } }),
+    ).rejects.toMatchObject({ details: { code: "NO_RUNS_LEFT" } });
   });
 
   it("실행 횟수를 모두 사용하면 NO_RUNS_LEFT로 거부한다", async () => {
@@ -279,7 +380,7 @@ describe("practiceRun", () => {
       { quizId: QUIZ_ID, problemId: PROBLEM_ID, code: "int main(){}" },
       STUDENT_EMAIL,
     );
-    // maxRunsPerProblem은 3 — 한도보다 많은 4번째 호출도 성공해야 한다.
+    // maxRunsTotal은 3 — 한도보다 많은 4번째 호출도 성공해야 한다.
     await practiceRun.run(request);
     await practiceRun.run({ ...request, data: { ...request.data, code: "code-2" } });
     await practiceRun.run({ ...request, data: { ...request.data, code: "code-3" } });
