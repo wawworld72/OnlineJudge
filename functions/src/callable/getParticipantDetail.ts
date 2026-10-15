@@ -18,6 +18,13 @@ export const getParticipantDetail = createCallable(
       throw domainError("NOT_ENTERED", "아직 입장하지 않은 학생입니다.");
     }
     const participant = snap.data() as Participant;
-    return { submissions: participant.submissions, runResults: participant.runResults };
+    return {
+      submissions: participant.submissions,
+      runResults: participant.runResults,
+      focusLossEvents: (participant.focusLossEvents ?? []).map((e) => ({
+        at: e.at.toMillis(),
+        durationMs: e.durationMs,
+      })),
+    };
   },
 );

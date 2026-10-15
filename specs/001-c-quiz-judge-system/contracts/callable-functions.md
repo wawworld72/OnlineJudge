@@ -166,6 +166,17 @@
   설계의 서브컬렉션 다중 조회 대신 단일 문서 읽기).
 - **Response**: `{ submissions: {...}, runResults: {...} }`
 
+## 학생용 — 화면 이탈 보고
+
+### `reportFocusLoss`
+
+- **Request**: `{ quizId: string, durationMs: number }` (학생, 응시 화면이 복귀 시 1회 호출)
+- **처리**: FR-042. 참가자 문서에 `focusLossCount`+1, `focusLossTotalMs`+=`durationMs`(0~남은 응시
+  시간으로 클램프), `lastFocusLossAt`(서버 시각), `focusLossEvents`(최대 50건)를 트랜잭션으로
+  기록한다. `IN_PROGRESS`가 아니거나 `isTestEntry`이거나 `focusGuardEnabled === false`면 기록하지
+  않는다.
+- **Response**: `{ recorded: boolean }`
+
 ## 교사용 — Classroom (필수, User Story 5)
 
 ### `syncRoster`
@@ -203,6 +214,12 @@
 - **Request**: `{ quizId: string }`
 - **처리**: FR-037~038. Grader/Classroom과 마찬가지로 실패 시 1회 재시도(헌법 VI).
 - **Response**: `{ spreadsheetUrl, createdAt }`
+
+### `setFocusGuard`
+
+- **Request**: `{ quizId: string, enabled: boolean }` (교사)
+- **처리**: 퀴즈의 `focusGuardEnabled`를 갱신한다(FR-043). 상태·시각과 무관.
+- **Response**: `{ focusGuardEnabled }`
 
 ### `deleteQuizData`
 

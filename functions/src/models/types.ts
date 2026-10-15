@@ -76,6 +76,10 @@ export interface Quiz {
    *  재입장까지)을 즉시 차단한다(`enterQuiz.ts`) — 문제 유출 방지용 비상 잠금.
    *  전역 테스트 계정(isTestEntry)만 예외로 계속 접근 가능하다. 기본 false. */
   accessBlocked: boolean;
+  /** 켜져 있으면 응시 화면(QuizTaking)이 브라우저 탭/창 이탈을 감지해 2단계로 경고하고
+   *  이탈 이벤트를 서버에 기록한다(`reportFocusLoss`). 브라우저 JS 기반 억제책이라 완전한
+   *  차단은 아니다. 새 퀴즈는 켠 상태로 만들며, 필드가 없는 기존 문서는 켜진 것으로 읽는다. */
+  focusGuardEnabled?: boolean;
 }
 
 export interface Problem {
@@ -161,6 +165,17 @@ export interface Participant {
    * 제외된다(`participantOverview.ts`/`batchGrade.ts`).
    */
   isTestEntry: boolean;
+  /** 화면 이탈 감지(`reportFocusLoss`)가 기록한 이탈 횟수·누적 시간·최근 시각·상세 이벤트(최대
+   *  FOCUS_LOSS_EVENTS_MAX건). 이탈이 없었으면 필드가 없을 수 있다. */
+  focusLossCount?: number;
+  focusLossTotalMs?: number;
+  lastFocusLossAt?: Timestamp;
+  focusLossEvents?: FocusLossEvent[];
+}
+
+export interface FocusLossEvent {
+  at: Timestamp;
+  durationMs: number;
 }
 
 export interface AccessLog {

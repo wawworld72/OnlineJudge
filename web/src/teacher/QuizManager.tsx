@@ -22,6 +22,7 @@ import { PreDeployCheck } from "./PreDeployCheck";
 import { BatchGrade } from "./BatchGrade";
 import { TestCaseReveal } from "./TestCaseReveal";
 import { ClipboardRestriction } from "./ClipboardRestriction";
+import { FocusGuard } from "./FocusGuard";
 import { AccessBlock } from "./AccessBlock";
 import { ParticipantStatus } from "./ParticipantStatus";
 import { ClassroomPanel } from "./ClassroomPanel";
@@ -490,6 +491,11 @@ export function QuizManager() {
                 <ClipboardRestriction
                   quizId={selected.quizId}
                   clipboardRestricted={selected.clipboardRestricted}
+                  onChanged={() => openForEdit(selected.quizId)}
+                />
+                <FocusGuard
+                  quizId={selected.quizId}
+                  focusGuardEnabled={selected.focusGuardEnabled}
                   onChanged={() => openForEdit(selected.quizId)}
                 />
                 <AccessBlock

@@ -213,6 +213,17 @@ export const setClipboardRestrictionSchema = z.object({
   restricted: z.boolean(),
 });
 
+export const setFocusGuardSchema = z.object({
+  quizId: z.string().min(1),
+  enabled: z.boolean(),
+});
+
+export const reportFocusLossSchema = z.object({
+  quizId: z.string().min(1),
+  // 한 번의 이탈이 지속된 시간(ms). 서버가 남은 응시 시간 범위로 다시 클램프한다.
+  durationMs: z.number().finite().nonnegative(),
+});
+
 export const batchGradeSchema = z.object({
   quizId: z.string().min(1),
 });

@@ -170,6 +170,8 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
     // 교사가 켜면 응시 화면(QuizTaking)의 코드 에디터에서 복사·붙여넣기가 막힌다
     // (부정행위 방지 — CEditor.tsx). 참가자 상태와 무관하게 항상 내려준다.
     clipboardRestricted: boolean;
+    // 화면 이탈 감지(2단계 경고 + 서버 기록) 사용 여부. 필드가 없는 기존 퀴즈는 켜진 것으로 본다.
+    focusGuardEnabled: boolean;
     // 교사의 전역 테스트 계정(addGlobalTestAccount) 등 테스트 참가자 여부. 클라이언트가 이 값을
     // 알아야 QuizTaking.tsx가 마감시각 경과에 따른 화면 잠금(에디터 readOnly, 기본
     // 코드/최종 제출 버튼 비활성화 등)을 테스트 참가자에게는 걸지 않을 수 있다 —
@@ -190,7 +192,8 @@ export const enterQuiz = createCallable(enterQuizSchema, async ({ data, authEmai
     studentName,
     studentEmail: authEmail,
     serverNow: Timestamp.now().toMillis(),
-    clipboardRestricted: quiz.clipboardRestricted ?? false,
+    clipboardRestricted: quiz.clipboardRestricted ?? true,
+    focusGuardEnabled: quiz.focusGuardEnabled ?? true,
     isTestEntry: participant.isTestEntry,
   };
 

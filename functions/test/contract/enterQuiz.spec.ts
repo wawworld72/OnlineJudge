@@ -132,7 +132,7 @@ describe("enterQuiz", () => {
     expect(response.serverNow).toBeLessThanOrEqual(after);
   });
 
-  it("clipboardRestricted 필드가 없는(레거시) 퀴즈 문서는 응답에서 false로 내려온다", async () => {
+  it("clipboardRestricted·focusGuardEnabled 필드가 없는(레거시) 퀴즈 문서는 응답에서 true로 내려온다", async () => {
     const response = await enterQuiz.run(
       makeRequest(
         { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },
@@ -140,7 +140,21 @@ describe("enterQuiz", () => {
       ),
     );
 
-    expect(response.clipboardRestricted).toBe(false);
+    expect(response.clipboardRestricted).toBe(true);
+    expect(response.focusGuardEnabled).toBe(true);
+  });
+
+  it("focusGuardEnabled: false가 명시된 퀴즈는 응답에서 false로 내려온다", async () => {
+    await testDb().collection("quizzes").doc(QUIZ_ID).update({ focusGuardEnabled: false });
+
+    const response = await enterQuiz.run(
+      makeRequest(
+        { quizId: QUIZ_ID, accessCode: "ABC123", studentId: STUDENT_ID, name: "홍길동" },
+        STUDENT_EMAIL,
+      ),
+    );
+
+    expect(response.focusGuardEnabled).toBe(false);
   });
 
   it("퀴즈에 clipboardRestricted: true가 설정되어 있으면 응답에 그대로 반영된다", async () => {

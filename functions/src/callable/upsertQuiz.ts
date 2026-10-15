@@ -38,7 +38,8 @@ export const upsertQuiz = createCallable(upsertQuizSchema, async ({ data, isTeac
     timerDurationMs: DEFAULT_TIMER_DURATION_MS,
     pausedAt: null,
     revealTestCases: false,
-    clipboardRestricted: false,
+    clipboardRestricted: true,
+    focusGuardEnabled: true,
     accessBlocked: false,
   };
   const quizRef = await db.collection("quizzes").add(newQuiz);

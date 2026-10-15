@@ -34,6 +34,8 @@ export interface EnterQuizResponse {
   serverNow: number;
   // 응시 화면 코드 에디터에서 복사·붙여넣기를 막을지(부정행위 방지) — CEditor.tsx.
   clipboardRestricted: boolean;
+  // 화면 이탈 감지(2단계 경고 + 서버 기록) 사용 여부 — useFocusGuard.ts.
+  focusGuardEnabled: boolean;
   // 교사의 "테스트용 수강생" 참가자 여부 — 참이면 QuizTaking.tsx가 마감시각 경과에
   // 따른 화면 잠금(readOnly/버튼 비활성화)을 걸지 않는다.
   isTestEntry: boolean;
@@ -77,6 +79,10 @@ export interface PracticeRunResponse {
   tcResults: TestCaseResult[];
   remainingRuns: number;
   usedCache: boolean;
+}
+
+export function reportFocusLoss(input: { quizId: string; durationMs: number }) {
+  return callFunction<typeof input, { recorded: boolean }>("reportFocusLoss", input);
 }
 
 export function practiceRun(input: { quizId: string; problemId: string; code: string }) {

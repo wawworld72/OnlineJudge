@@ -32,6 +32,7 @@ describe("getParticipantDetail", () => {
           p1: { status: "AC", score: 100, maxScore: 100, compileErrorMessage: null, tcResults: [] },
         },
         gradePushedAt: null,
+        focusLossEvents: [{ at: Timestamp.fromMillis(1_000), durationMs: 7_000 }],
       });
 
     const response = await getParticipantDetail.run(
@@ -40,6 +41,7 @@ describe("getParticipantDetail", () => {
 
     expect(response.submissions.p1.code).toBe("int main(){}");
     expect(response.runResults.p1.status).toBe("AC");
+    expect(response.focusLossEvents).toEqual([{ at: 1_000, durationMs: 7_000 }]);
   });
 
   it("입장한 적 없는 학생을 조회하면 NOT_ENTERED로 거부한다", async () => {

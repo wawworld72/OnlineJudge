@@ -3,8 +3,16 @@ import { CEditor } from "../editor/CEditor";
 import { DelayedActionButton } from "../shared/DelayedActionButton";
 import { SplitPanel } from "../shared/SplitPanel";
 import { formatRemaining, startCountdown } from "../shared/countdown";
-import { finalSubmit, practiceRun, type EnterQuizResponse, type PracticeRunResponse } from "./api";
+import {
+  finalSubmit,
+  practiceRun,
+  reportFocusLoss,
+  type EnterQuizResponse,
+  type PracticeRunResponse,
+} from "./api";
 import { FinalSubmitModal } from "./FinalSubmitModal";
+import { FocusGuardOverlay } from "./FocusGuardOverlay";
+import { useFocusGuard } from "./useFocusGuard";
 import { Markdown } from "./Markdown";
 import { ResultView } from "./ResultView";
 import { TcResultTable } from "./TcResultTable";
@@ -75,6 +83,19 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
     () => startCountdown(initial.endAt + CLIENT_SUBMIT_GRACE_MS, setRemainingSubmitMs),
     [initial.endAt],
   );
+
+  // 화면 이탈 감지 — 응시 중이고 마감 전일 때만(교사 테스트 참가자는 제외). 복귀 시 이탈
+  // 길이를 서버에 한 번 보고하며, 실패해도 응시 흐름은 막지 않는다.
+  const focusGuard = useFocusGuard({
+    enabled:
+      initial.focusGuardEnabled &&
+      !initial.isTestEntry &&
+      participantStatus === "IN_PROGRESS" &&
+      remainingMs > 0,
+    onReport: (durationMs) => {
+      void reportFocusLoss({ quizId, durationMs }).catch(() => undefined);
+    },
+  });
 
   const activeProblem = initial.problems[activeIndex];
 
@@ -150,6 +171,11 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
 
   return (
     <div className="container">
+      <FocusGuardOverlay
+        stage={focusGuard.stage}
+        away={focusGuard.away}
+        onAcknowledge={focusGuard.acknowledge}
+      />
       <div className="card">
         <h1>{initial.quizTitle}</h1>
 

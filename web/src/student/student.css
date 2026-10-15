@@ -559,3 +559,57 @@ th {
     display: none;
   }
 }
+
+/* 화면 이탈 감지(useFocusGuard) — 1단계 배너, 2단계 주황색 점멸 오버레이.
+   점멸은 약 1Hz의 부드러운 색 전환이라 광과민성 위험 기준(3Hz 미만)을 지킨다. */
+.focus-guard-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 10px 16px;
+  text-align: center;
+  font-weight: bold;
+  background: #fff8e1;
+  border-bottom: 2px solid #ff9800;
+  color: #b36b00;
+}
+
+.focus-guard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ff9800;
+  animation: focus-guard-flash 1s ease-in-out infinite;
+}
+
+.focus-guard-box {
+  max-width: 480px;
+  margin: 16px;
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff;
+  color: #5d3300;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes focus-guard-flash {
+  0%,
+  100% {
+    background: #ff9800;
+  }
+  50% {
+    background: #ffe0b2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-guard-overlay {
+    animation: none;
+  }
+}

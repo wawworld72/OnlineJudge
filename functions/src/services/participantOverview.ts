@@ -8,6 +8,8 @@ export interface OverviewItem {
   status: "NOT_ENTERED" | "IN_PROGRESS" | "SUBMITTED" | "FINALIZED";
   submittedAt?: number;
   finalTotal?: number;
+  focusLossCount?: number;
+  focusLossTotalMs?: number;
 }
 
 /**
@@ -50,6 +52,8 @@ export async function getParticipantOverviewData(
     const item: OverviewItem = { studentId, name, email, status: participant.finalStatus };
     if (participant.finalSubmittedAt) item.submittedAt = participant.finalSubmittedAt.toMillis();
     if (participant.finalStatus === "FINALIZED") item.finalTotal = participant.finalTotal;
+    item.focusLossCount = participant.focusLossCount ?? 0;
+    item.focusLossTotalMs = participant.focusLossTotalMs ?? 0;
     return item;
   }
 

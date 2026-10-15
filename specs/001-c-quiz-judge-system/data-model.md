@@ -55,6 +55,8 @@ Firestore 컬렉션 경로와 문서 스키마. spec.md의 Key Entities와 1:1 �
 | status | `'DRAFT' \| 'OPEN' \| 'CLOSED'` | PAUSED 없음 (Clarify Q2로 범위 제외) |
 | maxRunsTotal | number | 퀴즈 전체(모든 문항 합산) 최대 연습 실행 횟수. 이 필드가 없는 기존 문서는 구 필드 `maxRunsPerProblem` 값을 그대로 총 한도로 사용한다 |
 | courseId | string \| null | 연결된 분반 |
+| clipboardRestricted | boolean | 코드 에디터 복사·붙여넣기 제한. 새 퀴즈는 `true`, 필드가 없는 기존 문서는 `true`로 읽음 |
+| focusGuardEnabled | boolean | 화면 이탈 감지(FR-041~043). 새 퀴즈는 `true`, 필드가 없는 기존 문서는 `true`로 읽음 |
 | courseWorkId, courseWorkLink | string \| null | Classroom 과제 배포 결과 (FR-028~029) |
 | archivedAt | timestamp \| null | 마지막 아카이브 생성 시각. null이면 미아카이브 (FR-040) |
 | archiveSpreadsheetUrl | string \| null | 아카이브 스프레드시트 링크 |
@@ -137,6 +139,8 @@ lost-update가 발생할 수 있었다.
 | runsUsedByProblem | map<problemId, number> | 문항별 실행 횟수 사용량(통계용). 한도 판정은 이 값들의 합(퀴즈 전체 사용량)으로 하며 `runTransaction`으로만 증가(FR-014, research.md §5) |
 | submissions | map<problemId, `{code, submittedAt}`> | 문항별 최종 제출 코드(구 `submissions` 서브컬렉션, FR-017) |
 | runResults | map<problemId, `{status, score, maxScore, compileErrorMessage, tcResults}`> | 문항별 확정 채점 결과(구 `runResults` 서브컬렉션, FR-024). `status`는 `'AC'\|'WA'\|'CE'\|'NOT_ATTEMPTED'` — 코드를 제출하지 않은 문항은 `'NOT_ATTEMPTED'`/0점으로 기록한다(FR-022) |
+| focusLossCount, focusLossTotalMs, lastFocusLossAt | number, number, timestamp | 화면 이탈 횟수·누적 시간(ms)·최근 이탈 시각. 이탈이 없으면 필드 없음(FR-042) |
+| focusLossEvents | array<`{at, durationMs}`> | 상세 이탈 이벤트, 최대 50건(초과분은 횟수·누적 시간에만 반영) |
 | gradePushedAt | timestamp \| null | `pushGrades`(User Story 5)가 이 참가자의 성적을 Classroom에 성공 반영한 시각. `batchGrade`가 `classroomGradesPending`(FR-023)을 판단하려면 "이미 반영됨"과 "아직 반영 안 됨"을 구분할 무언가가 필요한데, 원래 설계엔 이 필드가 없었다(research.md §19 — 구현 중 발견) |
 
 **생성 시점**: `enterQuiz`(최초 입장) 시점에 생성하며 `finalStatus: 'IN_PROGRESS'`,

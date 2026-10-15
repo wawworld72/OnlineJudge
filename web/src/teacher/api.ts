@@ -59,6 +59,7 @@ export interface QuizDetail {
   archiveSpreadsheetUrl: string | null;
   revealTestCases: boolean;
   clipboardRestricted: boolean;
+  focusGuardEnabled: boolean;
   accessBlocked: boolean;
   problems: ProblemDetail[];
 }
@@ -176,6 +177,10 @@ export function setClipboardRestriction(input: { quizId: string; restricted: boo
   );
 }
 
+export function setFocusGuard(input: { quizId: string; enabled: boolean }) {
+  return callFunction<typeof input, { focusGuardEnabled: boolean }>("setFocusGuard", input);
+}
+
 export function setAccessBlocked(input: { quizId: string; blocked: boolean }) {
   return callFunction<typeof input, { accessBlocked: boolean }>("setAccessBlocked", input);
 }
@@ -200,6 +205,8 @@ export interface ParticipantOverviewItem {
   status: ParticipantOverviewStatus;
   submittedAt?: number;
   finalTotal?: number;
+  focusLossCount?: number;
+  focusLossTotalMs?: number;
 }
 
 export function getParticipantOverview(input: { quizId: string }) {
@@ -210,6 +217,8 @@ export function getParticipantOverview(input: { quizId: string }) {
 }
 
 export interface ParticipantDetail {
+  /** 화면 이탈 이벤트(최대 50건) — 시각과 이탈 지속 시간(ms) */
+  focusLossEvents: Array<{ at: number; durationMs: number }>;
   submissions: Record<string, { code: string; submittedAt: number }>;
   runResults: Record<
     string,

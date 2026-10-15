@@ -17,6 +17,11 @@ const STATUS_LABEL: Record<ParticipantOverviewItem["status"], string> = {
   FINALIZED: "채점완료",
 };
 
+function formatFocusLoss(count?: number, totalMs?: number): string {
+  if (!count) return "-";
+  return `${count}회 / ${Math.round((totalMs ?? 0) / 1000)}초`;
+}
+
 /** 참가자 현황 목록 + 상세 열람 화면(FR-025). */
 export function ParticipantStatus({ quizId }: ParticipantStatusProps) {
   const [participants, setParticipants] = useState<ParticipantOverviewItem[] | null>(null);
@@ -44,6 +49,7 @@ export function ParticipantStatus({ quizId }: ParticipantStatusProps) {
             <th>상태</th>
             <th>제출 시각</th>
             <th>확정 점수</th>
+            <th>화면 이탈</th>
             <th></th>
           </tr>
         </thead>
@@ -55,6 +61,7 @@ export function ParticipantStatus({ quizId }: ParticipantStatusProps) {
               <td>{STATUS_LABEL[p.status]}</td>
               <td>{p.submittedAt ? new Date(p.submittedAt).toLocaleString() : "-"}</td>
               <td>{p.finalTotal ?? "-"}</td>
+              <td>{formatFocusLoss(p.focusLossCount, p.focusLossTotalMs)}</td>
               <td>
                 {p.status !== "NOT_ENTERED" && (
                   <button onClick={() => openDetail(p.studentId)}>상세</button>
@@ -69,6 +76,18 @@ export function ParticipantStatus({ quizId }: ParticipantStatusProps) {
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal-box">
             <h4>{detail.studentId} 상세</h4>
+            <h5>화면 이탈 기록</h5>
+            {detail.data.focusLossEvents.length === 0 ? (
+              <p>이탈 기록이 없습니다.</p>
+            ) : (
+              <ul>
+                {detail.data.focusLossEvents.map((e, i) => (
+                  <li key={i}>
+                    {new Date(e.at).toLocaleTimeString()} — {Math.round(e.durationMs / 1000)}초
+                  </li>
+                ))}
+              </ul>
+            )}
             {Object.entries(detail.data.runResults).map(([problemId, result]) => (
               <div key={problemId} style={{ marginBottom: 12 }}>
                 <p>

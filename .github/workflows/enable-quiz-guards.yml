@@ -1,0 +1,36 @@
+name: Enable Quiz Guards
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "true면 변경 없이 대상 수만 출력"
+        required: true
+        default: "true"
+
+jobs:
+  enable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install functions dependencies
+        run: npm ci
+        working-directory: functions
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Enable clipboard restriction and focus guard on existing quizzes
+        working-directory: functions
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: npx tsx scripts/enableGuardsForExistingQuizzes.ts
