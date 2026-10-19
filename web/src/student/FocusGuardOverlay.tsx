@@ -6,7 +6,7 @@ interface FocusGuardOverlayProps {
   onAcknowledge: () => void;
 }
 
-/** 화면 이탈 경고: 1단계는 상단 배너, 2단계는 주황색으로 점멸하는 전체 화면 오버레이. */
+/** 화면 이탈 경고: 1단계는 상단 배너, 2단계는 화면 전체가 주황색으로 바뀌는 오버레이(점멸 없음). */
 export function FocusGuardOverlay({ stage, away, onAcknowledge }: FocusGuardOverlayProps) {
   if (stage === 0) return null;
 

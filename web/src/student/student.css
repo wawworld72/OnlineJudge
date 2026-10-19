@@ -560,8 +560,7 @@ th {
   }
 }
 
-/* 화면 이탈 감지(useFocusGuard) — 1단계 배너, 2단계 주황색 점멸 오버레이.
-   점멸은 약 1Hz의 부드러운 색 전환이라 광과민성 위험 기준(3Hz 미만)을 지킨다. */
+/* 화면 이탈 감지(useFocusGuard) — 1단계 배너, 2단계 주황색 전체 화면 오버레이(점멸 없음). */
 .focus-guard-banner {
   position: fixed;
   top: 0;
@@ -584,7 +583,6 @@ th {
   align-items: center;
   justify-content: center;
   background: #ff9800;
-  animation: focus-guard-flash 1s ease-in-out infinite;
 }
 
 .focus-guard-box {
@@ -598,18 +596,3 @@ th {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
-@keyframes focus-guard-flash {
-  0%,
-  100% {
-    background: #ff9800;
-  }
-  50% {
-    background: #ffe0b2;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .focus-guard-overlay {
-    animation: none;
-  }
-}
