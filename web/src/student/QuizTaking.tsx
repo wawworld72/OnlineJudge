@@ -10,8 +10,10 @@ import {
   type EnterQuizResponse,
   type PracticeRunResponse,
 } from "./api";
+import { EditorFontSizeControl } from "./EditorFontSizeControl";
 import { FinalSubmitModal } from "./FinalSubmitModal";
 import { FocusGuardOverlay } from "./FocusGuardOverlay";
+import { useEditorFontSize } from "./useEditorFontSize";
 import { useFocusGuard } from "./useFocusGuard";
 import { Markdown } from "./Markdown";
 import { ResultView } from "./ResultView";
@@ -83,6 +85,8 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
     () => startCountdown(initial.endAt + CLIENT_SUBMIT_GRACE_MS, setRemainingSubmitMs),
     [initial.endAt],
   );
+
+  const editorFont = useEditorFontSize();
 
   // 화면 이탈 감지 — 응시 중이고 마감 전일 때만(교사 테스트 참가자는 제외). 복귀 시 이탈
   // 길이를 서버에 한 번 보고하며, 실패해도 응시 흐름은 막지 않는다.
@@ -266,7 +270,11 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
                   🔒 이 퀴즈는 코드 에디터에서 복사·붙여넣기가 제한됩니다.
                 </p>
               )}
-              <div className="editor-shell">
+              <EditorFontSizeControl size={editorFont.size} onChange={editorFont.setSize} />
+              <div
+                className="editor-shell"
+                style={{ "--editor-font-size": `${editorFont.size}px` } as React.CSSProperties}
+              >
                 {/* key로 문제가 바뀔 때마다 에디터를 새로 마운트한다 — 그렇지 않으면 CEditor
                     안의 CodeMirror 인스턴스가 재사용되면서, 문제 전환 시 내용을 바꿔치기하는
                     트랜잭션이 실행취소(Ctrl+Z) 히스토리에 그대로 남아, 새 문제에서 되돌리기를

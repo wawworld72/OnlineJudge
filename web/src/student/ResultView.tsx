@@ -7,7 +7,9 @@ import {
   type GradedProblemResult,
   type TestCaseResult,
 } from "./api";
+import { EditorFontSizeControl } from "./EditorFontSizeControl";
 import { Markdown } from "./Markdown";
+import { useEditorFontSize } from "./useEditorFontSize";
 import { TcResultTable } from "./TcResultTable";
 
 interface ResultViewProps {
@@ -44,6 +46,7 @@ function tabStatusClass(result: GradedProblemResult | undefined): string {
  */
 export function ResultView({ quizId, initial }: ResultViewProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const editorFont = useEditorFontSize();
   // enterQuiz의 gradedResult(=participant.runResults)는 채점 시점에 마스킹된 그대로다.
   // 퀴즈 종료 후 교사가 테스트케이스 공개를 켰다면, getMyResult가 그 순간에 계산하는
   // 공개 오버레이를 따로 받아와 tcResults만 덮어써야 실제로 화면에 반영된다(공개
@@ -155,7 +158,11 @@ export function ResultView({ quizId, initial }: ResultViewProps) {
           left={<Markdown text={activeProblem.description} />}
           right={
             <div className="problem-editor-panel">
-              <div className="editor-shell">
+              <EditorFontSizeControl size={editorFont.size} onChange={editorFont.setSize} />
+              <div
+                className="editor-shell"
+                style={{ "--editor-font-size": `${editorFont.size}px` } as React.CSSProperties}
+              >
                 {/* QuizTaking.tsx와 같은 이유로 key를 둔다 — 문제 전환 시 에디터를 새로
                     마운트해 CodeMirror 실행취소 히스토리가 문제 간에 섞이지 않게 한다. */}
                 <CEditor

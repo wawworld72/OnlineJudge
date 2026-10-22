@@ -56,6 +56,7 @@ export function CEditor({
       extensions: [
         basicSetup,
         cpp(),
+        EditorState.tabSize.of(4), // 탭 문자는 4칸 폭으로 보여준다(C 코드 들여쓰기 관례)
         keymap.of([indentWithTab]),
         EditorView.editable.of(!readOnly),
         EditorView.domEventHandlers({
