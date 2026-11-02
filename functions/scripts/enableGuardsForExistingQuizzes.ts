@@ -1,5 +1,6 @@
 /**
- * 기존 퀴즈 전부에 부정행위 방지 설정(복사·붙여넣기 제한, 화면 이탈 감지)을 켠다. 새 퀴즈는
+ * 기존 퀴즈 전부에 부정행위 방지 설정(복사·붙여넣기 제한, 화면 이탈 감지)과 제출 후 테스트케이스
+ * 공개(revealTestCases)를 켠다. 새 퀴즈는
  * 기본값이 이미 켜짐이지만, 기존 퀴즈 문서에는 `clipboardRestricted: false`가 명시 저장돼
  * 있어 코드 기본값 변경만으로는 바뀌지 않는다. GitHub Actions의 `enable-quiz-guards.yml`
  * 워크플로우(수동 실행)가 서비스 계정 자격증명으로 실행한다 — 로컬에서 직접 실행하지 않는다.
@@ -24,13 +25,21 @@ async function main() {
       skipped++;
       continue;
     }
-    if (quiz.clipboardRestricted === true && quiz.focusGuardEnabled === true) {
+    if (
+      quiz.clipboardRestricted === true &&
+      quiz.focusGuardEnabled === true &&
+      quiz.revealTestCases === true
+    ) {
       skipped++;
       continue;
     }
     updated++;
     if (!dryRun) {
-      void writer.update(doc.ref, { clipboardRestricted: true, focusGuardEnabled: true });
+      void writer.update(doc.ref, {
+        clipboardRestricted: true,
+        focusGuardEnabled: true,
+        revealTestCases: true,
+      });
     }
   }
   await writer.close();

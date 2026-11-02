@@ -121,9 +121,19 @@ describe("getMyResult", () => {
     await teardownTestApp();
   });
 
-  it("FINALIZED 이전에는 점수 없이 상태만 반환한다", async () => {
+  it("응시 중(IN_PROGRESS)에는 상태만 반환하고 테스트케이스를 공개하지 않는다", async () => {
     await clearFirestore();
     await seedStudentAndProblem();
+    await seedParticipant("IN_PROGRESS");
+
+    const response = await getMyResult.run(makeRequest({ quizId: QUIZ_ID }, STUDENT_EMAIL));
+
+    expect(response).toEqual({ participantStatus: "IN_PROGRESS" });
+  });
+
+  it("최종 제출 후 채점 전(SUBMITTED)에는 점수 없이 모든 테스트케이스의 입력·기대 출력을 반환한다", async () => {
+    await clearFirestore();
+    await seedStudentAndProblem({ status: "OPEN", revealTestCases: true });
     await seedParticipant("SUBMITTED");
 
     const response = await getMyResult.run(makeRequest({ quizId: QUIZ_ID }, STUDENT_EMAIL));
@@ -131,11 +141,30 @@ describe("getMyResult", () => {
     expect(response.participantStatus).toBe("SUBMITTED");
     expect(response).not.toHaveProperty("finalTotal");
     expect(response).not.toHaveProperty("perProblem");
+    expect(response.testCases).toEqual([
+      {
+        problemId: PROBLEM_ID,
+        testCases: [
+          { tcId: "tc1", isPublic: true, points: 60, input: "1", expectedOutput: "1" },
+          { tcId: "tc2", isPublic: false, points: 40, input: "2", expectedOutput: "2" },
+        ],
+      },
+    ]);
   });
 
-  it("FINALIZED 이후에는 점수와 문항별 결과를 반환한다(비공개 항목은 기본적으로 마스킹 유지)", async () => {
+  it("SUBMITTED여도 교사가 공개를 꺼두면 테스트케이스를 반환하지 않는다", async () => {
     await clearFirestore();
-    await seedStudentAndProblem();
+    await seedStudentAndProblem({ revealTestCases: false });
+    await seedParticipant("SUBMITTED");
+
+    const response = await getMyResult.run(makeRequest({ quizId: QUIZ_ID }, STUDENT_EMAIL));
+
+    expect(response).toEqual({ participantStatus: "SUBMITTED" });
+  });
+
+  it("FINALIZED 이후에는 점수와 문항별 결과를 반환한다(공개를 끈 퀴즈는 비공개 항목 마스킹 유지)", async () => {
+    await clearFirestore();
+    await seedStudentAndProblem({ revealTestCases: false });
     await seedParticipant("FINALIZED");
 
     const response = await getMyResult.run(makeRequest({ quizId: QUIZ_ID }, STUDENT_EMAIL));
@@ -173,7 +202,7 @@ describe("getMyResult", () => {
     ).rejects.toMatchObject({ details: { code: "NOT_ENTERED" } });
   });
 
-  it("퀴즈가 CLOSED여도 공개 토글이 꺼져 있으면 비공개 항목은 그대로 마스킹된다", async () => {
+  it("공개 토글이 꺼져 있으면 퀴즈가 CLOSED여도 비공개 항목은 그대로 마스킹된다", async () => {
     await clearFirestore();
     await seedStudentAndProblem({ status: "CLOSED", revealTestCases: false });
     await seedParticipant("FINALIZED");
@@ -184,7 +213,7 @@ describe("getMyResult", () => {
     expect(tc2).toEqual({ tcId: "tc2", passed: false, isPublic: false, points: 40 });
   });
 
-  it("퀴즈가 OPEN이면 공개 토글이 켜져 있어도 비공개 항목은 마스킹된다", async () => {
+  it("퀴즈가 아직 OPEN이어도 본인이 제출을 마쳤고 공개가 켜져 있으면 비공개 항목이 공개된다", async () => {
     await clearFirestore();
     await seedStudentAndProblem({ status: "OPEN", revealTestCases: true });
     await seedParticipant("FINALIZED");
@@ -192,7 +221,22 @@ describe("getMyResult", () => {
     const response = await getMyResult.run(makeRequest({ quizId: QUIZ_ID }, STUDENT_EMAIL));
 
     const tc2 = response.perProblem![0]!.tcResults.find((tc: TestCaseResult) => tc.tcId === "tc2")!;
-    expect(tc2).toEqual({ tcId: "tc2", passed: false, isPublic: false, points: 40 });
+    expect(tc2).toMatchObject({ input: "2", expectedOutput: "2" });
+  });
+
+  it("revealTestCases 필드가 없는 기존 퀴즈도 공개된 것으로 본다", async () => {
+    await clearFirestore();
+    await seedStudentAndProblem();
+    await testDb()
+      .collection("quizzes")
+      .doc(QUIZ_ID)
+      .update({ revealTestCases: FieldValue.delete() });
+    await seedParticipant("FINALIZED");
+
+    const response = await getMyResult.run(makeRequest({ quizId: QUIZ_ID }, STUDENT_EMAIL));
+
+    const tc2 = response.perProblem![0]!.tcResults.find((tc: TestCaseResult) => tc.tcId === "tc2")!;
+    expect(tc2).toMatchObject({ input: "2", expectedOutput: "2" });
   });
 
   it("퀴즈가 CLOSED고 공개 토글이 켜져 있으면 비공개 항목의 input/expected가 채워진다(actual은 없음)", async () => {

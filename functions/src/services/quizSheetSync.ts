@@ -458,7 +458,7 @@ export async function syncQuizFromSheet(
       deletedAt: null,
       timerDurationMs: DEFAULT_TIMER_DURATION_MS,
       pausedAt: null,
-      revealTestCases: false,
+      revealTestCases: true,
       clipboardRestricted: true,
       focusGuardEnabled: true,
       accessBlocked: false,

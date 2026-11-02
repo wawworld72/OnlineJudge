@@ -109,8 +109,19 @@ export interface PerProblemResult {
   tcResults: TestCaseResult[];
 }
 
+/** 채점 전(SUBMITTED)에 보여주는 테스트케이스 — 입력·기대 출력만 있고 정답 여부는 없다. */
+export interface UngradedTestCase {
+  tcId: string;
+  isPublic: boolean;
+  points: number;
+  input: string;
+  expectedOutput: string;
+}
+
 export interface GetMyResultResponse {
   participantStatus: ParticipantStatus;
+  /** 최종 제출 후 채점 전이고 교사가 공개를 끄지 않았을 때만 온다. */
+  testCases?: Array<{ problemId: string; testCases: UngradedTestCase[] }>;
   finalTotal?: number;
   maxTotal?: number;
   perProblem?: PerProblemResult[];

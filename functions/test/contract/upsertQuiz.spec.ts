@@ -40,6 +40,7 @@ describe("upsertQuiz", () => {
     // 부정행위 방지 설정은 새 퀴즈에서 기본 켜짐이다.
     expect(quiz.clipboardRestricted).toBe(true);
     expect(quiz.focusGuardEnabled).toBe(true);
+    expect(quiz.revealTestCases).toBe(true);
   });
 
   it("교사가 아닌 계정은 거부한다", async () => {

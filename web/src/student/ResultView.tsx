@@ -6,9 +6,11 @@ import {
   type EnterQuizResponse,
   type GradedProblemResult,
   type TestCaseResult,
+  type UngradedTestCase,
 } from "./api";
 import { EditorFontSizeControl } from "./EditorFontSizeControl";
 import { Markdown } from "./Markdown";
+import { UngradedTcTable } from "./UngradedTcTable";
 import { useEditorFontSize } from "./useEditorFontSize";
 import { TcResultTable } from "./TcResultTable";
 
@@ -57,14 +59,23 @@ export function ResultView({ quizId, initial }: ResultViewProps) {
     TestCaseResult[]
   > | null>(null);
 
+  // 최종 제출 직후(채점 전)에도 문항별 테스트케이스의 입력·기대 출력을 보여준다.
+  const [ungradedTcs, setUngradedTcs] = useState<Record<string, UngradedTestCase[]> | null>(null);
+
   useEffect(() => {
-    if (initial.participantStatus !== "FINALIZED") return;
+    if (initial.participantStatus === "IN_PROGRESS") return;
     getMyResult({ quizId })
       .then((response) => {
-        if (!response.perProblem) return;
-        const byProblemId: Record<string, TestCaseResult[]> = {};
-        for (const p of response.perProblem) byProblemId[p.problemId] = p.tcResults;
-        setRevealedTcResults(byProblemId);
+        if (response.perProblem) {
+          const byProblemId: Record<string, TestCaseResult[]> = {};
+          for (const p of response.perProblem) byProblemId[p.problemId] = p.tcResults;
+          setRevealedTcResults(byProblemId);
+        }
+        if (response.testCases) {
+          const byProblemId: Record<string, UngradedTestCase[]> = {};
+          for (const p of response.testCases) byProblemId[p.problemId] = p.testCases;
+          setUngradedTcs(byProblemId);
+        }
       })
       .catch(() => {
         // 실패해도 기존 gradedResult 기반 마스킹 화면을 그대로 보여준다.
@@ -174,7 +185,12 @@ export function ResultView({ quizId, initial }: ResultViewProps) {
               </div>
 
               {!activeResult ? (
-                <div className="result-box muted">채점 대기 중입니다.</div>
+                <>
+                  <div className="result-box muted">채점 대기 중입니다.</div>
+                  {ungradedTcs?.[activeProblem.problemId] && (
+                    <UngradedTcTable testCases={ungradedTcs[activeProblem.problemId]!} />
+                  )}
+                </>
               ) : activeResult.status === "CE" ? (
                 <div className="compile-error-box">
                   <b>컴파일 오류</b>

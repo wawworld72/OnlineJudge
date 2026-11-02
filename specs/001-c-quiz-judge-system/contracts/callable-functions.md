@@ -221,6 +221,12 @@
 - **처리**: 퀴즈의 `focusGuardEnabled`를 갱신한다(FR-043). 상태·시각과 무관.
 - **Response**: `{ focusGuardEnabled }`
 
+### `getMyResult` 공개 규칙 (FR-044)
+
+- `IN_PROGRESS`: 상태만 반환.
+- `SUBMITTED`(채점 전): 퀴즈 `revealTestCases !== false`이면 `testCases: [{problemId, testCases:[{tcId, isPublic, points, input, expectedOutput}]}]`를 함께 반환(정답 여부 없음).
+- `FINALIZED`: `perProblem[].tcResults`에서 비공개 항목의 `input`/`expectedOutput`을 같은 조건으로 되살려 반환.
+
 ### `deleteQuizData`
 
 - **Request**: `{ quizId: string, confirmWithoutArchive?: boolean }`

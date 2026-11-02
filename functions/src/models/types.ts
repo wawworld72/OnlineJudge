@@ -60,11 +60,11 @@ export interface Quiz {
   /** 일시정지 시각. null이면 실행 중이거나 아직 시작 전. "시작"(재개) 시
    *  멈춰있던 시간(now - pausedAt)만큼 endAt을 뒤로 늦추고 null로 되돌린다. */
   pausedAt: Timestamp | null;
-  /** 교사가 켜면, 퀴즈가 CLOSED된 뒤 학생 본인 결과 화면에서 비공개
-   *  테스트케이스의 input/expected까지 공개한다(getMyResult.ts). 기본 false —
-   *  같은 문제를 다른 분반 퀴즈에 재사용 중이면 그 분반이 다 끝나기 전에는
-   *  켜면 안 된다(교사가 직접 판단, 시스템이 감지하지 못함). */
-  revealTestCases: boolean;
+  /** 켜져 있으면 학생이 최종 제출을 마친 뒤 본인 결과 화면에서 비공개 테스트케이스의
+   *  input/expected까지 자동으로 공개한다(getMyResult.ts). 새 퀴즈는 true이고 필드가 없는
+   *  기존 문서도 켜진 것으로 읽는다. 같은 문제를 다른 분반 퀴즈에 재사용 중이거나 아직 응시
+   *  중인 다른 학생에게 답이 새면 곤란할 때만 교사가 끈다(시스템이 감지하지 못함). */
+  revealTestCases?: boolean;
   /** 교사가 켜면 학생 응시 화면(QuizTaking)의 코드 에디터에서 붙여넣기(paste)·
    *  끌어다놓기(drop)·복사(copy)·잘라내기(cut)를 모두 막는다(부정행위 방지 —
    *  특히 문제/코드를 복사해 외부 AI 도구에 붙여넣는 경로 차단). 브라우저 JS
