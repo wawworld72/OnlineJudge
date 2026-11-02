@@ -393,12 +393,14 @@ button:disabled {
   border-right: 1px solid #d8dbe0;
 }
 
+/* 현재 줄 배경은 반드시 반투명이어야 한다 — 선택 영역(.cm-selectionBackground)은 글자 뒤쪽 레이어에
+   그려지므로, 불투명한 배경을 깔면 같은 줄에서 드래그한 선택이 가려져 보이지 않는다. */
 .editor-shell .cm-activeLine {
-  background: #eef4ff;
+  background: rgba(74, 144, 217, 0.1);
 }
 
 .editor-shell .cm-activeLineGutter {
-  background: #e1ebfd;
+  background: rgba(74, 144, 217, 0.2);
   color: #1a1a1a;
 }
 
@@ -409,7 +411,12 @@ button:disabled {
 
 .editor-shell .cm-selectionBackground,
 .editor-shell .cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground {
-  background: #b3d4fc;
+  background: #9cc7fa;
+}
+
+/* 선택한 글자와 같은 문자열을 코드 다른 곳에 표시하는 하이라이트 — 선택 영역과 구분되도록 연한 노란색 */
+.editor-shell .cm-selectionMatch {
+  background: rgba(255, 213, 0, 0.35);
 }
 
 .result-box {
