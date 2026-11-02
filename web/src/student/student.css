@@ -658,3 +658,21 @@ th {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
+
+/* 문항별 배점 — 실행 전에도 미리 보여준다. */
+.problem-points-badge {
+  margin-left: 10px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: #e8f0fe;
+  color: #1a4a9c;
+  font-size: 14px;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+.quiz-total-points {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #555;
+}

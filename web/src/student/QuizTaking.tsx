@@ -182,6 +182,10 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
       />
       <div className="card">
         <h1>{initial.quizTitle}</h1>
+        <p className="quiz-total-points">
+          전체 배점 {initial.problems.reduce((sum, p) => sum + p.pointsTotal, 0)}점 · 문항{" "}
+          {initial.problems.length}개
+        </p>
 
         {remainingMs > 0 && remainingMs <= 60 * 1000 && (
           <div className="time-warning-banner danger">1분 미만 남았습니다. 지금 제출하세요.</div>
@@ -242,7 +246,9 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
               >
                 {problem.title}
                 <span className="tab-meta">
-                  {run ? `${run.score}/${run.maxScore}점(예상)` : ""}
+                  {run
+                    ? `${run.score}/${problem.pointsTotal}점(예상)`
+                    : `배점 ${problem.pointsTotal}점`}
                 </span>
               </button>
             );
@@ -252,7 +258,10 @@ export function QuizTaking({ quizId, initial }: QuizTakingProps) {
 
       <div className="card">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2 style={{ margin: 0 }}>{activeProblem.title}</h2>
+          <h2 style={{ margin: 0 }}>
+            {activeProblem.title}
+            <span className="problem-points-badge">배점 {activeProblem.pointsTotal}점</span>
+          </h2>
           <button className="secondary" onClick={() => setDescHidden((v) => !v)}>
             {descHidden ? "문제 보기" : "문제 숨기기"}
           </button>
